@@ -2,6 +2,29 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import {
+  CanalVenda,
+  Cargo,
+  CategoriaCliente,
+  CategoriaProduto,
+  CategoriaTransacao,
+  Cidade,
+  Financeiro,
+  Cliente,
+  FormaPagamento,
+  Fornecedor,
+  KitProdutosVinculados,
+  Produto,
+  ProdutosVinculados,
+  StatusCliente,
+  StatusEnvio,
+  StatusPagamento,
+  TipoEnvio,
+  Usuario,
+  Venda,
+  ItensVenda,
+} from './entity';
+
 import { User } from './users/user.entity';
 
 @Module({
