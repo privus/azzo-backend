@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { StatusPagamento } from './statusPagamento';
-import {  CategoriaTransacao } from './categoriaTransacao';
+import { CategoriaTransacao } from './categoriaTransacao';
 import { Venda } from './venda';
 import { FormaPagamento } from './formaPagamento';
 

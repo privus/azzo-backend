@@ -50,6 +50,9 @@ export class Cliente {
   @Column({ type: 'datetime', nullable: true })
   data_criacao: Date;
 
+  @Column({ type: 'varchar', length: 45, nullable: true })
+  nome_fantasia: string;
+
   @ManyToOne(() => Cidade)
   @JoinColumn({ name: 'cidade_id' })
   cidade: Cidade;

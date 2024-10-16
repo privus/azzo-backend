@@ -22,6 +22,12 @@ export class Usuario {
   @Column({ type: 'varchar', length: 45 })
   senha: string;
 
+  @Column({ type: 'date' })
+  data_nascimento: Date;
+
+  @Column({ type: 'varchar', length: 45 })
+  username: string;
+
   @ManyToOne(() => Cidade)
   @JoinColumn({ name: 'cidade_id' })
   cidade: Cidade;

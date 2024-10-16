@@ -18,3 +18,4 @@ export * from './tipoEnvio';
 export * from './usuario';
 export * from './venda';
 export * from './itensVenda';
+export * from './estado';

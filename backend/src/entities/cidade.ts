@@ -1,6 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, JoinColumn } from 'typeorm';
 import { Cliente } from './cliente';
 import { Usuario } from './usuario';
+import { Estado } from './estado';
 
 @Entity('cidade')
 export class Cidade {
@@ -15,4 +16,8 @@ export class Cidade {
 
   @OneToMany(() => Usuario, (usuario) => usuario.cidade)
   usuarios: Usuario[];
+
+  @OneToMany(() => Estado, (estado) => estado.cidade)
+  @JoinColumn({ name: 'estado_id' })
+  estado: Estado;
 }
