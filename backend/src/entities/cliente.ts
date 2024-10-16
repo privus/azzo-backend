@@ -29,7 +29,7 @@ export class Cliente {
   @Column({ type: 'varchar', length: 45, nullable: true })
   senha: string;
 
-  @Column({ type: 'varchar', length: 45 })
+  @Column({ type: 'varchar', length: 45, unique: true })
   email: string;
 
   @Column({ type: 'varchar', length: 45 })

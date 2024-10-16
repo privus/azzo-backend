@@ -17,7 +17,7 @@ export class Cidade {
   @OneToMany(() => Usuario, (usuario) => usuario.cidade)
   usuarios: Usuario[];
 
-  @OneToMany(() => Estado, (estado) => estado.cidade)
+  @OneToMany(() => Estado, (estado) => estado.cidades)
   @JoinColumn({ name: 'estado_id' })
-  estado: Estado;
+  estados: Estado;
 }

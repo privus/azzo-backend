@@ -10,16 +10,16 @@ export class Usuario {
   @Column({ type: 'varchar', length: 90 })
   nome: string;
 
-  @Column({ type: 'varchar', length: 45 })
+  @Column({ type: 'varchar', length: 45, unique: true })
   email: string;
 
-  @Column({ type: 'varchar', length: 45 })
+  @Column({ type: 'varchar', length: 45, nullable: true })
   celular: string;
 
   @Column({ type: 'varchar', length: 90 })
   endereco: string;
 
-  @Column({ type: 'varchar', length: 45 })
+  @Column({ type: 'varchar', length: 45, nullable: true })
   senha: string;
 
   @Column({ type: 'date' })
