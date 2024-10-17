@@ -12,6 +12,6 @@ export class Estado {
   @Column({ type: 'varchar', length: 2 })
   sigla: string;
 
-  @OneToMany(() => Cidade, (cidade) => cidade.estados)
+  @OneToMany(() => Cidade, (cidade) => cidade.estado)
   cidades: Cidade[];
 }

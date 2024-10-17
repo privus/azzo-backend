@@ -1,9 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, JoinColumn, ManyToOne, Unique } from 'typeorm';
 import { Cliente } from './cliente';
 import { Usuario } from './usuario';
 import { Estado } from './estado';
 
 @Entity('cidade')
+@Unique(['nome', 'estado'])
 export class Cidade {
   @PrimaryGeneratedColumn('increment')
   cidade_id: number;
@@ -17,7 +18,7 @@ export class Cidade {
   @OneToMany(() => Usuario, (usuario) => usuario.cidade)
   usuarios: Usuario[];
 
-  @OneToMany(() => Estado, (estado) => estado.cidades)
+  @ManyToOne(() => Estado, (estado) => estado.cidades)
   @JoinColumn({ name: 'estado_id' })
-  estados: Estado;
+  estado: Estado;
 }

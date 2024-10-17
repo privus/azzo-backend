@@ -22,8 +22,8 @@ export class Usuario {
   @Column({ type: 'varchar', length: 45, nullable: true })
   senha: string;
 
-  @Column({ type: 'date' })
-  data_nascimento: Date;
+  @Column({ type: 'varchar', length: 45, nullable: true })
+  data_nascimento: string;
 
   @Column({ type: 'varchar', length: 45 })
   username: string;

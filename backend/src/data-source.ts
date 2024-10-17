@@ -1,6 +1,6 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { runSeeders, SeederOptions } from 'typeorm-extension';
-import { MainSeeder } from './seeds/main.seeder';
+import { MainSeeder } from './seeds/mainSeeder';
 
 const options: DataSourceOptions & SeederOptions = {
   type: 'mysql',

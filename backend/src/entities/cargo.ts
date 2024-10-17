@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, Unique } from 'typeorm';
 import { Usuario } from './usuario';
 
 @Entity('cargo')
+@Unique(['nome'])
 export class Cargo {
   @PrimaryGeneratedColumn('increment')
   cargo_id: number;
