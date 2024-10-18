@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Cidade } from './cidade';
 import { Cargo } from './cargo';
+import { Regiao } from './regiao';
 
 @Entity('usuario')
 export class Usuario {
@@ -35,4 +36,8 @@ export class Usuario {
   @ManyToOne(() => Cargo)
   @JoinColumn({ name: 'cargo_id' })
   cargo: Cargo;
+
+  @ManyToOne(() => Regiao, { nullable: true })
+  @JoinColumn({ name: 'regiao_id' })
+  regiao: Regiao;
 }
