@@ -1,7 +1,6 @@
 // src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
 import { Logger } from '@nestjs/common';
 import * as cors from 'cors';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -17,9 +16,6 @@ async function bootstrap() {
       credentials: true,
     }),
   );
-
-  // Aplicar Filtros Globais
-  app.useGlobalFilters(new AllExceptionsFilter());
 
   // Configuração do Swagger (opcional)
   const config = new DocumentBuilder()

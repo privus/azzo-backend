@@ -20,24 +20,28 @@ export class Usuario {
   @Column({ type: 'varchar', length: 90 })
   endereco: string;
 
-  @Column({ type: 'varchar', length: 45, nullable: true })
+  @Column({ type: 'varchar', length: 90, nullable: true })
   senha: string;
 
   @Column({ type: 'varchar', length: 45, nullable: true })
   data_nascimento: string;
 
-  @Column({ type: 'varchar', length: 45 })
+  @Column({ type: 'varchar', length: 45, unique: true })
   username: string;
 
-  @ManyToOne(() => Cidade)
+  @ManyToOne(() => Cidade, { nullable: true })
   @JoinColumn({ name: 'cidade_id' })
   cidade: Cidade;
 
-  @ManyToOne(() => Cargo)
+  @ManyToOne(() => Cargo, { nullable: true })
   @JoinColumn({ name: 'cargo_id' })
   cargo: Cargo;
 
   @ManyToOne(() => Regiao, { nullable: true })
   @JoinColumn({ name: 'regiao_id' })
   regiao: Regiao;
+
+  constructor(partial: Partial<Usuario>) {
+    Object.assign(this, partial);
+  }
 }
