@@ -19,3 +19,4 @@ export * from './usuario';
 export * from './venda';
 export * from './itensVenda';
 export * from './estado';
+export * from './regiao';

@@ -4,33 +4,10 @@ import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 // Importação das entidades
-import {
-  CanalVenda,
-  Cargo,
-  CategoriaCliente,
-  CategoriaProduto,
-  CategoriaTransacao,
-  Cidade,
-  Financeiro,
-  Cliente,
-  FormaPagamento,
-  Fornecedor,
-  KitProdutosVinculados,
-  Produto,
-  ProdutosVinculados,
-  StatusCliente,
-  StatusEnvio,
-  StatusPagamento,
-  TipoEnvio,
-  Usuario,
-  Venda,
-  ItensVenda,
-  Estado,
-} from './infrastructure/database/entities';
+import * as entities from './infrastructure/database/entities/index';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { Regiao } from './infrastructure/database/entities/regiao';
 
 @Module({
   imports: [
@@ -52,59 +29,14 @@ import { Regiao } from './infrastructure/database/entities/regiao';
         username: 'usuario',
         password: 'senha',
         database: 'meu_banco',
-        entities: [
-          CanalVenda,
-          Cargo,
-          CategoriaCliente,
-          CategoriaProduto,
-          CategoriaTransacao,
-          Cidade,
-          Financeiro,
-          Cliente,
-          FormaPagamento,
-          Fornecedor,
-          KitProdutosVinculados,
-          Produto,
-          ProdutosVinculados,
-          StatusCliente,
-          StatusEnvio,
-          StatusPagamento,
-          TipoEnvio,
-          Usuario,
-          Venda,
-          ItensVenda,
-          Estado,
-          Regiao,
-        ],
+        entities: Object.values(entities),
         migrations: [__dirname + '/infrastructure/database/migrations/*.{ts,js}'],
         synchronize: true, // Use sincronização apenas para desenvolvimento
         logging: configService.get<string>('DB_LOGGING') === 'true', // Controle de logging via variável de ambiente
       }),
     }),
     // Registrando os repositórios
-    TypeOrmModule.forFeature([
-      CanalVenda,
-      Cargo,
-      CategoriaCliente,
-      CategoriaProduto,
-      CategoriaTransacao,
-      Cidade,
-      Financeiro,
-      Cliente,
-      FormaPagamento,
-      Fornecedor,
-      KitProdutosVinculados,
-      Produto,
-      ProdutosVinculados,
-      StatusCliente,
-      StatusEnvio,
-      StatusPagamento,
-      TipoEnvio,
-      Usuario,
-      Venda,
-      ItensVenda,
-      Estado,
-    ]),
+    TypeOrmModule.forFeature(Object.values(entities)),
     // Outros módulos podem ser adicionados aqui
   ],
   controllers: [AppController],

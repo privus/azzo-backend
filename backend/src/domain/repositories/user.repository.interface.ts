@@ -1,7 +1,7 @@
-import { User } from '../entities/user.entity';
+import { Usuario } from 'src/infrastructure/database/entities';
 
 export interface IUserRepository {
-  findByEmail(email: string): Promise<User | undefined>;
-  findById(id: number): Promise<User | undefined>;
-  create(user: User): Promise<User>;
+  findByEmail(email: string): Promise<Usuario>;
+  findById(id: number): Promise<Usuario>;
+  create(user: Usuario): Promise<Usuario>;
 }

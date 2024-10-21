@@ -13,38 +13,21 @@ export class UserRepository implements IUserRepository {
     private readonly userEntityRepository: Repository<Usuario>,
   ) {}
 
-  async findByEmail(email: string): Promise<User | undefined> {
+  async findByEmail(email: string): Promise<Usuario> {
     const userEntity = await this.userEntityRepository.findOne({ where: { email } });
     if (!userEntity) return undefined;
-    return this.toDomain(userEntity);
+    return userEntity;
   }
 
-  async findById(id: number): Promise<User | undefined> {
+  async findById(id: number): Promise<Usuario>{
     const userEntity = await this.userEntityRepository.findOne({ where: { usuario_id: id } });
     if (!userEntity) return undefined;
-    return this.toDomain(userEntity);
+    return userEntity;
   }
 
-  async create(user: User): Promise<User> {
+  async create(user: Usuario): Promise<Usuario> {
     const userEntity = this.userEntityRepository.create(user);
     const savedUser = await this.userEntityRepository.save(userEntity);
-    return this.toDomain(savedUser);
-  }
-
-  private toDomain(userEntity: Usuario): User {
-    const user: User = {
-      usuario_id: userEntity.usuario_id,
-      nome: userEntity.nome,
-      email: userEntity.email,
-      senha: userEntity.senha,
-      celular: userEntity.celular,
-      endereco: userEntity.endereco,
-      data_nascimento: userEntity.data_nascimento,
-      username: userEntity.username,
-      cidade_id: userEntity.cidade.cidade_id,
-      cargo_id: userEntity.cargo.cargo_id,
-      regiao_id: userEntity.regiao.regiao_id,
-    };
-    return user;
+    return userEntity;
   }
 }

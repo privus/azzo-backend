@@ -29,15 +29,19 @@ export class Usuario {
   @Column({ type: 'varchar', length: 45 })
   username: string;
 
-  @ManyToOne(() => Cidade)
+  @ManyToOne(() => Cidade, { nullable: true })
   @JoinColumn({ name: 'cidade_id' })
-  cidade: Cidade;
+  cidade?: Cidade;
 
-  @ManyToOne(() => Cargo)
+  @ManyToOne(() => Cargo, { nullable: true })
   @JoinColumn({ name: 'cargo_id' })
-  cargo: Cargo;
+  cargo?: Cargo;
 
   @ManyToOne(() => Regiao, { nullable: true })
   @JoinColumn({ name: 'regiao_id' })
-  regiao: Regiao;
+  regiao?: Regiao;
+
+  constructor(partial: Partial<Usuario>) {
+    Object.assign(this, partial);
+  }
 }

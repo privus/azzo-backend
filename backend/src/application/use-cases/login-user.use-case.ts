@@ -29,7 +29,7 @@ export class LoginUserUseCase {
     const payload = {
       userId: user.usuario_id,
       email: user.email,
-      cargo: user.cargo_id,
+      cargo: user.cargo.cargo_id,
     };
     const secret = this.configService.get<string>('JWT_SECRET') || 'defaultSecret';
     const expiresIn = this.configService.get<string>('JWT_EXPIRES_IN') || '1h';
