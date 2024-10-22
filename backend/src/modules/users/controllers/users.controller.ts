@@ -1,10 +1,10 @@
-import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
-import { UsersService } from '../services/users.service';
+import { Controller, Get, Post, Body, Param, Put, Delete, Inject } from '@nestjs/common';
+import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import { RegisterUserDto } from '../../auth/dto/register-user.dto';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(@Inject('IUserRepository') private readonly usersService: IUserRepository) {}
 
   @Get()
   async findAll() {
@@ -13,12 +13,12 @@ export class UsersController {
 
   @Get(':id')
   async findOne(@Param('id') id: number) {
-    return this.usersService.findOne(id);
+    return this.usersService.findById(id);
   }
 
   @Post()
   async create(@Body() registerUserDto: RegisterUserDto) {
-    return this.usersService.create(registerUserDto);
+    return this.usersService.register(registerUserDto);
   }
 
   @Put(':id')

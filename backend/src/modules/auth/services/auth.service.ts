@@ -1,6 +1,5 @@
-// src/modules/auth/services/auth.service.ts
 import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
-import { IUserRepository } from '../../../domain/userModule/repositories/user.repository.interface';
+import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import { LoginUserDto } from '../dto/login-user.dto';
 import { RegisterUserDto } from '../dto/register-user.dto';
 import * as bcrypt from 'bcryptjs';
@@ -9,7 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { Usuario, Cargo, Cidade, Regiao } from '../../../infrastructure/database/entities';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IAuthRepository } from '../../../domain/userModule/repositories/auth.repository.interface';
+import { IAuthRepository } from '../../../domain/repositories/auth.repository.interface';
 
 @Injectable()
 export class AuthService implements IAuthRepository {
@@ -20,6 +19,15 @@ export class AuthService implements IAuthRepository {
     @InjectRepository(Cidade) private readonly cidadeRepository: Repository<Cidade>,
     @InjectRepository(Regiao) private readonly regiaoRepository: Repository<Regiao>,
   ) {}
+
+  async getRelatedEntities(cargo_id: number, cidade_id: number, regiao_id: number) {
+    console.log('regiao_idv ==>', regiao_id);
+    const cargo = await this.cargoRepository.findOne({ where: { cargo_id } });
+    const cidade = await this.cidadeRepository.findOne({ where: { cidade_id } });
+    const regiao = await this.regiaoRepository.findOne({ where: { regiao_id } });
+
+    return { cargo, cidade, regiao };
+  }
 
   async login(loginDto: LoginUserDto): Promise<{ accessToken: string }> {
     const { email, senha } = loginDto;
@@ -39,7 +47,7 @@ export class AuthService implements IAuthRepository {
       email: user.email,
       cargo: user.cargo,
     };
-    const secret = this.configService.get<string>('JWT_SECRET') || 'defaultSecret';
+    const secret = this.configService.get<string>('JWT_SECRET') || 'your_jwt_secret';
     const expiresIn = this.configService.get<string>('JWT_EXPIRES_IN') || '5h';
 
     const accessToken = jwt.sign(payload, secret, { expiresIn });
@@ -47,12 +55,12 @@ export class AuthService implements IAuthRepository {
     return { accessToken };
   }
 
-  async register(registerDto: RegisterUserDto): Promise<Usuario> {
+  async register(registerDto: RegisterUserDto): Promise<Partial<Usuario>> {
     const { email, senha, cargo_id, regiao_id, cidade_id, ...rest } = registerDto;
 
-    const cargo = await this.cargoRepository.findOne({ where: { cargo_id } });
-    const cidade = await this.cidadeRepository.findOne({ where: { cidade_id } });
-    const regiao = await this.regiaoRepository.findOne({ where: { regiao_id } });
+    console.log('regiao_idv ==>', regiao_id);
+
+    const { cargo, cidade, regiao } = await this.getRelatedEntities(cargo_id, cidade_id, regiao_id); //parametros na ordem correta
 
     const existingUser = await this.userRepository.findByEmail(email);
     if (existingUser) {
@@ -61,7 +69,7 @@ export class AuthService implements IAuthRepository {
 
     const hashedPassword = await bcrypt.hash(senha, 10);
 
-    const user = new Usuario({
+    return await this.userRepository.register({
       ...rest,
       email,
       senha: hashedPassword,
@@ -69,7 +77,5 @@ export class AuthService implements IAuthRepository {
       cidade,
       regiao,
     });
-
-    return await this.userRepository.create(user);
   }
 }

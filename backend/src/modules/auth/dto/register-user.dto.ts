@@ -11,24 +11,17 @@ export class RegisterUserDto {
   @MinLength(6)
   senha: string;
 
-  @IsOptional()
-  celular?: string;
-
   @IsNotEmpty()
   endereco: string;
-
-  @IsNotEmpty()
   data_nascimento?: string;
-
-  @IsNotEmpty()
   username: string;
 
   @IsNumber()
   cidade_id: number;
-
-  @IsNumber()
   cargo_id: number;
+  celular: string;
 
   @IsOptional()
   regiao_id?: number;
+  usuario_id?: number;
 }

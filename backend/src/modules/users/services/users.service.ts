@@ -2,23 +2,25 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Usuario } from '../../../infrastructure/database/entities';
+import { IUserRepository } from 'src/domain/repositories/user.repository.interface';
 
 @Injectable()
-export class UsersService {
-  constructor(
-    @InjectRepository(Usuario)
-    private readonly userRepository: Repository<Usuario>,
-  ) {}
+export class UsersService implements IUserRepository {
+  constructor(@InjectRepository(Usuario) private readonly userRepository: Repository<Usuario>) {}
+
+  async findByEmail(email: string): Promise<Usuario> {
+    return this.userRepository.findOne({ where: { email } });
+  }
 
   async findAll(): Promise<Usuario[]> {
     return this.userRepository.find();
   }
 
-  async findOne(id: number): Promise<Usuario> {
-    return this.userRepository.findOne({ where: { usuario_id: id } });
+  async findById(id: number): Promise<Partial<Usuario>> {
+    return this.userRepository.findOne({ where: { usuario_id: id }, relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'] });
   }
 
-  async create(user: Partial<Usuario>): Promise<Usuario> {
+  async register(user: Partial<Usuario>): Promise<Usuario> {
     return this.userRepository.save(user);
   }
 
