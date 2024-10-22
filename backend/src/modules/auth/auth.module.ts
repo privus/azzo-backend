@@ -4,14 +4,15 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Cargo, Usuario, Regiao, Cidade, Estado } from '../..//infrastructure/database/entities';
+import { Usuario } from '../..//infrastructure/database/entities';
 import { AuthController } from './controllers/auth.controller';
 import { AuthService } from './services/auth.service';
 import { UsersModule } from '../users/users.module';
+import { SharedModule } from '../shared/shared.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Usuario, Cargo, Regiao, Cidade, Estado]),
+    TypeOrmModule.forFeature([Usuario]),
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -21,7 +22,8 @@ import { UsersModule } from '../users/users.module';
         signOptions: { expiresIn: configService.get<string>('JWT_EXPIRES_IN') || '5h' },
       }),
     }),
-    UsersModule, // Importa o UserModule que fornece IUserRepository
+    UsersModule,
+    SharedModule,
   ],
   controllers: [AuthController],
   providers: [JwtStrategy, AuthService],

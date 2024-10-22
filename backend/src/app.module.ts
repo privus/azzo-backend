@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { SharedModule } from './modules/shared/shared.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { UsersModule } from './modules/users/users.module';
     TypeOrmModule.forFeature(Object.values(entities)),
     AuthModule,
     UsersModule,
+    SharedModule,
     // Outros módulos podem ser adicionados aqui
   ],
   controllers: [AppController],
