@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, OneToMany, JoinColumn, ManyToOn
 import { Cliente } from './cliente';
 import { Usuario } from './usuario';
 import { Estado } from './estado';
+import { Regiao } from './regiao';
 
 @Entity('cidade')
 @Unique(['nome', 'estado'])
@@ -21,4 +22,8 @@ export class Cidade {
   @ManyToOne(() => Estado, (estado) => estado.cidades)
   @JoinColumn({ name: 'estado_id' })
   estado: Estado;
+
+  @ManyToOne(() => Regiao, (regiao) => regiao.cidades, { nullable: true })
+  @JoinColumn({ name: 'regiao_id' })
+  regiao: Regiao;
 }

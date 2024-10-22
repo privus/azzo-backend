@@ -1,6 +1,7 @@
-import { DataSource, DeepPartial } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { Seeder } from 'typeorm-extension';
 import { Cargo, Cidade, Usuario } from '../entities';
+import * as bcrypt from 'bcryptjs';
 
 export class UsuarioSeed implements Seeder {
   async run(dataSource: DataSource): Promise<void> {
@@ -14,7 +15,7 @@ export class UsuarioSeed implements Seeder {
         email: 'andre.jvb@example.com',
         celular: '(35) 99999-9999',
         endereco: 'Rua Exemplo, 123',
-        senha: 'senha123',
+        senha: await bcrypt.hash('senha123', 10),
         data_nascimento: '2001-08-20',
         username: 'andrejvb',
         cidade_id: 1, // ID da cidade
@@ -25,7 +26,7 @@ export class UsuarioSeed implements Seeder {
         email: 'maria.oliveira@example.com',
         celular: '(21) 88888-8888',
         endereco: 'Av. Exemplo, 456',
-        senha: 'senha456',
+        senha: await bcrypt.hash('senha45', 10),
         data_nascimento: '1990-05-15',
         username: 'mariaoliveira',
         cidade_id: 3, // ID da cidade
@@ -38,7 +39,7 @@ export class UsuarioSeed implements Seeder {
 
       if (!userExists) {
         // Busque a cidade e o cargo pelos IDs antes de criar o usuário
-        const cidade = await cidadeRepository.findOneBy({ cidade_id: user.cidade_id});
+        const cidade = await cidadeRepository.findOneBy({ cidade_id: user.cidade_id });
         const cargo = await cargoRepository.findOneBy({ cargo_id: user.cargo_id });
 
         if (cidade && cargo) {
@@ -50,14 +51,10 @@ export class UsuarioSeed implements Seeder {
           await userRepository.save(newUser);
           console.log(`Usuário ${user.nome} foi adicionado.`);
         } else {
-          console.log(
-            `Erro ao encontrar a cidade ou o cargo para o usuário ${user.nome}.`,
-          );
+          console.log(`Erro ao encontrar a cidade ou o cargo para o usuário ${user.nome}.`);
         }
       } else {
-        console.log(
-          `Usuário ${user.email} já existe. Nenhuma alteração foi feita.`,
-        );
+        console.log(`Usuário ${user.email} já existe. Nenhuma alteração foi feita.`);
       }
     }
   }
