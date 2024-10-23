@@ -19,8 +19,8 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
   // Configuração do Swagger (opcional)
   const config = new DocumentBuilder()
-    .setTitle('API da Aplicação')
-    .setDescription('Descrição da API')
+    .setTitle('API Azzo')
+    .setDescription('API para criação de usuários e autenticação')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
