@@ -15,7 +15,7 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
-  @ApiOperation({ summary: 'Obter um usuário pelo ID' }) // Descrição da rota
+  @ApiOperation({ summary: 'Obter um usuário pelo ID' })
   @Get(':id')
   async findOne(@Param('id') id: number) {
     return this.usersService.findById(id);
