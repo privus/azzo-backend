@@ -6,5 +6,5 @@ export interface IUserRepository {
   register(user: Partial<Usuario>): Promise<Usuario>;
   findAll(): Promise<Usuario[]>;
   remove(id: number): Promise<void>;
-  update(id: number, user: Partial<Usuario>): Promise<Usuario>;
+  update(id: number, user: Partial<Usuario>): Promise<Partial<Usuario>>;
 }

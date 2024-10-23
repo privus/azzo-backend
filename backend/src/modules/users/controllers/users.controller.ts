@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Param, Put, Delete, Inject } from '@nestjs/common';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import { RegisterUserDto } from '../../auth/dto/register-user.dto';
+import { UpdateUserDto } from '../dto/update-user.dto';
 
 @Controller('users')
 export class UsersController {
@@ -22,7 +23,7 @@ export class UsersController {
   }
 
   @Put(':id')
-  async update(@Param('id') id: number, @Body() updateUserDto: Partial<RegisterUserDto>) {
+  async update(@Param('id') id: number, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);
   }
 

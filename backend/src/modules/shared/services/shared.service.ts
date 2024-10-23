@@ -12,18 +12,18 @@ export class SharedService implements ISharedRepository {
     @InjectRepository(Regiao) private readonly regiaoRepository: Repository<Regiao>,
   ) {}
 
-  async getRelatedEntities(isCreate: boolean, cargo_id?: number, cidade_id?: number, regiao_id?: number) {
+  async getRelatedEntities(cargo_id?: number, cidade_id?: number, regiao_id?: number, isCreate = true) {
     if (isCreate) {
       const cargo = await this.cargoRepository.findOne({ where: { cargo_id } });
       const cidade = await this.cidadeRepository.findOne({ where: { cidade_id } });
-      const regiao = regiao_id ? await this.regiaoRepository.findOne({ where: { regiao_id } }) : undefined;
+      const regiao = regiao_id ? await this.regiaoRepository.findOne({ where: { regiao_id } }) : null;
 
       return { cargo, cidade, regiao };
     }
     return {
-      cargo: cargo_id !== undefined ? await this.cargoRepository.findOne({ where: { cargo_id } }) : null,
-      cidade: cidade_id !== undefined ? await this.cidadeRepository.findOne({ where: { cidade_id } }) : null,
-      regiao: regiao_id !== undefined ? await this.regiaoRepository.findOne({ where: { regiao_id } }) : null,
+      cargo: cargo_id ? await this.cargoRepository.findOne({ where: { cargo_id } }) : null,
+      cidade: cidade_id ? await this.cidadeRepository.findOne({ where: { cidade_id } }) : null,
+      regiao: regiao_id ? await this.regiaoRepository.findOne({ where: { regiao_id } }) : null,
     };
   }
 }

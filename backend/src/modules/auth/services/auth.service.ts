@@ -13,7 +13,7 @@ import { ISharedRepository } from 'src/domain/repositories/shared.repository.int
 export class AuthService implements IAuthRepository {
   constructor(
     @Inject('IUserRepository') private readonly userRepository: IUserRepository,
-    @Inject('ISharedRepository') private readonly sharedService: ISharedRepository,
+    @Inject('ISharedRepository') private readonly sharedRepository: ISharedRepository,
     private readonly configService: ConfigService,
   ) {}
 
@@ -46,7 +46,7 @@ export class AuthService implements IAuthRepository {
   async register(registerDto: RegisterUserDto): Promise<Partial<Usuario>> {
     const { email, senha, cargo_id, regiao_id, cidade_id, ...rest } = registerDto;
 
-    const { cargo, cidade, regiao } = await this.sharedService.getRelatedEntities(true, cargo_id, cidade_id, regiao_id); //parametros na ordem correta
+    const { cargo, cidade, regiao } = await this.sharedRepository.getRelatedEntities(cargo_id, cidade_id, regiao_id); //parametros na ordem correta
 
     const existingUser = await this.userRepository.findByEmail(email);
     if (existingUser) {
