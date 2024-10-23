@@ -1,7 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { CategoriaCliente } from './categoriaCliente';
-import { Cidade } from './cidade';
-import { StatusCliente } from './statusCliente';
+import { CategoriaCliente, Cidade, StatusCliente } from './';
 
 @Entity('cliente')
 export class Cliente {

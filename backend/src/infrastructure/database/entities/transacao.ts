@@ -1,19 +1,17 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { StatusPagamento } from './statusPagamento';
-import { CategoriaTransacao } from './categoriaTransacao';
-import { Venda } from './venda';
-import { FormaPagamento } from './formaPagamento';
+import { StatusPagamento, CategoriaTransacao, Venda, FormaPagamento, Debito } from './';
 
-@Entity('financeiro')
-export class Financeiro {
+
+@Entity('transacao')
+export class Transacao {
   @PrimaryGeneratedColumn('increment')
   transacao_id: number;
 
   @Column({ type: 'tinyint' })
   tipo: boolean;
 
-  @Column({ type: 'datetime' })
-  data_criacao: Date;
+  @Column({ type: 'varchar', length: 45 })
+  data_criacao: string;
 
   @Column({ type: 'varchar', length: 45, nullable: true })
   descricao: string;
@@ -30,17 +28,14 @@ export class Financeiro {
   @Column({ type: 'varchar', length: 45, nullable: true })
   observacao: string;
 
-  @Column({ type: 'datetime', nullable: true })
-  data_vencimento: Date;
+  @Column({ type: 'varchar', length: 45 })
+  data_vencimento: string;
 
-  @Column({ type: 'date', nullable: true })
-  data_efetiva: Date;
-
-  @Column({ type: 'int', nullable: true })
-  parcelas: number;
+  @Column({ type: 'varchar', length: 45, nullable: true })
+  data_efetiva?: string;
 
   @Column({ type: 'int', nullable: true })
-  venda_id: number;
+  total_parcelas?: number;
 
   @Column({ type: 'int', nullable: true })
   forma_pagamento_id: number;
@@ -60,4 +55,8 @@ export class Financeiro {
   @ManyToOne(() => FormaPagamento)
   @JoinColumn({ name: 'forma_pagamento_id' })
   formaPagamento: FormaPagamento;
+
+  @ManyToOne(() => Debito, { nullable: true })
+  @JoinColumn({ name: 'debito_id' })
+  debito?: Debito;
 }

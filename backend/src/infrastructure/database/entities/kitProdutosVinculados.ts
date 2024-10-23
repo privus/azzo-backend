@@ -1,6 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { Produto } from './produto';
-import { ProdutosVinculados } from './produtosVinculados';
+import { Produto, ProdutosVinculados } from './';
 
 @Entity('kit_produtos_vinculados')
 export class KitProdutosVinculados {
