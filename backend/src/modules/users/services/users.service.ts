@@ -1,11 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Usuario } from '../../../infrastructure/database/entities';
 import { IUserRepository } from 'src/domain/repositories/user.repository.interface';
+import { ISharedRepository } from 'src/domain/repositories/shared.repository.interface';
+import { UpdateUserDto } from '../dto/update-user.dto';
 
 @Injectable()
 export class UsersService implements IUserRepository {
+  @Inject('ISharedRepository') private readonly sharedService: ISharedRepository;
   constructor(@InjectRepository(Usuario) private readonly userRepository: Repository<Usuario>) {}
 
   async findByEmail(email: string): Promise<Usuario> {
@@ -24,11 +27,24 @@ export class UsersService implements IUserRepository {
     return this.userRepository.save(user);
   }
 
-  async update(id: number, user: Partial<Usuario>): Promise<Usuario> {
-    await this.userRepository.update(id, user);
-    return this.userRepository.findOne({ where: { usuario_id: id } });
-  }
+  async update(id: number, user: UpdateUserDto): Promise<Partial<Usuario>> {
+    const { cargo_id, regiao_id, cidade_id, ...rest } = user;
 
+    // Obtém as entidades relacionadas para cargo, cidade e regiao, se fornecidos
+    const { cargo, cidade, regiao } = await this.sharedService.getRelatedEntities(cargo_id, cidade_id, regiao_id, false);
+
+    const updateData: Partial<Usuario> = {
+      ...rest,
+      ...(cargo && { cargo }), // Atualiza cargo apenas se fornecido
+      ...(cidade && { cidade }), // Atualiza cidade apenas se fornecido
+      ...(regiao && { regiao }), // Atualiza regiao apenas se fornecido
+    };
+    // Atualiza o usuário com os campos que foram fornecidos
+    await this.userRepository.update(id, updateData);
+
+    // Retorna o usuário atualizado
+    return this.findById(id);
+  }
   async remove(id: number): Promise<void> {
     await this.userRepository.delete(id);
   }

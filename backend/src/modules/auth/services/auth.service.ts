@@ -5,29 +5,17 @@ import { RegisterUserDto } from '../dto/register-user.dto';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { ConfigService } from '@nestjs/config';
-import { Usuario, Cargo, Cidade, Regiao } from '../../../infrastructure/database/entities';
-import { Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
+import { Usuario } from '../../../infrastructure/database/entities';
 import { IAuthRepository } from '../../../domain/repositories/auth.repository.interface';
+import { ISharedRepository } from 'src/domain/repositories/shared.repository.interface';
 
 @Injectable()
 export class AuthService implements IAuthRepository {
   constructor(
     @Inject('IUserRepository') private readonly userRepository: IUserRepository,
+    @Inject('ISharedRepository') private readonly sharedRepository: ISharedRepository,
     private readonly configService: ConfigService,
-    @InjectRepository(Cargo) private readonly cargoRepository: Repository<Cargo>,
-    @InjectRepository(Cidade) private readonly cidadeRepository: Repository<Cidade>,
-    @InjectRepository(Regiao) private readonly regiaoRepository: Repository<Regiao>,
   ) {}
-
-  async getRelatedEntities(cargo_id: number, cidade_id: number, regiao_id: number) {
-    console.log('regiao_idv ==>', regiao_id);
-    const cargo = await this.cargoRepository.findOne({ where: { cargo_id } });
-    const cidade = await this.cidadeRepository.findOne({ where: { cidade_id } });
-    const regiao = await this.regiaoRepository.findOne({ where: { regiao_id } });
-
-    return { cargo, cidade, regiao };
-  }
 
   async login(loginDto: LoginUserDto): Promise<{ accessToken: string }> {
     const { email, senha } = loginDto;
@@ -58,9 +46,7 @@ export class AuthService implements IAuthRepository {
   async register(registerDto: RegisterUserDto): Promise<Partial<Usuario>> {
     const { email, senha, cargo_id, regiao_id, cidade_id, ...rest } = registerDto;
 
-    console.log('regiao_idv ==>', regiao_id);
-
-    const { cargo, cidade, regiao } = await this.getRelatedEntities(cargo_id, cidade_id, regiao_id); //parametros na ordem correta
+    const { cargo, cidade, regiao } = await this.sharedRepository.getRelatedEntities(cargo_id, cidade_id, regiao_id); //parametros na ordem correta
 
     const existingUser = await this.userRepository.findByEmail(email);
     if (existingUser) {
