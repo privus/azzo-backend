@@ -1,8 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, JoinColumn, ManyToOne, Unique } from 'typeorm';
-import { Cliente } from './cliente';
-import { Usuario } from './usuario';
-import { Estado } from './estado';
-import { Regiao } from './regiao';
+import { Cliente, Usuario, Estado, Regiao } from './';
 
 @Entity('cidade')
 @Unique(['nome', 'estado'])

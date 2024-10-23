@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { Cliente } from './cliente';
+import { Cliente } from './';
 
 @Entity('status_cliente')
 export class StatusCliente {

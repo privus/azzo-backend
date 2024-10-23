@@ -1,12 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { Cliente } from './cliente';
-import { CanalVenda } from './canalVenda';
-import { Usuario } from './usuario';
-import { Produto } from './produto';
-import { FormaPagamento } from './formaPagamento';
-import { StatusPagamento } from './statusPagamento';
-import { StatusEnvio } from './statusEnvio';
-import { TipoEnvio } from './tipoEnvio';
+import { Cliente, CanalVenda, Usuario, Produto, FormaPagamento, StatusPagamento, StatusEnvio, TipoEnvio } from './';
 
 @Entity('venda')
 export class Venda {
@@ -32,7 +25,7 @@ export class Venda {
   produto_id: number;
 
   @Column({ type: 'int' })
-  numero_parcelas: number;
+  total_parcelas: number;
 
   @Column({ type: 'int' })
   forma_pagamento_id: number;

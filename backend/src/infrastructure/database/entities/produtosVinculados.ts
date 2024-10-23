@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { KitProdutosVinculados } from './kitProdutosVinculados';
+import { KitProdutosVinculados } from './';
 
 @Entity('produtos_vinculados')
 export class ProdutosVinculados {
