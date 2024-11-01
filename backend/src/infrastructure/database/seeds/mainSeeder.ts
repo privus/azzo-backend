@@ -11,7 +11,7 @@ export class MainSeeder implements Seeder {
     await runSeeder(dataSource, EstadoSeed);
     await runSeeder(dataSource, CidadeSeed);
     await runSeeder(dataSource, CargoSeed);
-    await runSeeder(dataSource, UsuarioSeed);
     await runSeeder(dataSource, RegiaoSeed);
+    await runSeeder(dataSource, UsuarioSeed);
   }
 }
