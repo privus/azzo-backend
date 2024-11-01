@@ -18,11 +18,11 @@ export class Usuario {
   @Column({ type: 'varchar', length: 90 })
   endereco: string;
 
-  @Column({ type: 'varchar', length: 45, nullable: true })
+  @Column({ type: 'varchar', length: 90, nullable: true })
   senha: string;
 
   @Column({ type: 'varchar', length: 45, nullable: true })
-  data_nascimento: string;
+  nascimento: string;
 
   @Column({ type: 'varchar', length: 45, unique: true })
   username: string;

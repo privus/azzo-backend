@@ -42,7 +42,7 @@ export class UpdateUserDto {
    */
   @IsOptional()
   @Matches(/^\d{2}\/\d{2}\/\d{4}$/, { message: 'A data de nascimento deve estar no formato DD/MM/YYYY.' })
-  data_nascimento?: string;
+  nascimento?: string;
 
   /**
    * ID da cidade do usuário.
@@ -60,11 +60,11 @@ export class UpdateUserDto {
 
   /**
    * Deve conter exatamente 11 dígitos (incluindo o DDD).
-   * Exemplo: '3591990909'
+   * Exemplo: '(35) 91990909'
    */
   @IsOptional()
   @IsString({ message: 'O celular deve ser uma string.' })
-  @Matches(/^\d{11}$/, { message: 'O celular deve conter exatamente 11 dígitos numéricos.' })
+  @Matches(/^.{15}$/, { message: 'O celular deve conter exatamente 15 caracteres.' })
   celular?: string;
 
   /**

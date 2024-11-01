@@ -22,7 +22,7 @@ export class AuthService implements IAuthRepository {
 
     const user = await this.userRepository.findByEmail(email);
     if (!user) {
-      throw new UnauthorizedException('Usuário não encontrado.');
+      throw new UnauthorizedException('Email não encontrado.');
     }
 
     const isPasswordValid = await bcrypt.compare(senha, user.senha);
@@ -35,6 +35,7 @@ export class AuthService implements IAuthRepository {
       email: user.email,
       cargo: user.cargo,
     };
+
     const secret = this.configService.get<string>('JWT_SECRET') || 'your_jwt_secret';
     const expiresIn = this.configService.get<string>('JWT_EXPIRES_IN') || '5h';
 

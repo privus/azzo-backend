@@ -12,7 +12,7 @@ export class UsersService implements IUserRepository {
   constructor(@InjectRepository(Usuario) private readonly userRepository: Repository<Usuario>) {}
 
   async findByEmail(email: string): Promise<Usuario> {
-    return this.userRepository.findOne({ where: { email } });
+    return this.userRepository.findOne({ where: { email }, relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'] });
   }
 
   async findAll(): Promise<Usuario[]> {

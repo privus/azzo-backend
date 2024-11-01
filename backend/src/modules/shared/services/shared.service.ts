@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { Cargo, Cidade, Regiao } from '../../../infrastructure/database/entities';
 import { ISharedRepository } from '../../../domain/repositories/shared.repository.interface';
 
@@ -25,5 +25,18 @@ export class SharedService implements ISharedRepository {
       cidade: cidade_id ? await this.cidadeRepository.findOne({ where: { cidade_id } }) : null,
       regiao: regiao_id ? await this.regiaoRepository.findOne({ where: { regiao_id } }) : null,
     };
+  }
+
+  async findAllCities() {
+    return await this.cidadeRepository.find();
+  }
+
+  async findPartial(query: string) {
+    return this.cidadeRepository.find({
+      where: {
+        nome: Like(`%${query}%`),
+      },
+      take: 20, // Limitar a 20 resultados
+    });
   }
 }

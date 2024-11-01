@@ -7,4 +7,6 @@ export interface ISharedRepository {
     regiao_id?: number,
     isCreate?: boolean,
   ): Promise<{ cargo: Cargo | null; cidade: Cidade | null; regiao: Regiao | null }>;
+  findAllCities(): Promise<Cidade[]>;
+  findPartial(query: string): Promise<Cidade[]>;
 }
