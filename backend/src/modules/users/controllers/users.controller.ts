@@ -21,12 +21,6 @@ export class UsersController {
     return this.usersService.findById(id);
   }
 
-  @ApiOperation({ summary: 'Cadastrar um novo usuario' })
-  @Post()
-  async create(@Body() registerUserDto: RegisterUserDto) {
-    return this.usersService.register(registerUserDto);
-  }
-
   @ApiOperation({ summary: 'Atualizar um usuario' })
   @Put(':id')
   async update(@Param('id') id: number, @Body() updateUserDto: UpdateUserDto) {

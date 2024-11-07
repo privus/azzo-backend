@@ -45,19 +45,21 @@ export class AuthService implements IAuthRepository {
   }
 
   async register(registerDto: RegisterUserDto): Promise<Partial<Usuario>> {
-    const { email, senha, cargo_id, regiao_id, cidade_id, ...rest } = registerDto;
+    const { email, senha, cargo_id, regiao_id, cidade_id, username, ...rest } = registerDto;
 
     const { cargo, cidade, regiao } = await this.sharedRepository.getRelatedEntities(cargo_id, cidade_id, regiao_id); //parametros na ordem correta
 
     const existingUser = await this.userRepository.findByEmail(email);
-    if (existingUser) {
-      throw new UnauthorizedException('Email já está em uso.');
+    const existingUsername = await this.userRepository.findByUsername(username);
+    if (existingUser || existingUsername) {
+      throw new UnauthorizedException('Email ou Username já está em uso.');
     }
 
     const hashedPassword = await bcrypt.hash(senha, 10);
 
     return await this.userRepository.register({
       ...rest,
+      username,
       email,
       senha: hashedPassword,
       cargo,

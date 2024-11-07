@@ -37,12 +37,12 @@ export class RegisterUserDto {
   endereco: string;
 
   /**
-   * Data de nascimento do usuário no formato DD/MM/YYYY.
+   * Nascimento do usuário no formato DD/MM/YYYY.
    * Exemplo/: '15/05/1993'.
    */
   @IsNotEmpty({ message: 'A data de nascimento é obrigatória.' })
   @Matches(/^\d{2}\/\d{2}\/\d{4}$/, { message: 'A data de nascimento deve estar no formato DD/MM/YYYY.' })
-  data_nascimento: string;
+  nascimento: string;
 
   /**
    * Nome de usuário (username).
@@ -71,10 +71,10 @@ export class RegisterUserDto {
    * Deve conter exatamente 11 dígitos (incluindo o DDD).
    * Exemplo: '3591990909'
    */
-  @IsNotEmpty({ message: 'O celular é obrigatório.' })
+  @IsOptional()
   @IsString({ message: 'O celular deve ser uma string.' })
-  @Matches(/^\d{11}$/, { message: 'O celular deve conter exatamente 11 dígitos numéricos.' })
-  celular: string;
+  @Matches(/^.{15}$/, { message: 'O celular deve conter exatamente 15 caracteres.' })
+  celular?: string;
 
   /**
    * ID da região do usuário

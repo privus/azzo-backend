@@ -15,6 +15,10 @@ export class UsersService implements IUserRepository {
     return this.userRepository.findOne({ where: { email }, relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'] });
   }
 
+  async findByUsername(username: string): Promise<Usuario> {
+    return this.userRepository.findOne({ where: { username }, relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'] });
+  }
+
   async findAll(): Promise<Usuario[]> {
     return this.userRepository.find();
   }
