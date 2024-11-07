@@ -28,5 +28,5 @@ COPY . .
 # Expor a porta usada pelo NestJS
 EXPOSE 3000
 
-# Comando para rodar a aplicação e o seed
-CMD ["./start-with-seed.sh"]
+# Comando para rodar a aplicação
+CMD ["npm", "run", "start:dev"]
