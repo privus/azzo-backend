@@ -1,6 +1,7 @@
 import { AppDataSource } from './data-source';
 import { runSeeders } from 'typeorm-extension';
 import { MainSeeder } from './seeds/mainSeeder';
+import 'dotenv/config';
 
 async function runSeeds() {
   try {
