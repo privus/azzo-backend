@@ -9,7 +9,7 @@ export class CidadeSeed implements Seeder {
     const cidadeRepository = dataSource.getRepository(Cidade);
     const estadoRepository = dataSource.getRepository(Estado);
 
-    const jsonFilePath = path.resolve('/home/ubuntu/azzo-backend/backend/src/infrastructure/database/seeds/utils/cidades.json');
+    const jsonFilePath = path.resolve('/home/ubuntu/azzo-backend/backend/src/utils/cidades.json');
     const jsonData = JSON.parse(fs.readFileSync(jsonFilePath, 'utf-8'));
 
     for (const cidadeData of jsonData) {
