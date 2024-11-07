@@ -4,13 +4,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Cidade, Estado } from '../entities';
 
-export class CidadeSeed implements Seeder { async run(dataSource: DataSource): Promise<void> {
+export class CidadeSeed implements Seeder {
+  async run(dataSource: DataSource): Promise<void> {
     const cidadeRepository = dataSource.getRepository(Cidade);
     const estadoRepository = dataSource.getRepository(Estado);
 
-    const jsonFilePath = path.resolve(
-      '/home/personizi-master/Documentos/projetos/azzo/azzo-backend/backend/src/utils/cidades.json',
-    );
+    const jsonFilePath = path.resolve('../../utils/seeds/data/cidades.json');
     const jsonData = JSON.parse(fs.readFileSync(jsonFilePath, 'utf-8'));
 
     for (const cidadeData of jsonData) {
