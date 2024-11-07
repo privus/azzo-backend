@@ -23,7 +23,7 @@ import { SharedModule } from './modules/shared/shared.module';
         type: 'mysql',
         host: 'database-azzo.cj46y6k2uqf8.sa-east-1.rds.amazonaws.com', // Nome do serviço MySQL no Docker Compose
         port: 3306,
-        username: 'usuario',
+        username: 'user',
         password: 'senha123',
         database: 'database-azzo',
         entities: Object.values(entities), // Importa todas as entidades

@@ -7,7 +7,7 @@ WORKDIR /usr/src/app
 ENV DB_TYPE=mysql
 ENV DB_HOST=database-azzo.cj46y6k2uqf8.sa-east-1.rds.amazonaws.com
 ENV DB_PORT=3306
-ENV DB_USERNAME=usuario
+ENV DB_USERNAME=user
 ENV DB_PASSWORD=senha123
 ENV DB_NAME=database-azzo
 ENV DB_LOGGING=true
