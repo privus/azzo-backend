@@ -21,7 +21,7 @@ import { SharedModule } from './modules/shared/shared.module';
       inject: [ConfigService], // Injeta o ConfigService
       useFactory: async (configService: ConfigService): Promise<TypeOrmModuleOptions> => ({
         type: 'mysql',
-        host: configService.get<string>('DB_HOST'), // Obtém o host do .env
+        host: configService.get<string>('DB_HOST') || '127.0.0.1', // Obtém o host do .env
         port: +configService.get<number>('DB_PORT'), // Obtém a porta do .env
         username: configService.get<string>('DB_USERNAME'), // Obtém o usuário do .env
         password: configService.get<string>('DB_PASSWORD'), // Obtém a senha do .env
