@@ -25,7 +25,7 @@ import { SharedModule } from './modules/shared/shared.module';
         port: 3306,
         username: 'user',
         password: 'senha123',
-        database: 'database-azzo',
+        database: 'azzo-dattbase',
         entities: Object.values(entities), // Importa todas as entidades
         migrations: [__dirname + '/infrastructure/database/migrations/*.{ts,js}'],
         synchronize: true, // Use sincronização apenas para desenvolvimento
