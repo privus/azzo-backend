@@ -21,14 +21,14 @@ import { SharedModule } from './modules/shared/shared.module';
       inject: [ConfigService], // Injeta o ConfigService
       useFactory: async (configService: ConfigService): Promise<TypeOrmModuleOptions> => ({
         type: 'mysql',
-        host: 'database-azzo.cj46y6k2uqf8.sa-east-1.rds.amazonaws.com', // Nome do serviço MySQL no Docker Compose
-        port: 3306,
-        username: 'user',
-        password: 'senha123',
-        database: 'bancoAzzo',
+        host: configService.get<string>('DB_HOST'), // Obtém o host do .env
+        port: +configService.get<number>('DB_PORT'), // Obtém a porta do .env
+        username: configService.get<string>('DB_USERNAME'), // Obtém o usuário do .env
+        password: configService.get<string>('DB_PASSWORD'), // Obtém a senha do .env
+        database: configService.get<string>('DB_NAME'), // Obtém o nome do banco de dados do .env
         entities: Object.values(entities), // Importa todas as entidades
         migrations: [__dirname + '/infrastructure/database/migrations/*.{ts,js}'],
-        synchronize: true, // Use sincronização apenas para desenvolvimento
+        synchronize: configService.get<string>('DB_SYNCHRONIZE') === 'true', // Controle de sincronização via variável de ambiente
         logging: configService.get<string>('DB_LOGGING') === 'true', // Controle de logging via variável de ambiente
       }),
     }),

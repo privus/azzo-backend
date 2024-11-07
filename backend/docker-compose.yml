@@ -5,11 +5,7 @@ services:
     image: mysql:8.0
     container_name: mysql-container
     restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: rootsenha
-      MYSQL_DATABASE: meu_banco
-      MYSQL_USER: usuario
-      MYSQL_PASSWORD: senha
+    env_file: .env
     ports:
       - '3306:3306'
     volumes:
@@ -27,13 +23,8 @@ services:
       - mysql
     volumes:
       - .:/usr/src/app
-    environment:
-      DATABASE_HOST: mysql
-      DATABASE_PORT: 3306
-      DATABASE_USER: usuario
-      DATABASE_PASSWORD: senha
-      DATABASE_NAME: meu_banco
-    command: npm run start:dev
+    env_file: .env
+    command: sh -c "npm run start:dev & sleep 20 && npm run seed"
     working_dir: /usr/src/app
     networks:
       - app-network
