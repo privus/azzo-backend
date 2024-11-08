@@ -14,9 +14,16 @@ async function bootstrap() {
     'http://54.233.159.54', // Endereço do frontend de produção
   ];
 
-  // Configuração do CORS
+  // Configuração do CORS com lista de origens e métodos permitidos
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
 
