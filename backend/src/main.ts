@@ -12,6 +12,7 @@ async function bootstrap() {
     'http://localhost:4200', // Para desenvolvimento local
     'http://172.18.0.4:4200', // Endereço interno do container
     'http://54.233.159.54', // Endereço do frontend de produção
+    "http://aws-front-bucket.s3-website-sa-east-1.amazonaws.com" // Endereço do frontend de produção
   ];
 
   // Configuração do CORS com lista de origens e métodos permitidos
