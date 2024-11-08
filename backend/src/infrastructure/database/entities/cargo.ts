@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, Unique } from 'typeorm';
-import { Usuario } from './usuario';
+import { Usuario } from './';
 
 @Entity('cargo')
 @Unique(['nome'])

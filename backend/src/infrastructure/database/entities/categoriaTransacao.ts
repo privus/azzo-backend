@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { Financeiro } from './financeiro';
+import { Transacao } from './';
 
 @Entity('categoria_transacoe')
 export class CategoriaTransacao {
@@ -12,6 +12,6 @@ export class CategoriaTransacao {
   @Column({ type: 'varchar', length: 45, nullable: true })
   nome: string;
 
-  @OneToMany(() => Financeiro, (financeiro) => financeiro.categoriaTransacao)
-  financeiros: Financeiro[];
+  @OneToMany(() => Transacao, (transacao) => transacao.categoriaTransacao)
+  transacoes: Transacao[];
 }

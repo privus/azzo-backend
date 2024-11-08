@@ -1,4 +1,3 @@
-// src/infrastructure/database/seed.ts
 import { AppDataSource } from './data-source';
 import { runSeeders } from 'typeorm-extension';
 import { MainSeeder } from './seeds/mainSeeder';

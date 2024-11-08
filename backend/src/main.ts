@@ -1,8 +1,6 @@
-// src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
-import { Logger } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import * as cors from 'cors';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
@@ -10,21 +8,21 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = new Logger('Bootstrap');
 
+  const allowedOrigins = ['http://localhost:4200', 'http://172.18.0.4:4200'];
+
   // Configurar CORS
   app.use(
     cors({
-      origin: process.env.FRONTEND_URL || 'http://localhost:4200',
+      origin: allowedOrigins,
       credentials: true,
     }),
   );
 
-  // Aplicar Filtros Globais
-  app.useGlobalFilters(new AllExceptionsFilter());
-
+  app.useGlobalPipes(new ValidationPipe());
   // Configuração do Swagger (opcional)
   const config = new DocumentBuilder()
-    .setTitle('API da Aplicação')
-    .setDescription('Descrição da API')
+    .setTitle('API Azzo')
+    .setDescription('API para criação de usuários e autenticação')
     .setVersion('1.0')
     .addBearerAuth()
     .build();

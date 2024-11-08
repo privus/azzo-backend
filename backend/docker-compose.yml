@@ -14,9 +14,11 @@ services:
       - '3306:3306'
     volumes:
       - mysql-data:/var/lib/mysql
+    networks:
+      - app-network
 
   app:
-    build: ./backend
+    build: .
     container_name: nest-app-container
     restart: always
     ports:
@@ -24,8 +26,7 @@ services:
     depends_on:
       - mysql
     volumes:
-      - ./backend:/usr/src/app
-      - /usr/src/app/node_modules
+      - .:/usr/src/app
     environment:
       DATABASE_HOST: mysql
       DATABASE_PORT: 3306
@@ -33,6 +34,13 @@ services:
       DATABASE_PASSWORD: senha
       DATABASE_NAME: meu_banco
     command: npm run start:dev
+    working_dir: /usr/src/app
+    networks:
+      - app-network
 
 volumes:
   mysql-data:
+
+networks:
+  app-network:
+    external: true 

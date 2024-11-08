@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { Cidade } from './cidade';
+import { Cidade } from './';
 
 @Entity('estado')
 export class Estado {
