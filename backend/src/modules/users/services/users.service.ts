@@ -16,7 +16,7 @@ export class UsersService implements IUserRepository {
   }
 
   async findAll(): Promise<Usuario[]> {
-    return this.userRepository.find();
+    return this.userRepository.find({ relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'] });
   }
 
   async findById(id: number): Promise<Partial<Usuario>> {

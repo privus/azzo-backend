@@ -42,7 +42,7 @@ export class RegisterUserDto {
    */
   @IsNotEmpty({ message: 'A data de nascimento é obrigatória.' })
   @Matches(/^\d{2}\/\d{2}\/\d{4}$/, { message: 'A data de nascimento deve estar no formato DD/MM/YYYY.' })
-  data_nascimento: string;
+  nascimento: string;
 
   /**
    * Nome de usuário (username).
