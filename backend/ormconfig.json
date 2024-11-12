@@ -1,16 +1,16 @@
 {
-    "type": "mysql",
-    "host": "localhost",
-    "port": 3306,
-    "username": "usuario",
-    "password": "senha",
-    "database": "meu_banco",
-    "entities": ["src/entity/**/*.ts"],
-    "migrations": ["src/migration/**/*.ts"],
-    "subscribers": ["src/subscriber/**/*.ts"],
-    "cli": {
-      "entitiesDir": "src/entity",
-      "migrationsDir": "src/migration",
-      "subscribersDir": "src/subscriber"
-    }
+  "type": "mysql",
+  "host": "database-azzo.cj46y6k2uqf8.sa-east-1.rds.amazonaws.com",
+  "port": 3306,
+  "username": "user",
+  "password": "senha123",
+  "database": "bancoAzzo",
+  "entities": ["src/entity/**/*.ts"],
+  "migrations": ["src/migration/**/*.ts"],
+  "subscribers": ["src/subscriber/**/*.ts"],
+  "cli": {
+    "entitiesDir": "src/entity",
+    "migrationsDir": "src/migration",
+    "subscribersDir": "src/subscriber"
   }
+}

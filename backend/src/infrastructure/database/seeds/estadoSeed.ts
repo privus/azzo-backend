@@ -9,10 +9,7 @@ export class EstadoSeed implements Seeder {
     const estadoRepository = dataSource.getRepository(Estado);
 
     // Defina o caminho para o arquivo JSON gerado
-    const jsonFilePath = path.resolve(
-      '/home/personizi-master/Documentos/projetos/azzo/azzo-backend/backend/src/utils/estados.json',
-    );
-    
+    const jsonFilePath = path.resolve('/home/ubuntu/azzo-backend/backend/src/utils/estados.json');    
     const jsonData = JSON.parse(fs.readFileSync(jsonFilePath, 'utf-8'));
 
     // Itera sobre os dados e insere no banco de dados

@@ -8,13 +8,19 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = new Logger('Bootstrap');
 
-  const allowedOrigins = ['http://localhost:4200', 'http://172.18.0.4:4200'];
+  const allowedOrigins = ['http://localhost:4200', 'http://aws-front-bucket.s3-website-sa-east-1.amazonaws.com'];
 
   // Configurar CORS
   app.use(
     cors({
-      origin: allowedOrigins,
-      credentials: true,
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     }),
   );
 

@@ -21,11 +21,11 @@ import { SharedModule } from './modules/shared/shared.module';
       inject: [ConfigService], // Injeta o ConfigService
       useFactory: async (configService: ConfigService): Promise<TypeOrmModuleOptions> => ({
         type: 'mysql',
-        host: 'mysql-container', // Nome do serviço MySQL no Docker Compose
+        host: 'database-azzo.cj46y6k2uqf8.sa-east-1.rds.amazonaws.com', // Nome do serviço MySQL no Docker Compose
         port: 3306,
-        username: 'usuario',
-        password: 'senha',
-        database: 'meu_banco',
+        username: 'user',
+        password: 'senha123',
+        database: 'bancoAzzo',
         entities: Object.values(entities), // Importa todas as entidades
         migrations: [__dirname + '/infrastructure/database/migrations/*.{ts,js}'],
         synchronize: true, // Use sincronização apenas para desenvolvimento
