@@ -10,6 +10,9 @@ export class Cargo {
   @Column({ type: 'varchar', length: 45 })
   nome: string;
 
+  @Column({ type: Number, nullable: true })
+  somaPermissao: number;
+
   @OneToMany(() => Usuario, (usuario) => usuario.cargo)
   usuarios: Usuario[];
 }

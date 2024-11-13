@@ -1,7 +1,7 @@
-import { Controller, Get, Inject, Query } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ISharedRepository } from '../../../domain/repositories/shared.repository.interface';
-import { Cidade } from 'src/infrastructure/database/entities';
+import { Cargo, Cidade } from 'src/infrastructure/database/entities';
 
 
 @ApiTags('shared')
@@ -15,6 +15,7 @@ export class SharedController {
     return this.sharedService.findAllCities();
   }
 
+  @ApiOperation({ summary: 'Busca a cidade por nome' })
   @Get('cities/partial')
   async findAllPartial(@Query('q') query: string): Promise<Cidade[]> {
     return this.sharedService.findPartial(query || '');

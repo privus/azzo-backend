@@ -1,7 +1,7 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Usuario } from '../../../infrastructure/database/entities';
+import { Cargo, Usuario } from '../../../infrastructure/database/entities';
 import { IUserRepository } from 'src/domain/repositories/user.repository.interface';
 import { ISharedRepository } from 'src/domain/repositories/shared.repository.interface';
 import { UpdateUserDto } from '../dto/update-user.dto';
@@ -9,7 +9,10 @@ import { UpdateUserDto } from '../dto/update-user.dto';
 @Injectable()
 export class UsersService implements IUserRepository {
   @Inject('ISharedRepository') private readonly sharedService: ISharedRepository;
-  constructor(@InjectRepository(Usuario) private readonly userRepository: Repository<Usuario>) {}
+  constructor(
+    @InjectRepository(Usuario) private readonly userRepository: Repository<Usuario>,
+    @InjectRepository(Cargo) private readonly cargoRepository: Repository<Cargo>
+  ) {}
 
   async findByEmail(email: string): Promise<Usuario> {
     return this.userRepository.findOne({ where: { email }, relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'] });
@@ -19,7 +22,7 @@ export class UsersService implements IUserRepository {
     return this.userRepository.find({ relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'] });
   }
 
-  async findById(id: number): Promise<Partial<Usuario>> {
+  async findById(id: number): Promise<Usuario> {
     return this.userRepository.findOne({ where: { usuario_id: id }, relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'] });
   }
 
@@ -27,7 +30,7 @@ export class UsersService implements IUserRepository {
     return this.userRepository.save(user);
   }
 
-  async update(id: number, user: UpdateUserDto): Promise<Partial<Usuario>> {
+  async update(id: number, user: UpdateUserDto): Promise<Usuario> {
     const { cargo_id, regiao_id, cidade_id, ...rest } = user;
 
     // Obtém as entidades relacionadas para cargo, cidade e regiao, se fornecidos
@@ -54,4 +57,30 @@ export class UsersService implements IUserRepository {
 
     return { message: 'Usuário deletado com sucesso.' };
   }
+
+  findRoles(): Promise<Cargo[]> {
+    return this.cargoRepository.find()
+  }
+  
+  async createRole(cargo: Cargo): Promise<Cargo> {
+    const roleName = cargo.nome;
+  
+    const existingRole = await this.cargoRepository.findOne({ where: { nome: roleName } });
+  
+    if (existingRole) {
+      throw new ConflictException('Cargo já existe.');
+    }
+  
+    return await this.cargoRepository.save(cargo);
+  }
+
+  async updateRole(id: number, cargo: Cargo): Promise<Cargo> {
+    await this.cargoRepository.update(id, cargo);
+    return await this.cargoRepository.findOne({where: {cargo_id: id}});
+  }
+
+  async findRoleById(id: number): Promise<Cargo> {
+    return await this.cargoRepository.findOne({where: {cargo_id: id}});
+  }
+
 }
