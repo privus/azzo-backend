@@ -39,4 +39,5 @@ export class SharedService implements ISharedRepository {
       take: 20, // Limitar a 20 resultados
     });
   }
+
 }

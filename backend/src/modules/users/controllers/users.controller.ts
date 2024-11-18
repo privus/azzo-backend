@@ -3,12 +3,37 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import { RegisterUserDto } from '../../auth/dto/register-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
+import { Cargo } from 'src/infrastructure/database/entities';
 
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
   constructor(@Inject('IUserRepository') private readonly usersService: IUserRepository) {}
 
+  @ApiOperation({ summary: 'Obter todos os cargos' })
+  @Get('roles')
+  async findAllRoles() {
+    return this.usersService.findRoles();
+  }
+
+  @ApiOperation({ summary: 'Obter um cargo pelo ID' })
+  @Get('roles/:id')
+  async findRoleById(@Param('id') id: number) {
+    return this.usersService.findRoleById(id);
+  }
+
+  @ApiOperation({ summary: 'Criar um cargo' })
+  @Post('roles/create')
+  async createRole(@Body() cargo: Cargo) {
+    return this.usersService.createRole(cargo);
+  }
+
+  @ApiOperation({ summary: 'Atualizar um cargo' })
+  @Put('roles/update/:id')
+  async updateRole(@Param('id') id: number, @Body() cargo: Cargo) {
+    return this.usersService.updateRole(id, cargo);
+  }
+  
   @ApiOperation({ summary: 'Obter todos os usuários' })
   @Get()
   async findAll() {
