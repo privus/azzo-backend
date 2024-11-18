@@ -1,18 +1,15 @@
-import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Cargo, Usuario } from '../../../infrastructure/database/entities';
-import { IUserRepository } from 'src/domain/repositories/user.repository.interface';
-import { ISharedRepository } from 'src/domain/repositories/shared.repository.interface';
+import { Usuario } from '../../../infrastructure/database/entities';
+import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
+import { ISharedRepository } from '../../../domain/repositories/shared.repository.interface';
 import { UpdateUserDto } from '../dto/update-user.dto';
 
 @Injectable()
 export class UsersService implements IUserRepository {
   @Inject('ISharedRepository') private readonly sharedService: ISharedRepository;
-  constructor(
-    @InjectRepository(Usuario) private readonly userRepository: Repository<Usuario>,
-    @InjectRepository(Cargo) private readonly cargoRepository: Repository<Cargo>
-  ) {}
+  constructor(@InjectRepository(Usuario) private readonly userRepository: Repository<Usuario>) {}
 
   async findByEmail(email: string): Promise<Usuario> {
     return this.userRepository.findOne({ where: { email }, relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'] });
@@ -58,29 +55,7 @@ export class UsersService implements IUserRepository {
     return { message: 'Usuário deletado com sucesso.' };
   }
 
-  findRoles(): Promise<Cargo[]> {
-    return this.cargoRepository.find()
+  findUsersByRole(cargo_id: number): Promise<Usuario[]> {
+    return this.userRepository.find({ where: { cargo: { cargo_id } }, relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'] });
   }
-  
-  async createRole(cargo: Cargo): Promise<Cargo> {
-    const roleName = cargo.nome;
-  
-    const existingRole = await this.cargoRepository.findOne({ where: { nome: roleName } });
-  
-    if (existingRole) {
-      throw new ConflictException('Cargo já existe.');
-    }
-  
-    return await this.cargoRepository.save(cargo);
-  }
-
-  async updateRole(id: number, cargo: Cargo): Promise<Cargo> {
-    await this.cargoRepository.update(id, cargo);
-    return await this.cargoRepository.findOne({where: {cargo_id: id}});
-  }
-
-  async findRoleById(id: number): Promise<Cargo> {
-    return await this.cargoRepository.findOne({where: {cargo_id: id}});
-  }
-
 }

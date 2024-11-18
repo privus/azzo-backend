@@ -24,7 +24,7 @@ module.exports = {
     'prettier/prettier': [
       'error',
       {
-        'printWidth': 130  // Aqui você define um limite maior ou ajusta conforme necessário
+        'printWidth': 150  // Aqui você define um limite maior ou ajusta conforme necessário
       }
     ],
   },
