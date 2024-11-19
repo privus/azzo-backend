@@ -20,7 +20,7 @@ export class AuthService implements IAuthRepository {
   async login(loginDto: LoginUserDto): Promise<{ accessToken: string }> {
     const { email, senha } = loginDto;
 
-    const user = await this.userRepository.findByEmail(email);
+    const user = await this.userRepository.findBy({ email });
     if (!user) {
       throw new UnauthorizedException('Email não encontrado.');
     }
@@ -45,20 +45,31 @@ export class AuthService implements IAuthRepository {
   }
 
   async register(registerDto: RegisterUserDto): Promise<Partial<Usuario>> {
-    const { email, senha, cargo_id, regiao_id, cidade_id, ...rest } = registerDto;
+    const { email, senha, cargo_id, regiao_id, cidade_id, username, ...rest } = registerDto;
 
-    const { cargo, cidade, regiao } = await this.sharedRepository.getRelatedEntities(cargo_id, cidade_id, regiao_id); //parametros na ordem correta
+    // Obtem entidades relacionadas
+    const { cargo, cidade, regiao } = await this.sharedRepository.getRelatedEntities(cargo_id, cidade_id, regiao_id);
 
-    const existingUser = await this.userRepository.findByEmail(email);
-    if (existingUser) {
+    // Verifica se o email já está em uso
+    const existingUserByEmail = await this.userRepository.findBy({ email });
+    if (existingUserByEmail) {
       throw new UnauthorizedException('Email já está em uso.');
     }
 
+    // Verifica se o username já está em uso
+    const existingUserByUsername = await this.userRepository.findBy({ username });
+    if (existingUserByUsername) {
+      throw new UnauthorizedException('Username já está em uso.');
+    }
+
+    // Criptografa a senha
     const hashedPassword = await bcrypt.hash(senha, 10);
 
+    // Registra o usuário
     return await this.userRepository.register({
       ...rest,
       email,
+      username, // Adiciona o username ao registro
       senha: hashedPassword,
       cargo,
       cidade,

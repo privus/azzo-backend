@@ -73,7 +73,7 @@ export class RegisterUserDto {
    */
   @IsNotEmpty({ message: 'O celular é obrigatório.' })
   @IsString({ message: 'O celular deve ser uma string.' })
-  @Matches(/^\d{11}$/, { message: 'O celular deve conter exatamente 11 dígitos numéricos.' })
+  @Matches(/^\(\d{2}\) \d{4,5}-\d{4}$/, { message: 'O celular deve estar no formato "(XX) XXXXX-XXXX" ou "(XX) XXXX-XXXX".' })
   celular: string;
 
   /**

@@ -11,8 +11,8 @@ export class UsersService implements IUserRepository {
   @Inject('ISharedRepository') private readonly sharedService: ISharedRepository;
   constructor(@InjectRepository(Usuario) private readonly userRepository: Repository<Usuario>) {}
 
-  async findByEmail(email: string): Promise<Usuario> {
-    return this.userRepository.findOne({ where: { email }, relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'] });
+  async findBy(param: Partial<Usuario>): Promise<Usuario | null> {
+    return this.userRepository.findOne({ where: param, relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'] });
   }
 
   async findAll(): Promise<Usuario[]> {
@@ -35,7 +35,7 @@ export class UsersService implements IUserRepository {
 
     const updateData: Partial<Usuario> = {
       ...rest,
-      ...(cargo && { cargo }), // Atualiza cargo apenas se fornecido
+      cargo: cargo_id === null ? null : cargo, // Atualiza cargo apenas se fornecido
       ...(cidade && { cidade }), // Atualiza cidade apenas se fornecido
       ...(regiao && { regiao }), // Atualiza regiao apenas se fornecido
     };
@@ -45,6 +45,7 @@ export class UsersService implements IUserRepository {
     // Retorna o usuário atualizado
     return this.findById(id);
   }
+
   async remove(id: number): Promise<{ message: string }> {
     const result = await this.userRepository.delete(id);
 

@@ -1,7 +1,7 @@
 import { Usuario } from 'src/infrastructure/database/entities';
 
 export interface IUserRepository {
-  findByEmail(email: string): Promise<Usuario>;
+  findBy(param: Partial<Usuario>): Promise<Usuario>;
   findById(id: number): Promise<Partial<Usuario>>;
   register(user: Partial<Usuario>): Promise<Usuario>;
   findAll(): Promise<Usuario[]>;
