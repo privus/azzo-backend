@@ -31,7 +31,7 @@ export class Usuario {
   @JoinColumn({ name: 'cidade_id' })
   cidade?: Cidade;
 
-  @ManyToOne(() => Cargo, { nullable: true })
+  @ManyToOne(() => Cargo, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn({ name: 'cargo_id' })
   cargo?: Cargo;
 
