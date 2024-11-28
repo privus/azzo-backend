@@ -8,9 +8,9 @@ export class AwsS3Service {
 
   constructor() {
     this.s3 = new AWS.S3({
-      accessKeyId: 'AKIAUNWLSU5XJDPBVIEO',
-      secretAccessKey: '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',
-      region: 'sa-east-1',
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      region: process.env.AWS_REGION,
     });
   }
 
