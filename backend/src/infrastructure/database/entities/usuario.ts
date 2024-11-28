@@ -27,6 +27,9 @@ export class Usuario {
   @Column({ type: 'varchar', length: 45, unique: true })
   username: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  fotoUrl: string;
+
   @ManyToOne(() => Cidade, { nullable: true })
   @JoinColumn({ name: 'cidade_id' })
   cidade?: Cidade;

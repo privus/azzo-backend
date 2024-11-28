@@ -59,4 +59,13 @@ export class UsersService implements IUserRepository {
   findUsersByRole(cargo_id: number): Promise<Usuario[]> {
     return this.userRepository.find({ where: { cargo: { cargo_id } }, relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'] });
   }
+
+  async updateUserPhotoUrl(id: number, fotoUrl: string): Promise<void> {
+    const usuario = await this.findById(id);
+    if (!usuario) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+    usuario.fotoUrl = fotoUrl;
+    await this.userRepository.save(usuario);
+  }
 }

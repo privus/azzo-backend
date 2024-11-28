@@ -8,4 +8,5 @@ export interface IUserRepository {
   remove(id: number): Promise<{ message: string }>;
   update(id: number, user: Partial<Usuario>): Promise<Usuario>;
   findUsersByRole(id: number): Promise<Usuario[]>;
+  updateUserPhotoUrl(id: number, fotoUrl: string): Promise<void>;
 }
