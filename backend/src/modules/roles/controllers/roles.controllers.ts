@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, Put, Delete, Inject } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { IRolesRepository } from '../../../domain/repositories/roles.repository.interface';
-import { Cargo } from '../../../infrastructure/database/entities';
+import { CreateRoleDTO } from '../dto/pormission-role.dto';
 
 @ApiTags('roles')
 @Controller('roles')
@@ -26,18 +26,11 @@ export class RolesController {
     return this.rolesService.findRoleById(id);
   }
 
-  @ApiOperation({ summary: 'Criar um cargo com permissões' })
   @Post('create')
-  async createRole(
-    @Body()
-    body: {
-      nome: string;
-      permissoes: { id: number; ler: number; editar: number; criar: number }[];
-    },
-  ) {
+  async createRole(@Body() body: CreateRoleDTO) {
     const { nome, permissoes } = body;
 
-    return this.rolesService.createRole({ nome } as any, permissoes);
+    return this.rolesService.createRole({ nome }, permissoes);
   }
 
   @ApiOperation({ summary: 'Atualizar um cargo com permissões' })
@@ -46,14 +39,14 @@ export class RolesController {
     @Param('id') id: number,
     @Body()
     body: {
-      cargo: Cargo;
-      permissoes?: { id: number; ler: number; editar: number; criar: number }[];
+      nome: string;
+      permissoes?: { permissao_id: number; ler: number; editar: number; criar: number }[];
     },
   ) {
-    const { cargo, permissoes } = body;
+    const { nome, permissoes } = body;
 
     // Permissões já estão no formato correto
-    return this.rolesService.updateRole(id, cargo, permissoes);
+    return this.rolesService.updateRole(id, { nome }, permissoes);
   }
 
   @ApiOperation({ summary: 'Deletar um cargo' })
