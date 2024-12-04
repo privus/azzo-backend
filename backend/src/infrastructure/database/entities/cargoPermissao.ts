@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, ManyToOne, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, ManyToOne, Column, JoinColumn } from 'typeorm';
 import { Permissao, Cargo } from './';
 
 @Entity('cargo_permissao')
@@ -6,10 +6,18 @@ export class CargoPermissao {
   @PrimaryGeneratedColumn('increment')
   id: number;
 
-  @ManyToOne(() => Cargo, (cargo) => cargo.cargoPermissoes, { onDelete: 'CASCADE' })
+  @Column({ name: 'cargo_id', type: 'int' })
+  cargo_id: number;
+
+  @ManyToOne(() => Cargo, (cargo) => cargo.cargoPermissoes, { onDelete: 'CASCADE', nullable: false })
+  @JoinColumn({ name: 'cargo_id' })
   cargo: Cargo;
 
-  @ManyToOne(() => Permissao, (permissao) => permissao.cargoPermissoes, { onDelete: 'CASCADE' })
+  @Column({ name: 'permissao_id', type: 'int' })
+  permissao_id: number;
+
+  @ManyToOne(() => Permissao, (permissao) => permissao.cargoPermissoes, { onDelete: 'CASCADE', nullable: false })
+  @JoinColumn({ name: 'permissao_id' })
   permissao: Permissao;
 
   @Column({ type: 'tinyint', default: 0 })

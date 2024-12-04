@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Cargo, Permissao, CargoPermissao, Usuario } from '../../../infrastructure/database/entities';
 import { IRolesRepository } from '../../../domain/repositories/roles.repository.interface';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
+import { PermissaoDTO } from '../dto/pormission-role.dto';
 
 @Injectable()
 export class RolesService implements IRolesRepository {
@@ -19,7 +20,7 @@ export class RolesService implements IRolesRepository {
     return this.cargoRepository.find({ relations: ['cargoPermissoes', 'cargoPermissoes.permissao'] });
   }
 
-  async createRole(cargo: { nome: string }, permissoes: { id: number; ler: number; editar: number; criar: number }[]): Promise<Cargo> {
+  async createRole(cargo: { nome: string }, permissoes?: PermissaoDTO[]): Promise<Cargo> {
     const roleName = cargo.nome;
 
     const existingRole = await this.cargoRepository.findOne({ where: { nome: roleName } });
@@ -34,9 +35,9 @@ export class RolesService implements IRolesRepository {
 
     // Associa as permissões ao cargo
     for (const perm of permissoes) {
-      const permissao = await this.permissaoRepository.findOne({ where: { permissao_id: perm.id } });
+      const permissao = await this.permissaoRepository.findOne({ where: { permissao_id: perm.permissao_id } });
       if (!permissao) {
-        throw new NotFoundException(`Permissão com ID ${perm.id} não encontrada.`);
+        throw new NotFoundException(`Permissão com ID ${perm.permissao_id} não encontrada.`);
       }
 
       const cargoPermissao = this.cargoPermissaoRepository.create({
@@ -55,9 +56,15 @@ export class RolesService implements IRolesRepository {
       relations: ['cargoPermissoes', 'cargoPermissoes.permissao'],
     });
   }
-
-  async updateRole(id: number, cargo: { nome: string }, permissoes?: { id: number; ler: number; editar: number; criar: number }[]): Promise<Cargo> {
-    const existingRole = await this.cargoRepository.findOne({ where: { cargo_id: id }, relations: ['cargoPermissoes'] });
+  async updateRole(
+    id: number,
+    cargo: { nome: string },
+    permissoes?: { permissao_id: number; ler: number; editar: number; criar: number }[],
+  ): Promise<Cargo> {
+    const existingRole = await this.cargoRepository.findOne({
+      where: { cargo_id: id },
+      relations: ['cargoPermissoes'],
+    });
 
     if (!existingRole) {
       throw new NotFoundException('Cargo não encontrado.');
@@ -70,18 +77,13 @@ export class RolesService implements IRolesRepository {
     // Atualizar permissões, se fornecidas
     if (permissoes) {
       // Remove permissões existentes
-      await this.cargoPermissaoRepository.delete({ cargo: { cargo_id: id } });
+      await this.cargoPermissaoRepository.delete({ cargo_id: id });
 
       // Adiciona novas permissões
       for (const perm of permissoes) {
-        const permissao = await this.permissaoRepository.findOne({ where: { permissao_id: perm.id } });
-        if (!permissao) {
-          throw new NotFoundException(`Permissão com ID ${perm.id} não encontrada.`);
-        }
-
         const cargoPermissao = this.cargoPermissaoRepository.create({
-          cargo: existingRole,
-          permissao,
+          cargo_id: id,
+          permissao_id: perm.permissao_id,
           ler: perm.ler,
           editar: perm.editar,
           criar: perm.criar,
