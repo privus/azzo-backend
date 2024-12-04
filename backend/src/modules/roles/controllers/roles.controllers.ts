@@ -8,6 +8,12 @@ import { Cargo } from '../../../infrastructure/database/entities';
 export class RolesController {
   constructor(@Inject('IRolesRepository') private readonly rolesService: IRolesRepository) {}
 
+  @ApiOperation({ summary: 'Obter permissões' })
+  @Get('permission')
+  async findPermission() {
+    return this.rolesService.findPermissions();
+  }
+
   @ApiOperation({ summary: 'Obter todos os cargos' })
   @Get()
   async findAllRoles() {
@@ -20,16 +26,34 @@ export class RolesController {
     return this.rolesService.findRoleById(id);
   }
 
-  @ApiOperation({ summary: 'Criar um cargo' })
+  @ApiOperation({ summary: 'Criar um cargo com permissões' })
   @Post('create')
-  async createRole(@Body() cargo: Cargo) {
-    return this.rolesService.createRole(cargo);
+  async createRole(
+    @Body()
+    body: {
+      nome: string;
+      permissoes: { id: number; ler: number; editar: number; criar: number }[];
+    },
+  ) {
+    const { nome, permissoes } = body;
+
+    return this.rolesService.createRole({ nome } as any, permissoes);
   }
 
-  @ApiOperation({ summary: 'Atualizar um cargo' })
+  @ApiOperation({ summary: 'Atualizar um cargo com permissões' })
   @Put('update/:id')
-  async updateRole(@Param('id') id: number, @Body() cargo: Cargo) {
-    return this.rolesService.updateRole(id, cargo);
+  async updateRole(
+    @Param('id') id: number,
+    @Body()
+    body: {
+      cargo: Cargo;
+      permissoes?: { id: number; ler: number; editar: number; criar: number }[];
+    },
+  ) {
+    const { cargo, permissoes } = body;
+
+    // Permissões já estão no formato correto
+    return this.rolesService.updateRole(id, cargo, permissoes);
   }
 
   @ApiOperation({ summary: 'Deletar um cargo' })

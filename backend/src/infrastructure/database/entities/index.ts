@@ -22,3 +22,5 @@ export * from './estado';
 export * from './regiao';
 export * from './transacao';
 export * from './debito';
+export * from './permissao';
+export * from './cargoPermissao';
