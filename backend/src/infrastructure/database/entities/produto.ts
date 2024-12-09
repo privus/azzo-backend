@@ -4,61 +4,43 @@ import { CategoriaProduto, Fornecedor } from './';
 @Entity('produto')
 export class Produto {
   @PrimaryGeneratedColumn('increment')
-  produto_id: number;
-
-  @Column({ type: 'varchar', length: 45 })
-  nome: string;
+  id: number;
 
   @Column({ type: 'int' })
   codigo: number;
 
   @Column({ type: 'varchar', length: 90, nullable: true })
-  descricao: string;
+  name: string;
 
-  @Column({ type: 'tinyint', default: 1 })
-  ativo: boolean;
+  @Column({ type: 'tinyint', default: 1, nullable: true })
+  ativo: number;
 
-  @Column({ type: 'int', nullable: true })
-  quantidade: number;
+  @Column({ type: 'varchar', length: 90, nullable: true })
+  desconto_maximo: number;
 
   @Column({ type: 'decimal' })
   preco_venda: number;
 
-  @Column({ type: 'decimal', nullable: true })
-  comissao: number;
+  @Column({ type: 'decimal' })
+  ncm: number;
 
-  @Column({ type: 'int' })
-  codigo_ean: number;
+  @Column({ type: 'decimal' })
+  ean: number;
 
   @Column({ type: 'decimal' })
   preco_custo: number;
 
-  @Column({ type: 'int' })
-  ncm: number;
-
-  @Column({ type: 'int' })
-  cest: number;
-
-  @Column({ type: 'decimal' })
-  peso_bruto_kg: number;
-
-  @Column({ type: 'decimal' })
-  peso_liquido_kg: number;
-
   @Column({ type: 'decimal', nullable: true })
-  comprimento_cm: number;
+  peso_grs: number;
 
-  @Column({ type: 'decimal', nullable: true })
-  altura_cm: number;
-
-  @Column({ type: 'decimal', nullable: true })
-  largura_cm: number;
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  fotoUrl: string;
 
   @ManyToOne(() => CategoriaProduto)
   @JoinColumn({ name: 'categoria_id' })
   categoria: CategoriaProduto;
 
-  @ManyToOne(() => Fornecedor)
+  @ManyToOne(() => Fornecedor, { nullable: true })
   @JoinColumn({ name: 'fornecedor_id' })
   fornecedor: Fornecedor;
 }

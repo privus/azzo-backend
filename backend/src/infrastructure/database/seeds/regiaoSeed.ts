@@ -6,13 +6,7 @@ export class RegiaoSeed implements Seeder {
   async run(dataSource: DataSource): Promise<void> {
     const regiaoRepository = dataSource.getRepository(Regiao);
 
-    const regioes = [
-      { nome: 'Norte' },
-      { nome: 'Nordeste' },
-      { nome: 'Centro-Oeste' },
-      { nome: 'Sudeste' },
-      { nome: 'Sul' },
-    ];
+    const regioes = [{ nome: 'Norte' }, { nome: 'Nordeste' }, { nome: 'Centro-Oeste' }, { nome: 'Sudeste' }, { nome: 'Sul' }];
 
     for (const regiao of regioes) {
       try {
