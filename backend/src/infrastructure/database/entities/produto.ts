@@ -6,11 +6,11 @@ export class Produto {
   @PrimaryGeneratedColumn('increment')
   id: number;
 
-  @Column({ type: 'int' })
+  @Column({ type: 'int', unique: true })
   codigo: number;
 
   @Column({ type: 'varchar', length: 90, nullable: true })
-  name: string;
+  nome: string;
 
   @Column({ type: 'tinyint', default: 1, nullable: true })
   ativo: number;
@@ -18,16 +18,16 @@ export class Produto {
   @Column({ type: 'varchar', length: 90, nullable: true })
   desconto_maximo: number;
 
-  @Column({ type: 'decimal' })
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   preco_venda: number;
 
-  @Column({ type: 'decimal' })
-  ncm: number;
+  @Column({ type: 'varchar', length: 90, nullable: true })
+  ncm: string;
 
-  @Column({ type: 'decimal' })
-  ean: number;
+  @Column({ type: 'varchar', length: 90, nullable: true })
+  ean: string;
 
-  @Column({ type: 'decimal' })
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   preco_custo: number;
 
   @Column({ type: 'decimal', nullable: true })

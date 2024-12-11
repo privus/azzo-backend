@@ -7,7 +7,7 @@ import { ProdutoAPIResponse } from '../dto/products.dto';
 
 @Injectable()
 export class ProductsService {
-  private readonly apiUrl = 'https://api.sellentt.com.br/api/v1/products';
+  private readonly apiUrl = 'https://api.sellentt.com.br/api/v1/products?limit=850';
   private readonly token =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MzI3MTM1NDQsImlzcyI6ImFwcC5wZWRpZG9zZGlnaXRhaXMuY29tLmJyIiwiaWQiOjI1OCwiY2xpZW50X2lkIjoxMDMwfQ.VCbVSBwUW8MPBWtVDNPzUuc8bFF_4FB9WmHk-MjUiRc';
 
@@ -28,6 +28,7 @@ export class ProductsService {
       });
 
       const produtosData = response.data.data;
+      console.log('Produtos recebidos ======================>', produtosData);
       for (const item of produtosData) {
         await this.processarProduto(item);
       }
@@ -38,8 +39,6 @@ export class ProductsService {
   }
 
   private async processarProduto(item: ProdutoAPIResponse) {
-    // Ajuste o campo de busca da categoria conforme o nome da coluna na sua entidade CategoriaProduto.
-    // Se a entidade CategoriaProduto tiver a coluna "id" e não "categoria_id", use { id: item.category.id }.
     let categoria = await this.categoriaRepository.findOne({ where: { categoria_id: item.category.id } });
 
     if (!categoria) {
@@ -56,12 +55,12 @@ export class ProductsService {
 
     const novoProduto = this.produtoRepository.create({
       codigo: item.code,
-      name: item.name,
+      nome: item.name,
       ativo: item.is_active,
       desconto_maximo: descontoMaximo,
       preco_venda: item.price.default,
-      ncm: Number(item.ncm),
-      ean: Number(item.ean),
+      ncm: item.ncm,
+      ean: item.ean,
       preco_custo: item.price_cost,
       peso_grs: item.average_weight,
       fotoUrl: item.catalog.image,
@@ -70,10 +69,14 @@ export class ProductsService {
     });
 
     await this.produtoRepository.save(novoProduto);
-    console.log(`Produto ${novoProduto.name} salvo com sucesso!`);
+    console.log(`Produto ${novoProduto.nome} salvo com sucesso!`);
   }
 
   findAllProducts(): Promise<Produto[]> {
     return this.produtoRepository.find({ relations: ['categoria'] });
+  }
+
+  findProductById(codigo: number): Promise<Produto> {
+    return this.produtoRepository.findOne({ where: { codigo }, relations: ['categoria'] });
   }
 }

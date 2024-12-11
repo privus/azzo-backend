@@ -8,8 +8,8 @@ export interface ProdutoAPIResponse {
     default: number;
   };
   price_cost: number;
-  ean: number;
-  ncm: number;
+  ean: string;
+  ncm: string;
   maximum_discount: number | null;
   is_active: number;
   category: {
