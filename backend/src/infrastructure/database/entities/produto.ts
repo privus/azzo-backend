@@ -4,7 +4,7 @@ import { CategoriaProduto, Fornecedor } from './';
 @Entity('produto')
 export class Produto {
   @PrimaryGeneratedColumn('increment')
-  id: number;
+  produto_id: number;
 
   @Column({ type: 'int', unique: true })
   codigo: number;
@@ -12,10 +12,10 @@ export class Produto {
   @Column({ type: 'varchar', length: 90, nullable: true })
   nome: string;
 
-  @Column({ type: 'tinyint', default: 1, nullable: true })
+  @Column({ type: 'tinyint', default: 0, nullable: true })
   ativo: number;
 
-  @Column({ type: 'varchar', length: 90, nullable: true })
+  @Column({ type: 'decimal' })
   desconto_maximo: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })

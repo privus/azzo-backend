@@ -6,26 +6,23 @@ export class Cliente {
   @PrimaryGeneratedColumn('increment')
   cliente_id: number;
 
+  @Column({ type: 'int', unique: true })
+  codigo: number;
+
   @Column({ type: 'varchar', length: 90 })
   nome: string;
 
-  @Column({ type: 'varchar', length: 90 })
-  sobrenome: string;
+  @Column({ type: 'varchar', length: 45, nullable: true })
+  nome_empresa: string;
 
   @Column({ type: 'varchar', length: 45, nullable: true })
-  cpf: string;
+  tipo_doc: string;
 
   @Column({ type: 'varchar', length: 45, nullable: true })
-  cnpj: string;
+  numero_doc: string;
 
   @Column({ type: 'varchar', length: 45, nullable: true })
-  rg: string;
-
-  @Column({ type: 'date', nullable: true })
-  data_nascimento: Date;
-
-  @Column({ type: 'varchar', length: 45, nullable: true })
-  senha: string;
+  ie: string;
 
   @Column({ type: 'varchar', length: 45, unique: true })
   email: string;
@@ -37,19 +34,25 @@ export class Cliente {
   telefone_comercial: string;
 
   @Column({ type: 'varchar', length: 90, nullable: true })
-  info_adicional: string;
-
-  @Column({ type: 'int' })
-  cep: number;
+  cep: string;
 
   @Column({ type: 'varchar', length: 90, nullable: true })
   endereco: string;
 
-  @Column({ type: 'datetime', nullable: true })
-  data_criacao: Date;
+  @Column({ type: 'varchar', length: 90, nullable: true })
+  num_endereco: string;
 
-  @Column({ type: 'varchar', length: 45, nullable: true })
-  nome_fantasia: string;
+  @Column({ type: 'varchar', length: 90, nullable: true })
+  bairro: string;
+
+  @Column({ type: 'varchar', length: 90, nullable: true })
+  complemento: string;
+
+  @Column({ type: 'varchar', length: 90, nullable: true })
+  data_criacao: string;
+
+  @Column({ type: 'tinyint', default: 0, nullable: true })
+  ativo: number;
 
   @ManyToOne(() => Cidade)
   @JoinColumn({ name: 'cidade_id' })
