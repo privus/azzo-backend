@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Cargo, Permissao, CargoPermissao } from '../../infrastructure/database/entities';
 import { RolesService } from './services/roles.service';
-import { RolesController } from './controllers/roles.controllers';
+import { RolesController } from './controllers/roles.controller';
 import { UsersModule } from '../users/users.module';
 
 @Module({

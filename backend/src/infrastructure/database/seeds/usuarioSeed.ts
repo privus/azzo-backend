@@ -61,7 +61,7 @@ export class UsuarioSeed implements Seeder {
             ...user,
             cidade,
             cargo,
-            regiao
+            regiao,
           });
           await userRepository.save(newUser);
           console.log(`Usuário ${user.nome} foi adicionado.`);

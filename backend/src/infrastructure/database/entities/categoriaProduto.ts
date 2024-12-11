@@ -4,7 +4,7 @@ import { Produto } from './';
 @Entity('categoria_produto')
 export class CategoriaProduto {
   @PrimaryGeneratedColumn('increment')
-  categoria_produto_id: number;
+  categoria_id: number;
 
   @Column({ type: 'varchar', length: 45 })
   nome: string;

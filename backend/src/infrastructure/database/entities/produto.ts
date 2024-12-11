@@ -4,61 +4,43 @@ import { CategoriaProduto, Fornecedor } from './';
 @Entity('produto')
 export class Produto {
   @PrimaryGeneratedColumn('increment')
-  produto_id: number;
+  id: number;
 
-  @Column({ type: 'varchar', length: 45 })
-  nome: string;
-
-  @Column({ type: 'int' })
+  @Column({ type: 'int', unique: true })
   codigo: number;
 
   @Column({ type: 'varchar', length: 90, nullable: true })
-  descricao: string;
+  nome: string;
 
-  @Column({ type: 'tinyint', default: 1 })
-  ativo: boolean;
+  @Column({ type: 'tinyint', default: 1, nullable: true })
+  ativo: number;
 
-  @Column({ type: 'int', nullable: true })
-  quantidade: number;
+  @Column({ type: 'varchar', length: 90, nullable: true })
+  desconto_maximo: number;
 
-  @Column({ type: 'decimal' })
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   preco_venda: number;
 
-  @Column({ type: 'decimal', nullable: true })
-  comissao: number;
+  @Column({ type: 'varchar', length: 90, nullable: true })
+  ncm: string;
 
-  @Column({ type: 'int' })
-  codigo_ean: number;
+  @Column({ type: 'varchar', length: 90, nullable: true })
+  ean: string;
 
-  @Column({ type: 'decimal' })
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   preco_custo: number;
 
-  @Column({ type: 'int' })
-  ncm: number;
-
-  @Column({ type: 'int' })
-  cest: number;
-
-  @Column({ type: 'decimal' })
-  peso_bruto_kg: number;
-
-  @Column({ type: 'decimal' })
-  peso_liquido_kg: number;
-
   @Column({ type: 'decimal', nullable: true })
-  comprimento_cm: number;
+  peso_grs: number;
 
-  @Column({ type: 'decimal', nullable: true })
-  altura_cm: number;
-
-  @Column({ type: 'decimal', nullable: true })
-  largura_cm: number;
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  fotoUrl: string;
 
   @ManyToOne(() => CategoriaProduto)
   @JoinColumn({ name: 'categoria_id' })
   categoria: CategoriaProduto;
 
-  @ManyToOne(() => Fornecedor)
+  @ManyToOne(() => Fornecedor, { nullable: true })
   @JoinColumn({ name: 'fornecedor_id' })
   fornecedor: Fornecedor;
 }
