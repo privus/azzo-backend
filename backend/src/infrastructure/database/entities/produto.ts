@@ -21,11 +21,11 @@ export class Produto {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   preco_venda: number;
 
-  @Column({ type: 'varchar', length: 90, nullable: true })
-  ncm: string;
+  @Column({ type: 'int', nullable: true })
+  ncm: number;
 
-  @Column({ type: 'varchar', length: 90, nullable: true })
-  ean: string;
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  ean: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   preco_custo: number;

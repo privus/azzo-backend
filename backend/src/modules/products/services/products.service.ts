@@ -28,7 +28,7 @@ export class ProductsService {
       });
 
       const produtosData = response.data.data;
-      console.log('Produtos recebidos ======================>', produtosData);
+      console.log('Produtos recebidos =>', produtosData);
       for (const item of produtosData) {
         await this.processarProduto(item);
       }
@@ -59,8 +59,8 @@ export class ProductsService {
       ativo: item.is_active,
       desconto_maximo: descontoMaximo,
       preco_venda: item.price.default,
-      ncm: item.ncm,
-      ean: item.ean,
+      ncm: Number(item.ncm),
+      ean: Number(item.ean),
       preco_custo: item.price_cost,
       peso_grs: item.average_weight,
       fotoUrl: item.catalog.image,

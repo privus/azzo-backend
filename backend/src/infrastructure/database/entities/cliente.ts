@@ -24,10 +24,10 @@ export class Cliente {
   @Column({ type: 'varchar', length: 45, nullable: true })
   ie: string;
 
-  @Column({ type: 'varchar', length: 45, unique: true })
+  @Column({ type: 'varchar', length: 45, nullable: true })
   email: string;
 
-  @Column({ type: 'varchar', length: 45 })
+  @Column({ type: 'varchar', length: 45, nullable: true })
   celular: string;
 
   @Column({ type: 'varchar', length: 45, nullable: true })
@@ -48,11 +48,17 @@ export class Cliente {
   @Column({ type: 'varchar', length: 90, nullable: true })
   complemento: string;
 
-  @Column({ type: 'varchar', length: 90, nullable: true })
-  data_criacao: string;
+  @Column({ type: 'varchar', length: 90 })
+  data_criacao: Date;
+
+  @Column({ type: 'varchar', length: 90 })
+  data_atualizacao: Date;
 
   @Column({ type: 'tinyint', default: 0, nullable: true })
   ativo: number;
+
+  @Column({ type: 'varchar', length: 180, nullable: true })
+  cidade_string: string;
 
   @ManyToOne(() => Cidade)
   @JoinColumn({ name: 'cidade_id' })
