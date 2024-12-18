@@ -9,7 +9,7 @@ import { UsersModule } from './modules/users/users.module';
 import { SharedModule } from './modules/shared/shared.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { ProductsModule } from './modules/products/products.module';
-import { CustomersModule } from './modules/custumers/customers.module';
+import { CustomersModule } from './modules/customers/customers.module';
 
 @Module({
   imports: [

@@ -2,8 +2,8 @@ export interface CustomerAPIResponse {
   code: number;
   name: string;
   company_name: string;
-  document_type: string;
-  document_number: string;
+  doc_type: string;
+  doc_number: string;
   reg_number: string;
   address_street: string;
   address_number: string;

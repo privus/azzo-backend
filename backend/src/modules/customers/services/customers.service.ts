@@ -7,7 +7,7 @@ import { CustomerAPIResponse } from '../dto/customers.dto';
 
 @Injectable()
 export class CustomersService {
-  private readonly apiUrl = 'https://api.sellentt.com.br/api/v1/stores';
+  private readonly apiUrl = 'https://api.sellentt.com.br/api/v1/stores?page=4';
   private readonly token =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MzI3MTM1NDQsImlzcyI6ImFwcC5wZWRpZG9zZGlnaXRhaXMuY29tLmJyIiwiaWQiOjI1OCwiY2xpZW50X2lkIjoxMDMwfQ.VCbVSBwUW8MPBWtVDNPzUuc8bFF_4FB9WmHk-MjUiRc';
 
@@ -42,11 +42,11 @@ export class CustomersService {
       relations: ['estado'],
     });
     const novoCliente = this.clienteRepository.create({
-      codigo: client.code,
       nome: client.name,
+      codigo: client.code,
       nome_empresa: client.company_name,
-      tipo_doc: client.document_type,
-      numero_doc: client.document_number,
+      tipo_doc: client.doc_type,
+      numero_doc: client.doc_number,
       ie: client.reg_number,
       endereco: client.address_street,
       num_endereco: client.address_number,
