@@ -1,6 +1,6 @@
 export interface ProdutoAPIResponse {
   id: number;
-  code: number;
+  code: string;
   erp_id: string;
   name: string;
   average_weight: number;
@@ -10,7 +10,6 @@ export interface ProdutoAPIResponse {
   price_cost: number;
   ean: string;
   ncm: string;
-  maximum_discount: number | null;
   is_active: number;
   category: {
     id: number;
@@ -18,5 +17,10 @@ export interface ProdutoAPIResponse {
   };
   catalog: {
     image: string | null;
+  };
+  created_at: Date;
+  updated_at: Date;
+  description: {
+    html: string;
   };
 }

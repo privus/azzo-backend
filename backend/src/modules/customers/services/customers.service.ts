@@ -7,7 +7,7 @@ import { CustomerAPIResponse } from '../dto/customers.dto';
 
 @Injectable()
 export class CustomersService {
-  private readonly apiUrl = 'https://api.sellentt.com.br/api/v1/stores?page=4';
+  private readonly apiUrl = 'https://api.sellentt.com.br/api/v1/stores?page=3';
   private readonly token =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MzI3MTM1NDQsImlzcyI6ImFwcC5wZWRpZG9zZGlnaXRhaXMuY29tLmJyIiwiaWQiOjI1OCwiY2xpZW50X2lkIjoxMDMwfQ.VCbVSBwUW8MPBWtVDNPzUuc8bFF_4FB9WmHk-MjUiRc';
 
@@ -68,10 +68,10 @@ export class CustomersService {
   }
 
   findAllCostumers(): Promise<Cliente[]> {
-    return this.clienteRepository.find({ relations: ['cidade', 'cidade.estado'] });
+    return this.clienteRepository.find({ relations: ['cidade.estado'] });
   }
 
-  findCostumerById(codigo: number): Promise<Cliente> {
-    return this.clienteRepository.findOne({ where: { codigo }, relations: ['cidade, cidade.estado'] });
+  findCostumerByCode(codigo: number): Promise<Cliente> {
+    return this.clienteRepository.findOne({ where: { codigo }, relations: ['cidade.estado'] });
   }
 }

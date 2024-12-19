@@ -6,7 +6,7 @@ export class Cliente {
   @PrimaryGeneratedColumn('increment')
   cliente_id: number;
 
-  @Column({ type: 'int', unique: true })
+  @Column({ type: 'int', nullable: false })
   codigo: number;
 
   @Column({ type: 'varchar', length: 90 })

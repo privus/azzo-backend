@@ -6,17 +6,14 @@ export class Produto {
   @PrimaryGeneratedColumn('increment')
   produto_id: number;
 
-  @Column({ type: 'int', unique: true })
-  codigo: number;
+  @Column({ type: 'varchar', length: 255, nullable: false })
+  codigo: string;
 
   @Column({ type: 'varchar', length: 90, nullable: true })
   nome: string;
 
   @Column({ type: 'tinyint', default: 0, nullable: true })
   ativo: number;
-
-  @Column({ type: 'decimal' })
-  desconto_maximo: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   preco_venda: number;
@@ -35,6 +32,15 @@ export class Produto {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   fotoUrl: string;
+
+  @Column({ type: 'varchar', length: 90 })
+  data_criacao: Date;
+
+  @Column({ type: 'varchar', length: 90 })
+  data_atualizacao: Date;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  descricao_uni: string;
 
   @ManyToOne(() => CategoriaProduto)
   @JoinColumn({ name: 'categoria_id' })

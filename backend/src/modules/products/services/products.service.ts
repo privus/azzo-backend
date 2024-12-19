@@ -51,13 +51,10 @@ export class ProductsService {
       await this.categoriaRepository.save(categoria);
     }
 
-    const descontoMaximo = item.maximum_discount || 0;
-
     const novoProduto = this.produtoRepository.create({
       codigo: item.code,
       nome: item.name,
       ativo: item.is_active,
-      desconto_maximo: descontoMaximo,
       preco_venda: item.price.default,
       ncm: Number(item.ncm),
       ean: Number(item.ean),
@@ -66,6 +63,9 @@ export class ProductsService {
       fotoUrl: item.catalog.image,
       categoria: categoria,
       fornecedor: null,
+      data_criacao: new Date(item.created_at),
+      data_atualizacao: new Date(item.updated_at),
+      descricao_uni: item.description.html,
     });
 
     await this.produtoRepository.save(novoProduto);
@@ -76,7 +76,7 @@ export class ProductsService {
     return this.produtoRepository.find({ relations: ['categoria'] });
   }
 
-  findProductById(codigo: number): Promise<Produto> {
-    return this.produtoRepository.findOne({ where: { codigo }, relations: ['categoria'] });
+  findProductById(id: number): Promise<Produto> {
+    return this.produtoRepository.findOne({ where: { produto_id: id }, relations: ['categoria'] });
   }
 }

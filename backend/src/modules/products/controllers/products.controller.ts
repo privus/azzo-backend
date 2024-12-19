@@ -21,7 +21,7 @@ export class ProductsController {
 
   @ApiOperation({ summary: 'Buscar produto por Código' })
   @Get(':id')
-  async findProductById(@Param('id') codigo: number) {
-    return this.productsService.findProductById(codigo);
+  async findProductById(@Param('id') id: number) {
+    return this.productsService.findProductById(id);
   }
 }

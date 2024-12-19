@@ -22,6 +22,6 @@ export class CustomersController {
   @ApiOperation({ summary: 'Buscar cliente por Código' })
   @Get(':id')
   async findCostumerById(@Param('id') codigo: number) {
-    return this.customersService.findCostumerById(codigo);
+    return this.customersService.findCostumerByCode(codigo);
   }
 }

@@ -16,5 +16,5 @@ export interface CustomerAPIResponse {
   phone_number_2: string;
   is_active: number;
   created_at: Date;
-  updated_at: string;
+  updated_at: Date;
 }
