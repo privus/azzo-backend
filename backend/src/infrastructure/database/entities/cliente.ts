@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { CategoriaCliente, Cidade, StatusCliente } from './';
+import { CategoriaCliente, Cidade, Regiao, StatusCliente } from './';
 
 @Entity('cliente')
 export class Cliente {
@@ -67,6 +67,10 @@ export class Cliente {
   @ManyToOne(() => CategoriaCliente)
   @JoinColumn({ name: 'categoria_id' })
   categoria: CategoriaCliente;
+
+  @ManyToOne(() => Regiao)
+  @JoinColumn({ name: 'regiao_id' })
+  regiao: Regiao;
 
   @ManyToOne(() => StatusCliente)
   @JoinColumn({ name: 'status' })
