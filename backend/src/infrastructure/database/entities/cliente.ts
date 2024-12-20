@@ -6,50 +6,59 @@ export class Cliente {
   @PrimaryGeneratedColumn('increment')
   cliente_id: number;
 
+  @Column({ type: 'int', nullable: false })
+  codigo: number;
+
   @Column({ type: 'varchar', length: 90 })
   nome: string;
 
-  @Column({ type: 'varchar', length: 90 })
-  sobrenome: string;
+  @Column({ type: 'varchar', length: 45, nullable: true })
+  nome_empresa: string;
 
   @Column({ type: 'varchar', length: 45, nullable: true })
-  cpf: string;
+  tipo_doc: string;
 
   @Column({ type: 'varchar', length: 45, nullable: true })
-  cnpj: string;
+  numero_doc: string;
 
   @Column({ type: 'varchar', length: 45, nullable: true })
-  rg: string;
-
-  @Column({ type: 'date', nullable: true })
-  data_nascimento: Date;
+  ie: string;
 
   @Column({ type: 'varchar', length: 45, nullable: true })
-  senha: string;
-
-  @Column({ type: 'varchar', length: 45, unique: true })
   email: string;
 
-  @Column({ type: 'varchar', length: 45 })
+  @Column({ type: 'varchar', length: 45, nullable: true })
   celular: string;
 
   @Column({ type: 'varchar', length: 45, nullable: true })
   telefone_comercial: string;
 
   @Column({ type: 'varchar', length: 90, nullable: true })
-  info_adicional: string;
-
-  @Column({ type: 'int' })
-  cep: number;
+  cep: string;
 
   @Column({ type: 'varchar', length: 90, nullable: true })
   endereco: string;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'varchar', length: 90, nullable: true })
+  num_endereco: string;
+
+  @Column({ type: 'varchar', length: 90, nullable: true })
+  bairro: string;
+
+  @Column({ type: 'varchar', length: 90, nullable: true })
+  complemento: string;
+
+  @Column({ type: 'varchar', length: 90 })
   data_criacao: Date;
 
-  @Column({ type: 'varchar', length: 45, nullable: true })
-  nome_fantasia: string;
+  @Column({ type: 'varchar', length: 90 })
+  data_atualizacao: Date;
+
+  @Column({ type: 'tinyint', default: 0, nullable: true })
+  ativo: number;
+
+  @Column({ type: 'varchar', length: 180, nullable: true })
+  cidade_string: string;
 
   @ManyToOne(() => Cidade)
   @JoinColumn({ name: 'cidade_id' })

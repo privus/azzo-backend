@@ -4,28 +4,25 @@ import { CategoriaProduto, Fornecedor } from './';
 @Entity('produto')
 export class Produto {
   @PrimaryGeneratedColumn('increment')
-  id: number;
+  produto_id: number;
 
-  @Column({ type: 'int', unique: true })
-  codigo: number;
+  @Column({ type: 'varchar', length: 255, nullable: false })
+  codigo: string;
 
   @Column({ type: 'varchar', length: 90, nullable: true })
   nome: string;
 
-  @Column({ type: 'tinyint', default: 1, nullable: true })
+  @Column({ type: 'tinyint', default: 0, nullable: true })
   ativo: number;
-
-  @Column({ type: 'varchar', length: 90, nullable: true })
-  desconto_maximo: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   preco_venda: number;
 
-  @Column({ type: 'varchar', length: 90, nullable: true })
-  ncm: string;
+  @Column({ type: 'int', nullable: true })
+  ncm: number;
 
-  @Column({ type: 'varchar', length: 90, nullable: true })
-  ean: string;
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  ean: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   preco_custo: number;
@@ -35,6 +32,15 @@ export class Produto {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   fotoUrl: string;
+
+  @Column({ type: 'varchar', length: 90 })
+  data_criacao: Date;
+
+  @Column({ type: 'varchar', length: 90 })
+  data_atualizacao: Date;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  descricao_uni: string;
 
   @ManyToOne(() => CategoriaProduto)
   @JoinColumn({ name: 'categoria_id' })

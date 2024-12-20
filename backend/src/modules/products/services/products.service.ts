@@ -28,7 +28,7 @@ export class ProductsService {
       });
 
       const produtosData = response.data.data;
-      console.log('Produtos recebidos ======================>', produtosData);
+      console.log('Produtos recebidos =>', produtosData);
       for (const item of produtosData) {
         await this.processarProduto(item);
       }
@@ -51,21 +51,21 @@ export class ProductsService {
       await this.categoriaRepository.save(categoria);
     }
 
-    const descontoMaximo = item.maximum_discount || 0;
-
     const novoProduto = this.produtoRepository.create({
       codigo: item.code,
       nome: item.name,
       ativo: item.is_active,
-      desconto_maximo: descontoMaximo,
       preco_venda: item.price.default,
-      ncm: item.ncm,
-      ean: item.ean,
+      ncm: Number(item.ncm),
+      ean: Number(item.ean),
       preco_custo: item.price_cost,
       peso_grs: item.average_weight,
       fotoUrl: item.catalog.image,
       categoria: categoria,
       fornecedor: null,
+      data_criacao: new Date(item.created_at),
+      data_atualizacao: new Date(item.updated_at),
+      descricao_uni: item.description.html,
     });
 
     await this.produtoRepository.save(novoProduto);
@@ -76,7 +76,7 @@ export class ProductsService {
     return this.produtoRepository.find({ relations: ['categoria'] });
   }
 
-  findProductById(codigo: number): Promise<Produto> {
-    return this.produtoRepository.findOne({ where: { codigo }, relations: ['categoria'] });
+  findProductById(id: number): Promise<Produto> {
+    return this.produtoRepository.findOne({ where: { produto_id: id }, relations: ['categoria'] });
   }
 }
