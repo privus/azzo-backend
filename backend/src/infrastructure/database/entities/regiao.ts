@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { Cidade, Usuario } from './';
+import { Cidade, Vendedor } from './';
 
 @Entity('regiao')
 export class Regiao {
@@ -12,6 +12,6 @@ export class Regiao {
   @OneToMany(() => Cidade, (cidade) => cidade.regiao)
   cidades: Cidade[];
 
-  @OneToMany(() => Usuario, (cidade) => cidade.regiao)
-  usuarios: Usuario[];
+  @OneToMany(() => Vendedor, (cidade) => cidade.regiao)
+  vendedores: Vendedor[];
 }

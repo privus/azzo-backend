@@ -24,3 +24,4 @@ export * from './transacao';
 export * from './debito';
 export * from './permissao';
 export * from './cargoPermissao';
+export * from './vendedor';

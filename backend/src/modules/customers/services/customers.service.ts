@@ -1,21 +1,26 @@
+import { Regiao } from 'src/infrastructure/database/entities';
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cidade, Cliente } from '../../../infrastructure/database/entities';
 import { CustomerAPIResponse } from '../dto/customers.dto';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class CustomersService {
-  private readonly apiUrl = 'https://api.sellentt.com.br/api/v1/stores?page=3';
-  private readonly token =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MzI3MTM1NDQsImlzcyI6ImFwcC5wZWRpZG9zZGlnaXRhaXMuY29tLmJyIiwiaWQiOjI1OCwiY2xpZW50X2lkIjoxMDMwfQ.VCbVSBwUW8MPBWtVDNPzUuc8bFF_4FB9WmHk-MjUiRc';
+  private readonly apiUrl = 'https://app.pedidosdigitais.com.br/api/v2/stores?page=3';
+  private readonly token: string;
 
   constructor(
     @InjectRepository(Cliente) private readonly clienteRepository: Repository<Cliente>,
     @InjectRepository(Cidade) private readonly cidadeRepository: Repository<Cidade>,
+    @InjectRepository(Regiao) private readonly regiaoRepository: Repository<Regiao>,
     private readonly httpService: HttpService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.token = this.configService.get<string>('SELLENTT_API_TOKEN');
+  }
 
   async syncroCostumers(): Promise<void> {
     try {
@@ -41,6 +46,10 @@ export class CustomersService {
       where: { nome: client.address_city },
       relations: ['estado'],
     });
+    const regiao = await this.regiaoRepository.findOne({
+      where: { regiao_id: client.region_code },
+    });
+
     const novoCliente = this.clienteRepository.create({
       nome: client.name,
       codigo: client.code,
@@ -59,6 +68,7 @@ export class CustomersService {
       celular: client.phone_number_1,
       telefone_comercial: client.phone_number_2,
       ativo: client.is_active,
+      regiao: regiao,
       data_criacao: new Date(client.created_at),
       data_atualizacao: new Date(client.updated_at),
     });

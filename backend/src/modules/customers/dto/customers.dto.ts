@@ -17,4 +17,5 @@ export interface CustomerAPIResponse {
   is_active: number;
   created_at: Date;
   updated_at: Date;
+  region_code: number;
 }
