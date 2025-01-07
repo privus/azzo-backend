@@ -9,10 +9,10 @@ export class Cliente {
   @Column({ type: 'int', nullable: false })
   codigo: number;
 
-  @Column({ type: 'varchar', length: 90 })
+  @Column({ type: 'varchar', length: 240 })
   nome: string;
 
-  @Column({ type: 'varchar', length: 45, nullable: true })
+  @Column({ type: 'varchar', length: 240, nullable: true })
   nome_empresa: string;
 
   @Column({ type: 'varchar', length: 45, nullable: true })
