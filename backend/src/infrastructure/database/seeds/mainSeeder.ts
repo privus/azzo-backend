@@ -7,6 +7,7 @@ import { CidadeSeed } from './cidadeSeed';
 import { RegiaoSeed } from './regiaoSeed';
 import { PermissaoSeed } from './permissaoSeed';
 import { CargoPermissaoSeed } from './cargoPermissaoSeed';
+import StatusPagamentoSeed from './statusPagamentoSeed';
 
 export class MainSeeder implements Seeder {
   async run(dataSource: DataSource): Promise<void> {
@@ -17,5 +18,6 @@ export class MainSeeder implements Seeder {
     await runSeeder(dataSource, UsuarioSeed);
     await runSeeder(dataSource, PermissaoSeed);
     await runSeeder(dataSource, CargoPermissaoSeed);
+    await runSeeder(dataSource, StatusPagamentoSeed);
   }
 }

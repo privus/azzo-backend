@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { Venda, Transacao } from './';
+import { ParcelaCredito } from './';
 
 @Entity('status_pagamento')
 export class StatusPagamento {
@@ -9,9 +9,6 @@ export class StatusPagamento {
   @Column({ type: 'varchar', length: 45 })
   nome: string;
 
-  @OneToMany(() => Venda, (venda) => venda.statusPagamento)
-  vendas: Venda[];
-
-  @OneToMany(() => Transacao, (transacao) => transacao.statusPagamento)
-  transacoes: Transacao[];
+  @OneToMany(() => ParcelaCredito, (Parcela) => Parcela.status_pagamento)
+  Parcelas: ParcelaCredito[];
 }

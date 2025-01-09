@@ -6,6 +6,9 @@ export class Regiao {
   @PrimaryGeneratedColumn('increment')
   regiao_id: number;
 
+  @Column({ type: 'int' })
+  codigo: number;
+
   @Column({ type: 'varchar', length: 90 })
   nome: string;
 

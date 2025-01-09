@@ -10,6 +10,8 @@ import { SharedModule } from './modules/shared/shared.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { ProductsModule } from './modules/products/products.module';
 import { CustomersModule } from './modules/customers/customers.module';
+import { SellersModule } from './modules/sellers/sellers.module';
+import { SellsModule } from './modules/sells/sells.module';
 
 @Module({
   imports: [
@@ -43,6 +45,8 @@ import { CustomersModule } from './modules/customers/customers.module';
     RolesModule,
     ProductsModule,
     CustomersModule,
+    SellersModule,
+    SellsModule,
     // Outros módulos podem ser adicionados aqui
   ],
   controllers: [AppController],

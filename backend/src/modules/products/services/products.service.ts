@@ -1,3 +1,4 @@
+import { ConfigService } from '@nestjs/config';
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -7,17 +8,18 @@ import { ProdutoAPIResponse } from '../dto/products.dto';
 
 @Injectable()
 export class ProductsService {
-  private readonly apiUrl = 'https://api.sellentt.com.br/api/v1/products?limit=850';
-  private readonly token =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MzI3MTM1NDQsImlzcyI6ImFwcC5wZWRpZG9zZGlnaXRhaXMuY29tLmJyIiwiaWQiOjI1OCwiY2xpZW50X2lkIjoxMDMwfQ.VCbVSBwUW8MPBWtVDNPzUuc8bFF_4FB9WmHk-MjUiRc';
-
+  private readonly apiUrl = 'https://api.sellentt.com.br/api/v1/products?limit=500';
+  private readonly token: string;
   constructor(
     @InjectRepository(Produto)
     private readonly produtoRepository: Repository<Produto>,
     @InjectRepository(CategoriaProduto)
     private readonly categoriaRepository: Repository<CategoriaProduto>,
-    private readonly httpService: HttpService, // Agora sem o @InjectRepository
-  ) {}
+    private readonly httpService: HttpService,
+    private readonly ConfigService: ConfigService,
+  ) {
+    this.token = this.ConfigService.get<string>('SELLENTT_API_TOKEN');
+  }
 
   async syncroProducts(): Promise<void> {
     try {

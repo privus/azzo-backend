@@ -23,22 +23,43 @@ export class CustomersService {
   }
 
   async syncroCostumers(): Promise<void> {
-    try {
-      const response = await this.httpService.axiosRef.get<{ data: CustomerAPIResponse[] }>(this.apiUrl, {
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-        },
-      });
+    let page = 1;
 
-      const clientesData = response.data.data;
-      console.log('Clientes recebidos =>', clientesData);
-      for (const client of clientesData) {
-        await this.processarCliente(client);
+    while (true) {
+      try {
+        // Monta a URL dinamicamente com o parâmetro de página
+        const url = `https://app.pedidosdigitais.com.br/api/v2/stores?page=${page}`;
+
+        // Faz a requisição
+        const response = await this.httpService.axiosRef.get<{ data: CustomerAPIResponse[] }>(url, {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        });
+
+        const clientesData = response.data.data;
+
+        // Se o array vier vazio, encerra o loop
+        if (!clientesData || clientesData.length === 0) {
+          console.log(`Nenhum registro encontrado na página ${page}. Encerrando a sincronização.`);
+          break;
+        }
+
+        // Processa cada cliente recebido
+        console.log(`Página ${page} => ${clientesData.length} clientes recebidos.`);
+        for (const client of clientesData) {
+          await this.processarCliente(client);
+        }
+
+        // Incrementa a página para a próxima iteração
+        page++;
+      } catch (error) {
+        console.error('Erro ao sincronizar clientes:', error);
+        throw error;
       }
-    } catch (error) {
-      console.error('Erro ao sincronizar clientes:', error);
-      throw error;
     }
+
+    console.log('Sincronização de clientes finalizada!');
   }
 
   private async processarCliente(client: CustomerAPIResponse) {
@@ -47,7 +68,7 @@ export class CustomersService {
       relations: ['estado'],
     });
     const regiao = await this.regiaoRepository.findOne({
-      where: { regiao_id: client.region_code },
+      where: { codigo: client.region_code },
     });
 
     const novoCliente = this.clienteRepository.create({

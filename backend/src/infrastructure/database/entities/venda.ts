@@ -1,5 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { Cliente, CanalVenda, Usuario, Produto, FormaPagamento, StatusPagamento, StatusEnvio, TipoEnvio } from './';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Cliente, Regiao, Vendedor, ParcelaCredito, ItensVenda } from './';
 
 @Entity('venda')
 export class Venda {
@@ -7,79 +7,50 @@ export class Venda {
   venda_id: number;
 
   @Column({ type: 'int' })
-  cliente_id: number;
-
-  @Column({ type: 'int' })
-  canal_venda_id: number;
-
-  @Column({ type: 'int' })
-  vendedor_id: number;
+  codigo: number;
 
   @Column({ type: 'date' })
-  data_pedido: Date;
+  data_criacao: Date;
 
-  @Column({ type: 'varchar', length: 45, nullable: true })
+  @Column({ type: 'varchar', length: 240, nullable: true })
   observacao: string;
 
-  @Column({ type: 'int' })
-  produto_id: number;
+  @Column({ type: 'int', nullable: true })
+  numero_parcelas: number;
 
-  @Column({ type: 'int' })
-  total_parcelas: number;
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  valor_parcela: number;
 
-  @Column({ type: 'int' })
-  forma_pagamento_id: number;
+  @Column({ type: 'varchar', length: 180 })
+  metodo_pagamento: string;
 
-  @Column({ type: 'date' })
-  data_vencimento: Date;
+  @Column({ type: 'varchar', length: 180 })
+  forma_pagamento: string;
 
-  @Column({ type: 'varchar', length: 90, nullable: true })
-  descricao: string;
+  @Column({ type: 'varchar', length: 180 })
+  datas_vencimento: Date;
 
-  @Column({ type: 'int' })
-  status_pagamento_id: number;
-
-  @Column({ type: 'int' })
-  status_envio_id: number;
-
-  @Column({ type: 'decimal' })
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   valor_total: number;
 
-  @Column({ type: 'int', nullable: true })
-  tipo_envio_id: number;
-
-  @Column({ type: 'decimal', nullable: true })
-  custo_envio: number;
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  desconto: number;
 
   @ManyToOne(() => Cliente)
   @JoinColumn({ name: 'cliente_id' })
   cliente: Cliente;
 
-  @ManyToOne(() => CanalVenda)
-  @JoinColumn({ name: 'canal_venda_id' })
-  canalVenda: CanalVenda;
-
-  @ManyToOne(() => Usuario)
+  @ManyToOne(() => Vendedor)
   @JoinColumn({ name: 'vendedor_id' })
-  vendedor: Usuario;
+  vendedor: Vendedor;
 
-  @ManyToOne(() => Produto)
-  @JoinColumn({ name: 'produto_id' })
-  produto: Produto;
+  @OneToMany(() => ItensVenda, (vp) => vp.venda, { cascade: true })
+  itensVenda: ItensVenda[];
 
-  @ManyToOne(() => FormaPagamento)
-  @JoinColumn({ name: 'forma_pagamento_id' })
-  formaPagamento: FormaPagamento;
+  @ManyToOne(() => Regiao)
+  @JoinColumn({ name: 'regiao_id' })
+  regiao: Regiao;
 
-  @ManyToOne(() => StatusPagamento)
-  @JoinColumn({ name: 'status_pagamento_id' })
-  statusPagamento: StatusPagamento;
-
-  @ManyToOne(() => StatusEnvio)
-  @JoinColumn({ name: 'status_envio_id' })
-  statusEnvio: StatusEnvio;
-
-  @ManyToOne(() => TipoEnvio)
-  @JoinColumn({ name: 'tipo_envio_id' })
-  tipoEnvio: TipoEnvio;
+  @OneToMany(() => ParcelaCredito, (parcela) => parcela.venda, { cascade: true })
+  parcela: ParcelaCredito[];
 }

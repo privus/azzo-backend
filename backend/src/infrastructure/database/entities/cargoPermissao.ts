@@ -6,17 +6,17 @@ export class CargoPermissao {
   @PrimaryGeneratedColumn('increment')
   id: number;
 
-  @Column({ name: 'cargo_id', type: 'int' })
+  @Column({ type: 'int' })
   cargo_id: number;
 
   @ManyToOne(() => Cargo, (cargo) => cargo.cargoPermissoes, { onDelete: 'CASCADE', nullable: false })
   @JoinColumn({ name: 'cargo_id' })
   cargo: Cargo;
 
-  @Column({ name: 'permissao_id', type: 'int' })
+  @Column({ type: 'int' })
   permissao_id: number;
 
-  @ManyToOne(() => Permissao, (permissao) => permissao.cargoPermissoes, { onDelete: 'CASCADE', nullable: false })
+  @ManyToOne(() => Permissao, (permissao) => permissao.cargo_permissoes, { onDelete: 'CASCADE', nullable: false })
   @JoinColumn({ name: 'permissao_id' })
   permissao: Permissao;
 

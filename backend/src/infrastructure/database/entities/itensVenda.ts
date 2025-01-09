@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { Venda, Produto } from './';
+import { Produto, Venda } from '.';
 
 @Entity('itens_venda')
 export class ItensVenda {
@@ -7,16 +7,13 @@ export class ItensVenda {
   itens_venda_id: number;
 
   @Column({ type: 'int' })
-  venda_id: number;
-
-  @Column({ type: 'int' })
-  produto_id: number;
-
-  @Column({ type: 'int' })
   quantidade: number;
 
-  @Column({ type: 'decimal' })
-  preco_unitario: number;
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  valor_unitario: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  valor_total: number;
 
   @ManyToOne(() => Venda)
   @JoinColumn({ name: 'venda_id' })

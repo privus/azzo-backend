@@ -8,7 +8,7 @@ import { SellerAPIResponse } from '../dto/sellers.dto';
 
 @Injectable()
 export class SellersService {
-  private readonly apiUrl = 'https://app.pedidosdigitais.com.br/api/v2/sellers';
+  private readonly apiUrl = 'https://app.pedidosdigitais.com.br/api/v2/seller';
   private readonly token: string;
 
   constructor(
@@ -40,17 +40,21 @@ export class SellersService {
   }
 
   private async processSeller(seller: SellerAPIResponse) {
+    // 1) Busca a região pelo ID (ou, se preferir, pelo campo 'nome')
     const regiao = await this.regiaoRepository.findOne({
-      where: { regiao_id: seller.region_code },
+      where: { codigo: seller.region_code },
     });
+
+    // 2) Cria ou atualiza o vendedor
     const novoVendedor = this.vendedorRepository.create({
       codigo: seller.code,
       nome: seller.name,
       ativo: seller.is_active,
       data_criacao: seller.created_at,
-      regiao: regiao || null,
+      regiao: regiao || null, // Se não encontrar a região, salva null ou trate como desejar
     });
 
+    // 3) Salva no banco
     await this.vendedorRepository.save(novoVendedor);
     console.log('Vendedor sincronizado =>', novoVendedor);
   }

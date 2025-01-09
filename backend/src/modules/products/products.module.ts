@@ -6,10 +6,7 @@ import { ProductsController } from './controllers/products.controller';
 import { CategoriaProduto, Produto } from '../../infrastructure/database/entities';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Produto, CategoriaProduto]),
-    HttpModule, // Importante importar o HttpModule
-  ],
+  imports: [TypeOrmModule.forFeature([Produto, CategoriaProduto]), HttpModule],
   providers: [ProductsService, { provide: 'IProductsRepository', useClass: ProductsService }],
   controllers: [ProductsController],
   exports: [ProductsService, 'IProductsRepository'],

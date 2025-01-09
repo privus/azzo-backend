@@ -10,5 +10,5 @@ export class Permissao {
   nome: string;
 
   @OneToMany(() => CargoPermissao, (cargoPermissao) => cargoPermissao.permissao, { cascade: true })
-  cargoPermissoes: CargoPermissao[];
+  cargo_permissoes: CargoPermissao[];
 }
