@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SellsService } from '../services/sells.service';
 
@@ -7,9 +7,21 @@ import { SellsService } from '../services/sells.service';
 export class SellsController {
   constructor(private readonly sellsService: SellsService) {}
 
+  @ApiOperation({ summary: 'Sincronizar vendas por data' })
+  @Get()
+  async sellsByDate(@Query('fromDate') fromDate?: string) {
+    return this.sellsService.sellsByDate(fromDate);
+  }
+
   @ApiOperation({ summary: 'Sincronizar todas as vendas' })
   @Get('syncro')
   async syncroAllSells() {
     return this.sellsService.syncroSells();
+  }
+
+  @ApiOperation({ summary: 'Obter venda por ID' })
+  @Get(':id')
+  async getSellById(@Param('id') id: number) {
+    return this.sellsService.getSellById(id);
   }
 }

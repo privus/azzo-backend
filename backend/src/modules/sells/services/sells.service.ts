@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, MoreThanOrEqual, Repository } from 'typeorm';
 import { Cliente, Produto, Venda, Vendedor, ParcelaCredito, Regiao, StatusPagamento } from '../../../infrastructure/database/entities';
 import { ConfigService } from '@nestjs/config';
 import { SellsApiResponse } from '../dto/sells.dto';
@@ -130,5 +130,23 @@ export class SellsService {
     // 5) Salva tudo no banco
     await this.vendaRepository.save(novaVenda);
     console.log('Venda sincronizada =>', novaVenda);
+  }
+
+  async sellsByDate(fromDate?: string): Promise<Venda[]> {
+    if (fromDate) {
+      return this.vendaRepository.find({
+        where: {
+          data_criacao: MoreThanOrEqual(new Date(fromDate)),
+        },
+        relations: ['cliente', 'vendedor', 'itensVenda'],
+      });
+    }
+    return this.vendaRepository.find({
+      relations: ['cliente', 'vendedor', 'itensVenda'],
+    });
+  }
+
+  async getSellById(id: number): Promise<Venda> {
+    return this.vendaRepository.findOne({ where: { venda_id: id }, relations: ['cliente', 'vendedor', 'itensVenda'] });
   }
 }
