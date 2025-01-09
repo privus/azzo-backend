@@ -8,7 +8,7 @@ export interface Product {
 
 export interface SellsApiResponse {
   code: number;
-  region: string;
+  region: number;
   amount: number;
   amount_final: number;
   amount_final_discount: string;

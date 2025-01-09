@@ -2,7 +2,7 @@ import { DataSource } from 'typeorm';
 import { Seeder } from 'typeorm-extension';
 import { StatusPagamento } from '../entities';
 
-export default class StatusPagamentoSeed implements Seeder {
+export class StatusPagamentoSeed implements Seeder {
   public async run(dataSource: DataSource): Promise<void> {
     const statusPagamentoRepository = dataSource.getRepository(StatusPagamento);
     await statusPagamentoRepository.save([
