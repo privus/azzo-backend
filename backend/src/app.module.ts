@@ -12,6 +12,7 @@ import { ProductsModule } from './modules/products/products.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { SellersModule } from './modules/sellers/sellers.module';
 import { SellsModule } from './modules/sells/sells.module';
+import { RegionsModule } from './modules/regions/regions.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { SellsModule } from './modules/sells/sells.module';
     CustomersModule,
     SellersModule,
     SellsModule,
+    RegionsModule
     // Outros módulos podem ser adicionados aqui
   ],
   controllers: [AppController],

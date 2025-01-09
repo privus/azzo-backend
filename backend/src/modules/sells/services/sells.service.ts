@@ -1,9 +1,8 @@
-import { StatusPagamento } from './../../../infrastructure/database/entities/statusPagamento';
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { Cliente, Produto, Venda, Vendedor, ParcelaCredito } from '../../../infrastructure/database/entities';
+import { Cliente, Produto, Venda, Vendedor, ParcelaCredito, Regiao, StatusPagamento } from '../../../infrastructure/database/entities';
 import { ConfigService } from '@nestjs/config';
 import { SellsApiResponse } from '../dto/sells.dto';
 
@@ -19,6 +18,7 @@ export class SellsService {
     @InjectRepository(Produto) private readonly produtoRepository: Repository<Produto>,
     @InjectRepository(ParcelaCredito) private readonly parcelaRepository: Repository<ParcelaCredito>,
     @InjectRepository(StatusPagamento) private readonly statusPagamentoRepository: Repository<StatusPagamento>,
+    @InjectRepository(Regiao) private readonly RegiaoRepository: Repository<Regiao>,
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
@@ -56,6 +56,10 @@ export class SellsService {
 
     const status_pagamento = await this.statusPagamentoRepository.findOne({
       where: { status_pagamento_id: 1 },
+    });
+
+    const regiao = await this.RegiaoRepository.findOne({
+      where: { codigo: sell.region },
     });
 
     // 3) Gera as datas de vencimento para cada parcela, com intervalo de 7 dias
@@ -115,14 +119,12 @@ export class SellsService {
       data_criacao: sell.order_date,
       valor_total: Number(sell.amount_final),
       desconto: Number(sell.amount_final_discount) || 0,
-      // Se quiser armazenar TODAS as datas de vencimento em forma de string:
-      // Exemplo: "2025-01-07, 2025-01-14, 2025-01-21"
       datas_vencimento: datasVencimentoArray.join(', '),
       cliente,
       vendedor,
-      itensVenda, // many-to-many
-      parcela, // one-to-many (cascade deve estar ativo na entidade)
-      // regiao: se quiser vincular pela API, ajuste aqui
+      itensVenda,
+      parcela,
+      regiao,
     });
 
     // 5) Salva tudo no banco
