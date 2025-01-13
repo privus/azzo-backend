@@ -30,4 +30,10 @@ export interface SellsApiResponse {
     erp_id: number;
   };
   products: Product[];
+  status: {
+    name: string;
+  };
+  company: {
+    id: number;
+  };
 }

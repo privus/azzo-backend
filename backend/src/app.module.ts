@@ -13,6 +13,7 @@ import { CustomersModule } from './modules/customers/customers.module';
 import { SellersModule } from './modules/sellers/sellers.module';
 import { SellsModule } from './modules/sells/sells.module';
 import { RegionsModule } from './modules/regions/regions.module';
+import { DebtsModule } from './modules/debts/debts.module';
 
 @Module({
   imports: [
@@ -48,7 +49,8 @@ import { RegionsModule } from './modules/regions/regions.module';
     CustomersModule,
     SellersModule,
     SellsModule,
-    RegionsModule
+    RegionsModule,
+    DebtsModule,
     // Outros módulos podem ser adicionados aqui
   ],
   controllers: [AppController],

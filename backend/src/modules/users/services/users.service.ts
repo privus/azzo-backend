@@ -2,8 +2,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Usuario } from '../../../infrastructure/database/entities';
-import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
-import { ISharedRepository } from '../../../domain/repositories/shared.repository.interface';
+import { IUserRepository, ISharedRepository } from '../../../domain/repositories';
 import { UpdateUserDto } from '../dto/update-user.dto';
 
 @Injectable()

@@ -19,6 +19,12 @@ export class RegionsController {
     return this.regionsService.getRegionById(id);
   }
 
+  @ApiOperation({ summary: 'Obter região por ID com informações adicionais' })
+  @Get(':id/info')
+  async getRegionAllInfoById(@Param('id') id: number) {
+    return this.regionsService.getRegionAllInfoById(id);
+  }
+
   @ApiOperation({ summary: 'Obter vendas por região a partir de uma data' })
   @Get(':id/sells')
   async getSellsByRegion(

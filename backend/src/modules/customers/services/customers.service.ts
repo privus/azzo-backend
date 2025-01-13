@@ -1,11 +1,10 @@
-import { Regiao, StatusCliente } from 'src/infrastructure/database/entities';
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Cidade, Cliente } from '../../../infrastructure/database/entities';
 import { CustomerAPIResponse } from '../dto/customers.dto';
 import { ConfigService } from '@nestjs/config';
+import { Regiao, StatusCliente, Cidade, Cliente } from '../../../infrastructure/database/entities';
 
 @Injectable()
 export class CustomersService {
@@ -63,6 +62,16 @@ export class CustomersService {
   }
 
   private async processarCliente(client: CustomerAPIResponse) {
+    // Verifica se já existe um cliente com o mesmo código
+    const existingClient = await this.clienteRepository.findOne({
+      where: { codigo: client.code },
+    });
+
+    if (existingClient) {
+      console.log(`Cliente com código ${client.code} já está cadastrado. Pulando...`);
+      return;
+    }
+
     const cidade = await this.cidadeRepository.findOne({
       where: { nome: client.address_city },
       relations: ['estado'],

@@ -1,24 +1,26 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, MoreThanOrEqual, Repository } from 'typeorm';
-import { Cliente, Produto, Venda, Vendedor, ParcelaCredito, Regiao, StatusPagamento } from '../../../infrastructure/database/entities';
+import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda } from '../../../infrastructure/database/entities';
 import { ConfigService } from '@nestjs/config';
 import { SellsApiResponse } from '../dto/sells.dto';
+import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository } from '../../../domain/repositories';
 
 @Injectable()
-export class SellsService {
+export class SellsService implements ISellsRepository {
   private readonly apiUrl = 'https://app.pedidosdigitais.com.br/api/v2/orders';
   private readonly token: string;
 
   constructor(
     @InjectRepository(Venda) private readonly vendaRepository: Repository<Venda>,
-    @InjectRepository(Cliente) private readonly clienteRepository: Repository<Cliente>,
-    @InjectRepository(Vendedor) private readonly vendedorRepository: Repository<Vendedor>,
+    @Inject('ICustomersRepository') private readonly clienteService: ICustomersRepository,
+    @Inject('ISellersRepository') private readonly sellersSevice: ISellersRepository,
     @InjectRepository(Produto) private readonly produtoRepository: Repository<Produto>,
     @InjectRepository(ParcelaCredito) private readonly parcelaRepository: Repository<ParcelaCredito>,
     @InjectRepository(StatusPagamento) private readonly statusPagamentoRepository: Repository<StatusPagamento>,
-    @InjectRepository(Regiao) private readonly RegiaoRepository: Repository<Regiao>,
+    @InjectRepository(StatusVenda) private readonly statusVendaRepository: Repository<StatusVenda>,
+    @Inject('IRegionsRepository') private readonly regiaoService: IRegionsRepository,
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
@@ -35,6 +37,7 @@ export class SellsService {
 
       const sellsData = response.data.data;
       console.log('Vendas recebidas =>', sellsData);
+
       for (const sell of sellsData) {
         await this.processSell(sell);
       }
@@ -45,42 +48,42 @@ export class SellsService {
   }
 
   private async processSell(sell: SellsApiResponse): Promise<void> {
+    const existingSell = await this.vendaRepository.findOne({ where: { codigo: Number(sell.code) } });
+    if (existingSell) {
+      console.log('Venda já existente =>', sell.code);
+      return;
+    }
     // 1) Busca o cliente e o vendedor
-    const cliente = await this.clienteRepository.findOne({
-      where: { codigo: sell.store.erp_id },
-    });
+    const cliente = await this.clienteService.findCostumerByCode(Number(sell.store.erp_id));
+    const vendedor = await this.sellersSevice.findBy({ nome: sell.user.name });
 
-    const vendedor = await this.vendedorRepository.findOne({
-      where: { nome: sell.user.name },
-    });
-
+    // 2) Status de pagamento padrão
     const status_pagamento = await this.statusPagamentoRepository.findOne({
       where: { status_pagamento_id: 1 },
     });
 
-    const regiao = await this.RegiaoRepository.findOne({
-      where: { codigo: sell.region },
-    });
+    const status_venda = await this.statusVendaRepository.findOne({ where: { nome: sell.status.name } });
 
-    // 3) Gera as datas de vencimento para cada parcela, com intervalo de 7 dias
-    // Exemplo: se `installment_qty = 3`, então teremos parcelas para +7, +14, +21 dias
+    // 3) Busca a região
+    const regiao = await this.regiaoService.getRegionById(sell.region);
+
+    // 4) Monta array de data de vencimento, incrementando 7 dias para cada parcela
     const baseDate = new Date(sell.order_date);
-
-    // Se quiser armazenar todas as datas num único campo (string) em 'datas_vencimento',
-    // podemos criar uma string como "2025-01-07, 2025-01-14, 2025-01-21" (exemplo).
     const datasVencimentoArray = Array.from({ length: sell.installment_qty }, (_, i) => {
       const data = new Date(baseDate);
       data.setDate(data.getDate() + 7 * (i + 1));
-      return data.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+      return data.toISOString().split('T')[0]; // ex: "2025-01-15"
     });
 
-    // Criação das parcelas propriamente ditas,
-    // cada parcela com data_vencimento incrementada (7 * i).
+    // Converte para array de arrays
+    const datasVencimentoMatriz = datasVencimentoArray.map((data) => [data]);
+
+    // Criação das parcelas
     const parcela = Array.from({ length: sell.installment_qty }, (_, i) => {
       const data = new Date(baseDate);
       data.setDate(data.getDate() + 7 * (i + 1));
       return this.parcelaRepository.create({
-        numero: i + 1, // opcional: qual parcela é (1ª, 2ª, 3ª, ...)
+        numero: i + 1,
         valor: Number(sell.installment_value),
         data_criacao: sell.order_date,
         data_vencimento: data,
@@ -88,6 +91,7 @@ export class SellsService {
       });
     });
 
+    // 5) Montar relação de itens de venda (se existirem produtos)
     let itensVenda = [];
     if (sell.products && sell.products.length > 0) {
       const productCodes = sell.products.map((item) => item.code);
@@ -95,22 +99,20 @@ export class SellsService {
         where: { codigo: In(productCodes) },
       });
 
-      // 2) Montar a relação de itens (VendaProdutos)
       itensVenda = sell.products.map((item) => {
         const produtoEncontrado = produtosEncontrados.find((p) => p.codigo === item.code);
-
         return {
           quantidade: Number(item.quantity),
           valor_unitario: Number(item.unit_price),
           valor_total: Number(item.total_price),
-          produto: produtoEncontrado, // ← Agora bate com a entidade
+          produto: produtoEncontrado,
         };
       });
     }
 
-    // 4) Cria a nova venda
+    // 6) Cria a nova venda com o array de arrays de datas de vencimento
     const novaVenda = this.vendaRepository.create({
-      codigo: Number(sell.code), // se tiver uma coluna 'codigo' na tabela Venda
+      codigo: Number(sell.code),
       observacao: sell.obs,
       numero_parcelas: sell.installment_qty,
       valor_parcela: Number(sell.installment_value),
@@ -119,15 +121,16 @@ export class SellsService {
       data_criacao: sell.order_date,
       valor_total: Number(sell.amount_final),
       desconto: Number(sell.amount_final_discount) || 0,
-      datas_vencimento: datasVencimentoArray.join(', '),
+      datas_vencimento: datasVencimentoMatriz,
       cliente,
       vendedor,
       itensVenda,
       parcela,
       regiao,
+      status_string: sell.status.name,
     });
 
-    // 5) Salva tudo no banco
+    // 7) Salva a venda no banco
     await this.vendaRepository.save(novaVenda);
     console.log('Venda sincronizada =>', novaVenda);
   }
@@ -142,11 +145,14 @@ export class SellsService {
       });
     }
     return this.vendaRepository.find({
-      relations: ['cliente', 'vendedor', 'itensVenda'],
+      relations: ['cliente', 'vendedor', 'itensVenda', 'statusPagamento'],
     });
   }
 
   async getSellById(id: number): Promise<Venda> {
-    return this.vendaRepository.findOne({ where: { venda_id: id }, relations: ['cliente', 'vendedor', 'itensVenda'] });
+    return this.vendaRepository.findOne({
+      where: { venda_id: id },
+      relations: ['cliente', 'vendedor', 'itensVenda'],
+    });
   }
 }

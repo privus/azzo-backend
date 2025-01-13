@@ -7,3 +7,5 @@ export * from './regiaoSeed';
 export * from './statusClienteSeed';
 export * from './statusPagamentoSeed';
 export * from './usuarioSeed';
+export * from './statusVendaSeed';
+
