@@ -5,4 +5,5 @@ export interface IProductsRepository {
   syncroProducts(): Promise<ProdutoAPIResponse[]>;
   findAllProducts(): Promise<Produto[]>;
   findProductById(id: number): Promise<Produto>;
+  findBy(param: Partial<Produto>): Promise<Produto | null>;
 }

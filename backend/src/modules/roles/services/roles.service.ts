@@ -2,8 +2,7 @@ import { ConflictException, Inject, Injectable, NotFoundException } from '@nestj
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cargo, Permissao, CargoPermissao, Usuario } from '../../../infrastructure/database/entities';
-import { IRolesRepository } from '../../../domain/repositories/roles.repository.interface';
-import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
+import { IRolesRepository, IUserRepository } from '../../../domain/repositories';
 import { PermissaoDTO } from '../dto/pormission-role.dto';
 
 @Injectable()

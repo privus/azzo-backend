@@ -8,7 +8,7 @@ import { HttpModule } from '@nestjs/axios';
 @Module({
   imports: [TypeOrmModule.forFeature([Vendedor, Regiao, Cidade]), HttpModule],
   controllers: [SellersController],
-  providers: [SellersService],
-  exports: [SellersService],
+  providers: [SellersService, { provide: 'ISellersRepository', useClass: SellersService }],
+  exports: [SellersService, 'ISellersRepository'],
 })
 export class SellersModule {}

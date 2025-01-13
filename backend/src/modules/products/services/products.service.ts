@@ -81,4 +81,8 @@ export class ProductsService {
   findProductById(id: number): Promise<Produto> {
     return this.produtoRepository.findOne({ where: { produto_id: id }, relations: ['categoria'] });
   }
+
+  async findBy(param: Partial<Produto>): Promise<Produto | null> {
+    return this.produtoRepository.findOne({ where: param });
+  }
 }

@@ -1,12 +1,12 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
-import { Cliente, Regiao, Vendedor, ParcelaCredito, ItensVenda } from './';
+import { Cliente, Regiao, Vendedor, ParcelaCredito, ItensVenda, StatusVenda } from './';
 
 @Entity('venda')
 export class Venda {
   @PrimaryGeneratedColumn('increment')
   venda_id: number;
 
-  @Column({ type: 'int' })
+  @Column({ type: 'int', nullable: false, unique: true })
   codigo: number;
 
   @Column({ type: 'date' })
@@ -23,6 +23,9 @@ export class Venda {
 
   @Column({ type: 'varchar', length: 180 })
   metodo_pagamento: string;
+
+  @Column({ type: 'varchar', length: 180 })
+  status_string: string;
 
   @Column({ type: 'varchar', length: 180 })
   forma_pagamento: string;
@@ -53,4 +56,8 @@ export class Venda {
 
   @OneToMany(() => ParcelaCredito, (parcela) => parcela.venda, { cascade: true })
   parcela: ParcelaCredito[];
+
+  @ManyToOne(() => StatusVenda)
+  @JoinColumn({ name: 'status_venda_id' })
+  status_venda: StatusVenda;
 }

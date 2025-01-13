@@ -1,13 +1,11 @@
 import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
-import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
-import { LoginUserDto } from '../dto/login-user.dto';
-import { RegisterUserDto } from '../dto/register-user.dto';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
-import { ConfigService } from '@nestjs/config';
+import { LoginUserDto } from '../dto/login-user.dto';
+import { RegisterUserDto } from '../dto/register-user.dto';
+import { IUserRepository, IAuthRepository, ISharedRepository } from '../../../domain/repositories';
 import { Usuario } from '../../../infrastructure/database/entities';
-import { IAuthRepository } from '../../../domain/repositories/auth.repository.interface';
-import { ISharedRepository } from 'src/domain/repositories/shared.repository.interface';
 
 @Injectable()
 export class AuthService implements IAuthRepository {

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Like, Repository } from 'typeorm';
 import { Cargo, Cidade, Regiao } from '../../../infrastructure/database/entities';
-import { ISharedRepository } from '../../../domain/repositories/shared.repository.interface';
+import { ISharedRepository } from '../../../domain/repositories';
 
 @Injectable()
 export class SharedService implements ISharedRepository {

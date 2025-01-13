@@ -12,6 +12,10 @@ export class RegionsService {
   }
 
   getRegionById(id: number): Promise<Regiao> {
+    return this.regiaoRepository.findOne({ where: { regiao_id: id } });
+  }
+
+  getRegionAllInfoById(id: number): Promise<Regiao> {
     return this.regiaoRepository.findOne({ where: { regiao_id: id }, relations: ['vendedores', 'clientes.cidade'] });
   }
 
