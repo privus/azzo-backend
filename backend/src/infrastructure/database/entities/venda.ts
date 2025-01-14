@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
-import { Cliente, Regiao, Vendedor, ParcelaCredito, ItensVenda, StatusVenda } from './';
+import { Cliente, Regiao, Vendedor, ParcelaCredito, ItensVenda, StatusVenda, StatusPagamento } from './';
 
 @Entity('venda')
 export class Venda {
@@ -9,7 +9,7 @@ export class Venda {
   @Column({ type: 'int', nullable: false, unique: true })
   codigo: number;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'timestamp', nullable: false })
   data_criacao: Date;
 
   @Column({ type: 'varchar', length: 240, nullable: true })
@@ -25,16 +25,19 @@ export class Venda {
   metodo_pagamento: string;
 
   @Column({ type: 'varchar', length: 180 })
-  status_string: string;
-
-  @Column({ type: 'varchar', length: 180 })
   forma_pagamento: string;
 
-  @Column({ type: 'varchar', length: 180 })
-  datas_vencimento: Date;
+  @Column({ type: 'json', nullable: true })
+  datas_vencimento: string[][];
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  valor_total: number;
+  valor_pedido: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  valor_final: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  flex_gerado: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   desconto: number;
@@ -60,4 +63,8 @@ export class Venda {
   @ManyToOne(() => StatusVenda)
   @JoinColumn({ name: 'status_venda_id' })
   status_venda: StatusVenda;
+
+  @ManyToOne(() => StatusPagamento)
+  @JoinColumn({ name: 'status_pagamento_id' })
+  status_pagamento: StatusPagamento;
 }

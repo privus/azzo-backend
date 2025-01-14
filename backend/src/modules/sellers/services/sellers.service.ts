@@ -59,7 +59,7 @@ export class SellersService {
     console.log('Vendedor sincronizado =>', novoVendedor);
   }
 
-  async findBy(param: Partial<Vendedor>): Promise<Vendedor | null> {
+  findBy(param: Partial<Vendedor>): Promise<Vendedor | null> {
     return this.vendedorRepository.findOne({ where: param });
   }
 }

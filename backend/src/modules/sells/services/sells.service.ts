@@ -54,18 +54,18 @@ export class SellsService implements ISellsRepository {
       return;
     }
     // 1) Busca o cliente e o vendedor
-    const cliente = await this.clienteService.findCostumerByCode(Number(sell.store.erp_id));
-    const vendedor = await this.sellersSevice.findBy({ nome: sell.user.name });
+    const cliente = await this.clienteService.findCostumerByCode(sell.store ? Number(sell.store.erp_id) : 0);
+    const vendedor = await this.sellersSevice.findBy({ codigo: Number(sell.seller_code) });
 
     // 2) Status de pagamento padrão
     const status_pagamento = await this.statusPagamentoRepository.findOne({
       where: { status_pagamento_id: 1 },
     });
 
-    const status_venda = await this.statusVendaRepository.findOne({ where: { nome: sell.status.name } });
-
-    // 3) Busca a região
-    const regiao = await this.regiaoService.getRegionById(sell.region);
+    const status_venda = await this.statusVendaRepository.findOne({
+      where: { status_venda_id: sell.status.id },
+    });
+    const regiao = await this.regiaoService.getRegionByCode(sell.region);
 
     // 4) Monta array de data de vencimento, incrementando 7 dias para cada parcela
     const baseDate = new Date(sell.order_date);
@@ -116,10 +116,12 @@ export class SellsService implements ISellsRepository {
       observacao: sell.obs,
       numero_parcelas: sell.installment_qty,
       valor_parcela: Number(sell.installment_value),
-      metodo_pagamento: sell.payment_method_text,
-      forma_pagamento: sell.payment_term_text,
+      metodo_pagamento: sell.payment_method_text || '',
+      forma_pagamento: sell.payment_term_text || '',
       data_criacao: sell.order_date,
-      valor_total: Number(sell.amount_final),
+      valor_pedido: Number(sell.amount),
+      valor_final: Number(sell.amount_final),
+      flex_gerado: Number(sell.no_financial) || 0,
       desconto: Number(sell.amount_final_discount) || 0,
       datas_vencimento: datasVencimentoMatriz,
       cliente,
@@ -127,7 +129,8 @@ export class SellsService implements ISellsRepository {
       itensVenda,
       parcela,
       regiao,
-      status_string: sell.status.name,
+      status_venda,
+      status_pagamento,
     });
 
     // 7) Salva a venda no banco
@@ -145,7 +148,7 @@ export class SellsService implements ISellsRepository {
       });
     }
     return this.vendaRepository.find({
-      relations: ['cliente', 'vendedor', 'itensVenda', 'statusPagamento'],
+      relations: ['cliente', 'vendedor', 'itensVenda', 'status_pagamento', 'status_venda'],
     });
   }
 
