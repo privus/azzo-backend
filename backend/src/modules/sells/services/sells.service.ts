@@ -122,7 +122,7 @@ export class SellsService implements ISellsRepository {
       valor_pedido: Number(sell.amount),
       valor_final: Number(sell.amount_final),
       flex_gerado: Number(sell.no_financial) || 0,
-      desconto: Number(sell.amount_final_discount) || 0,
+      desconto: sell.discount_total | 0,
       datas_vencimento: datasVencimentoMatriz,
       cliente,
       vendedor,
@@ -131,6 +131,7 @@ export class SellsService implements ISellsRepository {
       regiao,
       status_venda,
       status_pagamento,
+      tipo_pedido: sell.non_adherent_warning,
     });
 
     // 7) Salva a venda no banco
@@ -144,18 +145,18 @@ export class SellsService implements ISellsRepository {
         where: {
           data_criacao: MoreThanOrEqual(new Date(fromDate)),
         },
-        relations: ['cliente', 'vendedor', 'itensVenda'],
+        relations: ['cliente', 'vendedor'],
       });
     }
     return this.vendaRepository.find({
-      relations: ['cliente', 'vendedor', 'itensVenda', 'status_pagamento', 'status_venda'],
+      relations: ['cliente', 'vendedor', 'status_pagamento', 'status_venda'],
     });
   }
 
   async getSellById(id: number): Promise<Venda> {
     return this.vendaRepository.findOne({
       where: { venda_id: id },
-      relations: ['cliente', 'vendedor', 'itensVenda'],
+      relations: ['cliente', 'vendedor', 'itensVenda', 'itensVenda.produto', 'status_pagamento', 'status_venda'],
     });
   }
 }

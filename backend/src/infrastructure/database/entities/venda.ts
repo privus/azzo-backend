@@ -9,6 +9,9 @@ export class Venda {
   @Column({ type: 'int', nullable: false, unique: true })
   codigo: number;
 
+  @Column({ type: 'varchar', length: 180, nullable: true })
+  tipo_pedido: string;
+
   @Column({ type: 'timestamp', nullable: false })
   data_criacao: Date;
 
