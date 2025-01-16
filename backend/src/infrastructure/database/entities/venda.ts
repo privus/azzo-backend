@@ -61,7 +61,7 @@ export class Venda {
   regiao: Regiao;
 
   @OneToMany(() => ParcelaCredito, (parcela) => parcela.venda, { cascade: true })
-  parcela: ParcelaCredito[];
+  parcela_credito: ParcelaCredito[];
 
   @ManyToOne(() => StatusVenda)
   @JoinColumn({ name: 'status_venda_id' })

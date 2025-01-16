@@ -79,7 +79,7 @@ export class SellsService implements ISellsRepository {
     const datasVencimentoMatriz = datasVencimentoArray.map((data) => [data]);
 
     // Criação das parcelas
-    const parcela = Array.from({ length: sell.installment_qty }, (_, i) => {
+    const parcela_credito = Array.from({ length: sell.installment_qty }, (_, i) => {
       const data = new Date(baseDate);
       data.setDate(data.getDate() + 7 * (i + 1));
       return this.parcelaRepository.create({
@@ -127,7 +127,7 @@ export class SellsService implements ISellsRepository {
       cliente,
       vendedor,
       itensVenda,
-      parcela,
+      parcela_credito,
       regiao,
       status_venda,
       status_pagamento,
@@ -145,18 +145,27 @@ export class SellsService implements ISellsRepository {
         where: {
           data_criacao: MoreThanOrEqual(new Date(fromDate)),
         },
-        relations: ['cliente', 'vendedor'],
+        relations: ['cliente', 'vendedor', 'status_pagamento', 'status_venda', 'itensVenda.produto'],
       });
     }
     return this.vendaRepository.find({
-      relations: ['cliente', 'vendedor', 'status_pagamento', 'status_venda'],
+      relations: ['cliente', 'vendedor', 'status_pagamento', 'status_venda', 'itensVenda.produto'],
     });
   }
 
   async getSellById(id: number): Promise<Venda> {
     return this.vendaRepository.findOne({
       where: { venda_id: id },
-      relations: ['cliente', 'vendedor', 'itensVenda', 'itensVenda.produto', 'status_pagamento', 'status_venda'],
+      relations: [
+        'cliente',
+        'vendedor',
+        'itensVenda',
+        'itensVenda.produto',
+        'status_pagamento',
+        'status_venda',
+        'parcela_credito',
+        'parcela_credito.status_pagamento',
+      ],
     });
   }
 }
