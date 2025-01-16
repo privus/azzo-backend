@@ -15,18 +15,20 @@ export class RegionsService {
     return this.regiaoRepository.findOne({ where: { regiao_id: id } });
   }
 
-  getRegionAllInfoById(id: number): Promise<Regiao> {
+  getRegionByCode(codigo: number): Promise<Regiao> {
+    return this.regiaoRepository.findOne({ where: { codigo } });
+  }
+
+  async getRegionAllInfoById(id: number): Promise<Regiao> {
     return this.regiaoRepository.findOne({ where: { regiao_id: id }, relations: ['vendedores', 'clientes.cidade'] });
   }
 
   async getSellsByRegion(id: number, fromDate?: string): Promise<Regiao> {
-    // Monta a query com alias
     const query = this.regiaoRepository
       .createQueryBuilder('regiao')
       .leftJoinAndSelect('regiao.vendas', 'venda')
       .where('regiao.regiao_id = :id', { id });
 
-    // Se o parâmetro fromDate existir, adiciona o filtro
     if (fromDate) {
       query.andWhere('venda.data_criacao >= :fromDate', { fromDate });
     }

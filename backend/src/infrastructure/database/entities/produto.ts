@@ -6,7 +6,7 @@ export class Produto {
   @PrimaryGeneratedColumn('increment')
   produto_id: number;
 
-  @Column({ type: 'varchar', length: 255, nullable: false })
+  @Column({ type: 'varchar', length: 255, nullable: false, unique: true })
   codigo: string;
 
   @Column({ type: 'varchar', length: 90, nullable: true })

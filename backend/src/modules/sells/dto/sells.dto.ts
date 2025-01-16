@@ -10,8 +10,10 @@ export interface SellsApiResponse {
   code: number;
   region: number;
   amount: number;
+  seller_code: string;
   amount_final: number;
-  amount_final_discount: string;
+  discount_total?: number;
+  no_financial?: string;
   obs: string;
   payment_method_text: string;
   payment_term_text: string;
@@ -25,15 +27,16 @@ export interface SellsApiResponse {
     id: number;
     name: string;
   };
-  store: {
+  store?: {
     id: number;
     erp_id: number;
   };
   products: Product[];
   status: {
-    name: string;
+    id: number;
   };
   company: {
     id: number;
   };
+  non_adherent_warning?: string;
 }
