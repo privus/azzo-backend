@@ -9,8 +9,9 @@ import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRep
 
 @Injectable()
 export class SellsService implements ISellsRepository {
-  private readonly apiUrl = 'https://app.pedidosdigitais.com.br/api/v2/orders';
+  private readonly apiUrl: string;
   private readonly token: string;
+  private readonly apiTag: 'orders';
 
   constructor(
     @InjectRepository(Venda) private readonly vendaRepository: Repository<Venda>,
@@ -25,11 +26,12 @@ export class SellsService implements ISellsRepository {
     private readonly configService: ConfigService,
   ) {
     this.token = this.configService.get<string>('SELLENTT_API_TOKEN');
+    this.apiUrl = this.configService.get<string>('SELLENTT_API_URL');
   }
 
   async syncroSells(): Promise<void> {
     try {
-      const response = await this.httpService.axiosRef.get<{ data: SellsApiResponse[] }>(this.apiUrl, {
+      const response = await this.httpService.axiosRef.get<{ data: SellsApiResponse[] }>(this.apiUrl + this.apiTag, {
         headers: {
           Authorization: `Bearer ${this.token}`,
         },

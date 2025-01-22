@@ -8,8 +8,9 @@ import { SellerAPIResponse } from '../dto/sellers.dto';
 
 @Injectable()
 export class SellersService {
-  private readonly apiUrl = 'https://app.pedidosdigitais.com.br/api/v2/seller';
+  private readonly apiUrl: string;
   private readonly token: string;
+  private readonly apiTag: 'seller';
 
   constructor(
     @InjectRepository(Vendedor) private readonly vendedorRepository: Repository<Vendedor>,
@@ -18,11 +19,12 @@ export class SellersService {
     private readonly configService: ConfigService,
   ) {
     this.token = this.configService.get<string>('SELLENTT_API_TOKEN');
+    this.apiUrl = this.configService.get<string>('SELLENTT_API_URL');
   }
 
   async syncroSellers(): Promise<void> {
     try {
-      const response = await this.httpService.axiosRef.get<{ data: SellerAPIResponse[] }>(this.apiUrl, {
+      const response = await this.httpService.axiosRef.get<{ data: SellerAPIResponse[] }>(this.apiUrl + this.apiTag, {
         headers: {
           Authorization: `Bearer ${this.token}`,
         },

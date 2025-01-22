@@ -7,9 +7,8 @@ import { Estado } from '../entities';
 export class EstadoSeed implements Seeder {
   async run(dataSource: DataSource): Promise<void> {
     const estadoRepository = dataSource.getRepository(Estado);
-
     // Defina o caminho para o arquivo JSON gerado
-    const jsonFilePath = path.resolve('/home/personizi-master/Documentos/projetos/azzo/azzo-backend/backend/src/utils/estados.json');
+    const jsonFilePath = path.resolve(__dirname, 'estados.json');
 
     const jsonData = JSON.parse(fs.readFileSync(jsonFilePath, 'utf-8'));
 
