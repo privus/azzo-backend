@@ -1,5 +1,3 @@
-// src/modules/debts/services/debts.service.ts
-
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -9,14 +7,11 @@ import { DebtsDto } from '../dto/debts.dto';
 @Injectable()
 export class DebtsService {
   constructor(
-    @InjectRepository(Debito)
-    private readonly debtRepository: Repository<Debito>,
+    @InjectRepository(Debito) private readonly debtRepository: Repository<Debito>,
 
-    @InjectRepository(ParcelaDebito)
-    private readonly parcelaRepository: Repository<ParcelaDebito>,
+    @InjectRepository(ParcelaDebito) private readonly parcelaRepository: Repository<ParcelaDebito>,
 
-    @InjectRepository(StatusPagamento)
-    private readonly statusPagamentoRepository: Repository<StatusPagamento>,
+    @InjectRepository(StatusPagamento) private readonly statusPagamentoRepository: Repository<StatusPagamento>,
   ) {}
 
   async getAllDebts(): Promise<Debito[]> {

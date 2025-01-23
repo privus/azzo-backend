@@ -29,7 +29,7 @@ export class ParcelaCredito {
   @JoinColumn({ name: 'status_pagamento_id' })
   status_pagamento: StatusPagamento;
 
-  @ManyToOne(() => Venda, (venda) => venda.parcela)
+  @ManyToOne(() => Venda, (venda) => venda.parcela_credito)
   @JoinColumn({ name: 'venda_id' })
   venda: Venda;
 }

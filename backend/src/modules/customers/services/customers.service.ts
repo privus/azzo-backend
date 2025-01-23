@@ -8,7 +8,9 @@ import { Regiao, StatusCliente, Cidade, Cliente } from '../../../infrastructure/
 
 @Injectable()
 export class CustomersService {
+  private readonly apiUrl: string;
   private readonly token: string;
+  private readonly apiTag = 'stores'; // Initialize apiTag properly
 
   constructor(
     @InjectRepository(Cliente) private readonly clienteRepository: Repository<Cliente>,
@@ -18,6 +20,7 @@ export class CustomersService {
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
+    this.apiUrl = this.configService.get<string>('SELLENTT_API_URL');
     this.token = this.configService.get<string>('SELLENTT_API_TOKEN');
   }
 
@@ -26,10 +29,11 @@ export class CustomersService {
 
     while (true) {
       try {
-        // Monta a URL dinamicamente com o parâmetro de página
-        const url = `https://app.pedidosdigitais.com.br/api/v2/stores?page=${page}`;
+        // Construct the request URL
+        const url = `${this.apiUrl}${this.apiTag}?page=${page}`;
+        console.log(`Requesting: ${url}`); // Log the URL for debugging
 
-        // Faz a requisição
+        // Perform the HTTP request
         const response = await this.httpService.axiosRef.get<{ data: CustomerAPIResponse[] }>(url, {
           headers: {
             Authorization: `Bearer ${this.token}`,
@@ -38,37 +42,35 @@ export class CustomersService {
 
         const clientesData = response.data.data;
 
-        // Se o array vier vazio, encerra o loop
+        // Exit the loop if no data
         if (!clientesData || clientesData.length === 0) {
-          console.log(`Nenhum registro encontrado na página ${page}. Encerrando a sincronização.`);
+          console.log(`No records found on page ${page}. Ending synchronization.`);
           break;
         }
 
-        // Processa cada cliente recebido
-        console.log(`Página ${page} => ${clientesData.length} clientes recebidos.`);
+        // Process each customer
+        console.log(`Page ${page} => ${clientesData.length} customers received.`);
         for (const client of clientesData) {
           await this.processarCliente(client);
         }
-
-        // Incrementa a página para a próxima iteração
         page++;
       } catch (error) {
-        console.error('Erro ao sincronizar clientes:', error);
+        console.error('Error during customer synchronization:', error.message);
         throw error;
       }
     }
 
-    console.log('Sincronização de clientes finalizada!');
+    console.log('Customer synchronization completed!');
   }
 
   private async processarCliente(client: CustomerAPIResponse) {
-    // Verifica se já existe um cliente com o mesmo código
+    // Check if the customer already exists
     const existingClient = await this.clienteRepository.findOne({
       where: { codigo: client.code },
     });
 
     if (existingClient) {
-      console.log(`Cliente com código ${client.code} já está cadastrado. Pulando...`);
+      console.log(`Customer with code ${client.code} already exists. Skipping...`);
       return;
     }
 
@@ -92,7 +94,6 @@ export class CustomersService {
 
     let statusEntity: StatusCliente | null = null;
     if (client.custom_values && client.custom_values.length > 0) {
-      // Supondo que o primeiro item do array seja o "Status Cliente Azzo"
       const statusNome = client.custom_values[0].value;
       statusEntity = await this.statusClienteRepository.findOne({
         where: { nome: statusNome },
@@ -124,7 +125,7 @@ export class CustomersService {
     });
 
     await this.clienteRepository.save(novoCliente);
-    console.log(`Cliente ${novoCliente.nome} salvo com sucesso!`);
+    console.log(`Customer ${novoCliente.nome} saved successfully!`);
   }
 
   findAllCostumers(): Promise<Cliente[]> {
