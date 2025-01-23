@@ -10,7 +10,7 @@ import { SellerAPIResponse } from '../dto/sellers.dto';
 export class SellersService {
   private readonly apiUrl: string;
   private readonly token: string;
-  private readonly apiTag: 'seller';
+  private readonly apiTag = 'seller';
 
   constructor(
     @InjectRepository(Vendedor) private readonly vendedorRepository: Repository<Vendedor>,

@@ -92,13 +92,9 @@ export class CustomersService {
       await this.regiaoRepository.save(regiao);
     }
 
-    let statusEntity: StatusCliente | null = null;
-    if (client.custom_values && client.custom_values.length > 0) {
-      const statusNome = client.custom_values[0].value;
-      statusEntity = await this.statusClienteRepository.findOne({
-        where: { nome: statusNome },
-      });
-    }
+    const status = await this.statusClienteRepository.findOne({
+      where: { status_cliente_id: Number(client.tags) },
+    });
 
     const novoCliente = this.clienteRepository.create({
       nome: client.name,
@@ -121,7 +117,7 @@ export class CustomersService {
       regiao,
       data_criacao: new Date(client.created_at),
       data_atualizacao: new Date(client.updated_at),
-      status: statusEntity,
+      status_cliente: status || null,
     });
 
     await this.clienteRepository.save(novoCliente);
@@ -129,10 +125,14 @@ export class CustomersService {
   }
 
   findAllCostumers(): Promise<Cliente[]> {
-    return this.clienteRepository.find({ relations: ['cidade.estado', 'regiao'] });
+    return this.clienteRepository.find({ relations: ['cidade.estado', 'regiao', 'status_cliente'] });
   }
 
   findCostumerByCode(codigo: number): Promise<Cliente> {
-    return this.clienteRepository.findOne({ where: { codigo }, relations: ['cidade.estado', 'regiao', 'status'] });
+    return this.clienteRepository.findOne({ where: { codigo }, relations: ['cidade.estado', 'regiao', 'status_cliente'] });
+  }
+
+  findCostumersByStatus(id: number): Promise<StatusCliente[]> {
+    return this.statusClienteRepository.find({ where: { status_cliente_id: id }, relations: ['clientes'] });
   }
 }

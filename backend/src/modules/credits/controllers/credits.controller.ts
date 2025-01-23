@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { CreditsService } from '../services/credits.service';
 
@@ -13,9 +13,15 @@ export class CreditsController {
     return this.creditsService.getAllCredits();
   }
 
+  @ApiOperation({ summary: 'Obter crédito por Data' })
+  @Get('date')
+  async getCreditByDate(@Query('fromDate') fromDate?: string, @Query('toDate') toDate?: string) {
+    return this.creditsService.filterCreditsByDueDate(fromDate, toDate);
+  }
   @ApiOperation({ summary: 'Obter crédito por ID' })
   @Get(':id')
   async getCreditById(@Param('id') id: number) {
     return this.creditsService.getCreditById(id);
   }
+
 }
