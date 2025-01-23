@@ -73,6 +73,6 @@ export class Cliente {
   regiao: Regiao;
 
   @ManyToOne(() => StatusCliente)
-  @JoinColumn({ name: 'status' })
-  status: StatusCliente;
+  @JoinColumn({ name: 'status_cliente_id' })
+  status_cliente: StatusCliente;
 }

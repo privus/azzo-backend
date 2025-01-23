@@ -7,3 +7,4 @@ export * from './sellers.repository.interface';
 export * from './user.repository.interface';
 export * from './regions.repository.inteface';
 export * from './sells.repository.interface';
+export * from './credits.repository.interface';

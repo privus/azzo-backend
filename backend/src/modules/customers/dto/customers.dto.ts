@@ -18,5 +18,5 @@ export interface CustomerAPIResponse {
   created_at: Date;
   updated_at: Date;
   region_code: number;
-  custom_values: { value: string }[];
+  tags: string;
 }

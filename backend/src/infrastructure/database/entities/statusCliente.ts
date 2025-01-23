@@ -9,6 +9,6 @@ export class StatusCliente {
   @Column({ type: 'varchar', length: 45 })
   nome: string;
 
-  @OneToMany(() => Cliente, (cliente) => cliente.status)
+  @OneToMany(() => Cliente, (cliente) => cliente.status_cliente)
   clientes: Cliente[];
 }

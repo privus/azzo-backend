@@ -2,8 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, MoreThanOrEqual, Repository } from 'typeorm';
-import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda } from '../../../infrastructure/database/entities';
-import { ConfigService } from '@nestjs/config';
+import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro } from '../../../infrastructure/database/entities';
 import { SellsApiResponse } from '../dto/sells.dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository } from '../../../domain/repositories';
 
@@ -11,10 +10,9 @@ import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRep
 export class SellsService implements ISellsRepository {
   private readonly apiUrl: string;
   private readonly token: string;
-  private readonly apiTag: 'orders';
+  private readonly apiTag = 'orders';
 
   constructor(
-    @InjectRepository(Venda) private readonly vendaRepository: Repository<Venda>,
     @Inject('ICustomersRepository') private readonly clienteService: ICustomersRepository,
     @Inject('ISellersRepository') private readonly sellersSevice: ISellersRepository,
     @InjectRepository(Produto) private readonly produtoRepository: Repository<Produto>,
@@ -22,16 +20,23 @@ export class SellsService implements ISellsRepository {
     @InjectRepository(StatusPagamento) private readonly statusPagamentoRepository: Repository<StatusPagamento>,
     @InjectRepository(StatusVenda) private readonly statusVendaRepository: Repository<StatusVenda>,
     @Inject('IRegionsRepository') private readonly regiaoService: IRegionsRepository,
+    @InjectRepository(Syncro) private readonly syncroRepository: Repository<Syncro>,
+    @InjectRepository(Venda) private readonly vendaRepository: Repository<Venda>,
     private readonly httpService: HttpService,
-    private readonly configService: ConfigService,
   ) {
-    this.token = this.configService.get<string>('SELLENTT_API_TOKEN');
-    this.apiUrl = this.configService.get<string>('SELLENTT_API_URL');
+    this.token = process.env.SELLENTT_API_TOKEN;
+    this.apiUrl = process.env.SELLENTT_API_URL;
   }
 
   async syncroSells(): Promise<void> {
     try {
-      const response = await this.httpService.axiosRef.get<{ data: SellsApiResponse[] }>(this.apiUrl + this.apiTag, {
+      // Busca a última data de sincronização
+      const lastSync = await this.getLastSyncDate('sells');
+      console.log('Última sincronização:', lastSync);
+
+      // Adiciona o parâmetro after_created à URL
+      const url = `${this.apiUrl}${this.apiTag}${lastSync ? `?after_created=${lastSync.toISOString()}` : ''}`;
+      const response = await this.httpService.axiosRef.get<{ data: SellsApiResponse[] }>(url, {
         headers: {
           Authorization: `Bearer ${this.token}`,
         },
@@ -43,10 +48,38 @@ export class SellsService implements ISellsRepository {
       for (const sell of sellsData) {
         await this.processSell(sell);
       }
+
+      // Atualiza a data da última sincronização
+      await this.updateLastSyncDate('sells', new Date());
+      console.log('Sincronização concluída com sucesso.');
     } catch (error) {
       console.error('Erro ao sincronizar vendas:', error);
       throw error;
     }
+  }
+
+  private async getLastSyncDate(moduleName: string): Promise<Date | null> {
+    const metadata = await this.syncroRepository.findOne({ where: { module_name: moduleName } });
+    if (metadata?.last_sync) {
+      // Certifique-se de que o valor recuperado seja uma data sem horas
+      return new Date(metadata.last_sync);
+    }
+    return null;
+  }
+
+  private async updateLastSyncDate(moduleName: string, date: Date): Promise<void> {
+    let metadata = await this.syncroRepository.findOne({ where: { module_name: moduleName } });
+
+    // Trunca a hora, mantendo apenas a data
+    const onlyDate = new Date(date.toISOString().split('T')[0]);
+
+    if (!metadata) {
+      metadata = this.syncroRepository.create({ module_name: moduleName, last_sync: onlyDate });
+    } else {
+      metadata.last_sync = onlyDate;
+    }
+
+    await this.syncroRepository.save(metadata);
   }
 
   private async processSell(sell: SellsApiResponse): Promise<void> {

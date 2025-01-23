@@ -22,3 +22,4 @@ export * from './itensVenda';
 export * from './parcelaDebito';
 export * from './categoriaDebito';
 export * from './statusVenda';
+export * from './syncro';
