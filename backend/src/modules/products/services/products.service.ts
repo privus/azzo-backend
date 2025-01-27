@@ -1,4 +1,3 @@
-import { ConfigService } from '@nestjs/config';
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -13,16 +12,12 @@ export class ProductsService {
   private readonly apiTag = 'products'; // Inicializa corretamente o apiTag
 
   constructor(
-    @InjectRepository(Produto)
-    private readonly produtoRepository: Repository<Produto>,
-    @InjectRepository(CategoriaProduto)
-    private readonly categoriaRepository: Repository<CategoriaProduto>,
+    @InjectRepository(Produto) private readonly produtoRepository: Repository<Produto>,
+    @InjectRepository(CategoriaProduto) private readonly categoriaRepository: Repository<CategoriaProduto>,
     private readonly httpService: HttpService,
-    private readonly configService: ConfigService,
   ) {
-    // Configura as variáveis de ambiente corretamente
-    this.apiUrl = this.configService.get<string>('SELLENTT_API_URL');
-    this.token = this.configService.get<string>('SELLENTT_API_TOKEN');
+    this.token = process.env.SELLENTT_API_TOKEN;
+    this.apiUrl = process.env.SELLENTT_API_URL;
   }
 
   async syncroProducts(): Promise<void> {

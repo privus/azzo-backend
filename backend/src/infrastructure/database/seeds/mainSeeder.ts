@@ -11,6 +11,7 @@ import {
   StatusClienteSeed,
   PermissaoSeed,
   StatusVendaSeed,
+  TipoPedidoSeed,
 } from './';
 
 export class MainSeeder implements Seeder {
@@ -25,5 +26,6 @@ export class MainSeeder implements Seeder {
     await runSeeder(dataSource, StatusPagamentoSeed);
     await runSeeder(dataSource, StatusClienteSeed);
     await runSeeder(dataSource, StatusVendaSeed);
+    await runSeeder(dataSource, TipoPedidoSeed);
   }
 }

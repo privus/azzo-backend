@@ -18,8 +18,8 @@ export class SellersService {
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
-    this.token = this.configService.get<string>('SELLENTT_API_TOKEN');
-    this.apiUrl = this.configService.get<string>('SELLENTT_API_URL');
+    this.token = process.env.SELLENTT_API_TOKEN;
+    this.apiUrl = process.env.SELLENTT_API_URL;
   }
 
   async syncroSellers(): Promise<void> {

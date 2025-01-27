@@ -38,5 +38,6 @@ export interface SellsApiResponse {
   company: {
     id: number;
   };
-  non_adherent_warning?: string;
+  order_type_id: number;
+  updated_at: string;
 }
