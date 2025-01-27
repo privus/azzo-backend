@@ -16,7 +16,8 @@ export class SellsController {
   @ApiOperation({ summary: 'Sincronizar todas as vendas' })
   @Get('syncro')
   async syncroAllSells() {
-    return this.sellsService.syncroSells();
+    const resultMessage = await this.sellsService.syncroSells();
+    return { message: resultMessage };
   }
 
   @ApiOperation({ summary: 'Obter venda por ID' })

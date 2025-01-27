@@ -8,6 +8,9 @@ export class Syncro {
   @Column({ type: 'varchar', length: 255, unique: true })
   module_name: string;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   last_sync: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  last_update: Date;
 }

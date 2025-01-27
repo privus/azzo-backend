@@ -3,7 +3,6 @@ import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CustomerAPIResponse } from '../dto/customers.dto';
-import { ConfigService } from '@nestjs/config';
 import { Regiao, StatusCliente, Cidade, Cliente } from '../../../infrastructure/database/entities';
 
 @Injectable()
@@ -18,10 +17,9 @@ export class CustomersService {
     @InjectRepository(Regiao) private readonly regiaoRepository: Repository<Regiao>,
     @InjectRepository(StatusCliente) private readonly statusClienteRepository: Repository<StatusCliente>,
     private readonly httpService: HttpService,
-    private readonly configService: ConfigService,
   ) {
-    this.apiUrl = this.configService.get<string>('SELLENTT_API_URL');
-    this.token = this.configService.get<string>('SELLENTT_API_TOKEN');
+    this.token = process.env.SELLENTT_API_TOKEN;
+    this.apiUrl = process.env.SELLENTT_API_URL;
   }
 
   async syncroCostumers(): Promise<void> {
