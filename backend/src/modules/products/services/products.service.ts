@@ -10,6 +10,7 @@ export class ProductsService {
   private readonly apiUrl: string;
   private readonly token: string;
   private readonly apiTag = 'products'; // Inicializa corretamente o apiTag
+  photoUrl: string;
 
   constructor(
     @InjectRepository(Produto) private readonly produtoRepository: Repository<Produto>,
@@ -18,6 +19,7 @@ export class ProductsService {
   ) {
     this.token = process.env.SELLENTT_API_TOKEN;
     this.apiUrl = process.env.SELLENTT_API_URL;
+    this.photoUrl = process.env.PRODUCT_PHOTO;
   }
 
   async syncroProducts(): Promise<void> {
@@ -106,12 +108,12 @@ export class ProductsService {
       ean: Number(item.ean),
       preco_custo: item.price_cost,
       peso_grs: item.average_weight,
-      fotoUrl: item.catalog.image,
       categoria: categoria,
       fornecedor: null,
       data_criacao: new Date(item.created_at),
       data_atualizacao: new Date(item.updated_at),
       descricao_uni: item.description.html,
+      fotoUrl: `${this.photoUrl + item.code}.png`,
     });
 
     await this.produtoRepository.save(novoProduto);
