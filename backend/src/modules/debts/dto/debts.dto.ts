@@ -82,4 +82,20 @@ export class DebtsDto {
    */
   @IsNumber({}, { message: 'A categoria ID deve ser um número.' })
   categoria_id: number;
+
+  /**
+   * Nome do departamento.
+   * Exemplo: 'Financeiro'
+   */
+  @IsString({ message: 'O nome do departamento deve ser uma string.' })
+  @Length(3, 90, { message: 'O nome do departamento deve ter entre 3 e 90 caracteres.' })
+  departamento_nome: string;
+
+  /**
+   * Nome doa categoria.
+   * Exemplo: 'Financeiro'
+   */
+  @IsString({ message: 'O nome doa categoria deve ser uma string.' })
+  @Length(3, 90, { message: 'O nome do categoria deve ter entre 3 e 90 caracteres.' })
+  categoria_nome: string;
 }

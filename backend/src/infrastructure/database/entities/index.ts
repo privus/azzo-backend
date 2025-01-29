@@ -24,3 +24,4 @@ export * from './categoriaDebito';
 export * from './statusVenda';
 export * from './syncro';
 export * from './tipoPedido';
+export * from './departamento';
