@@ -14,6 +14,18 @@ export class DebtsController {
     return this.debtsService.getAllDebts();
   }
 
+  @ApiOperation({ summary: 'Obter todos os departamentos' })
+  @Get('departments')
+  async getAllDepartments() {
+    return this.debtsService.getAllDepartments();
+  }
+
+  @ApiOperation({ summary: 'Obter todas as categorias' })
+  @Get('categories')
+  async getAllCategories() {
+    return this.debtsService.getAllCategories();
+  }
+
   @ApiOperation({ summary: 'Obter débito por ID' })
   @Get(':id')
   async getDebtById(@Param('id') id: number) {

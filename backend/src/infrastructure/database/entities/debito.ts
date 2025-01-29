@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne } from 'typeorm';
-import { CategoriaDebito, ParcelaDebito } from './';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
+import { CategoriaDebito, ParcelaDebito, StatusPagamento, Departamento } from './';
+
 
 @Entity('debito')
 export class Debito {
@@ -34,8 +35,16 @@ export class Debito {
   datas_vencimento?: string[][];
 
   @OneToMany(() => ParcelaDebito, (parcela) => parcela.debito, { cascade: true })
-  parcela: ParcelaDebito[];
+  parcela_debito: ParcelaDebito[];
 
   @ManyToOne(() => CategoriaDebito, (categoria) => categoria.debitos)
   categoria: CategoriaDebito;
+
+  @ManyToOne(() => StatusPagamento)
+  @JoinColumn({ name: 'status_pagamento_id' })
+  status_pagamento: StatusPagamento;
+
+  @ManyToOne(() => Departamento)
+  @JoinColumn({ name: 'departamento_id' })
+  departamento: Departamento;
 }

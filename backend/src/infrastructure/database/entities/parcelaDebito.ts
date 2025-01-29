@@ -28,7 +28,7 @@ export class ParcelaDebito {
   @JoinColumn({ name: 'status_pagamento_id' })
   status_pagamento: StatusPagamento;
 
-  @ManyToOne(() => Debito, (debito) => debito.parcela)
-  @JoinColumn({ name: 'venda_id' })
+  @ManyToOne(() => Debito, (debito) => debito.parcela_debito)
+  @JoinColumn({ name: 'debito_id' })
   debito: Debito;
 }
