@@ -10,8 +10,7 @@ export class TipoPedidoSeed implements Seeder {
       { tipo_pedido_id: 10440, nome: 'Brinde' },
       { tipo_pedido_id: 10442, nome: 'Doação' },
       { tipo_pedido_id: 10439, nome: 'Troca' },
-      { tipo_pedido_id: 10438, nome: 'Venda S/ Nota' },
-      { tipo_pedido_id: 10794, nome: 'Venda C/ Nota' },
+      { tipo_pedido_id: 10438, nome: 'Venda' },
     ]);
   }
 }

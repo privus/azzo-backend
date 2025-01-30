@@ -25,6 +25,9 @@ export class ParcelaCredito {
   @Column({ type: 'date', nullable: true })
   data_pagamento: Date;
 
+  @Column({ type: 'varchar', length: 180 })
+  atualizado_por: string;
+
   @ManyToOne(() => StatusPagamento)
   @JoinColumn({ name: 'status_pagamento_id' })
   status_pagamento: StatusPagamento;
