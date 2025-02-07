@@ -21,6 +21,9 @@ export class ParcelaDebito {
   @Column({ type: 'date' })
   data_vencimento: Date;
 
+  @Column({ type: 'date', default: null })
+  data_competencia: Date;
+
   @Column({ type: 'date', nullable: true })
   data_pagamento: Date;
 

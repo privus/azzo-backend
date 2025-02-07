@@ -191,11 +191,12 @@ export class SellsService implements ISellsRepository {
     const baseDate = new Date(sell.order_date);
     const datasVencimentoArray = validPaymentDays.map((days) => {
       const data = new Date(baseDate);
-      data.setDate(data.getDate() + days); // Adiciona os dias de prazo
+      data.setDate(data.getDate() + days);
       return data.toISOString().split('T')[0]; // Formato "YYYY-MM-DD"
     });
 
-    const datasVencimentoMatriz = datasVencimentoArray.map((data) => [data]);
+    // Agora é um array de strings, não um array de arrays
+    const datas_vencimento = datasVencimentoArray;
 
     // Criar as parcelas de crédito
     const parcela_credito = validPaymentDays.map((days, index) => {
@@ -242,7 +243,7 @@ export class SellsService implements ISellsRepository {
       valor_final: Number(sell.amount_final),
       flex_gerado: Number(sell.no_financial) || 0,
       desconto: sell.discount_total | 0,
-      datas_vencimento: datasVencimentoMatriz,
+      datas_vencimento,
       cliente,
       vendedor,
       itensVenda,

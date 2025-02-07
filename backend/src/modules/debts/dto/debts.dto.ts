@@ -2,6 +2,13 @@ import { IsString, IsOptional, IsNumber, IsInt, IsDateString, Length, Min } from
 
 export class DebtsDto {
   /**
+   * Nome da despesa
+   * exemplo: 'Conta de luz'
+   */
+  @IsString({ message: 'O nome da despesa deve ser uma string.' })
+  @Length(3, 90, { message: 'O nome da despesa deve ter entre 3 e 90 caracteres.' })
+  nome: string;
+  /**
    * Número de parcelas.
    * Exemplo: 3
    */
@@ -11,11 +18,11 @@ export class DebtsDto {
   numero_parcelas?: number;
 
   /**
-   * Data de criação do débito (formato ISO ou YYYY-MM-DD).
+   * Data de competencia do débito (formato ISO ou YYYY-MM-DD).
    * Exemplo: '2025-01-08'
    */
   @IsDateString({}, { message: 'A data de criação deve estar em formato de data válido (YYYY-MM-DD).' })
-  data_criacao: Date;
+  data_competencia: string;
 
   /**
    * Data de criação de pagamento do débito (formato ISO ou YYYY-MM-DD).
@@ -23,7 +30,7 @@ export class DebtsDto {
    */
   @IsOptional()
   @IsDateString({}, { message: 'A data de pagamento deve estar em formato de data válido (YYYY-MM-DD).' })
-  data_pagamento?: Date;
+  data_pagamento?: string;
 
   /**
    * Descrição do débito.
@@ -34,15 +41,6 @@ export class DebtsDto {
   descricao: string;
 
   /**
-   * Valor da parcela.
-   * Exemplo: 120.50
-   */
-  @IsOptional()
-  @IsNumber({}, { message: 'O valor da parcela deve ser numérico.' })
-  @Min(0, { message: 'O valor da parcela não pode ser negativo.' })
-  valor_parcela?: number;
-
-  /**
    * Valor total do débito.
    * Exemplo: 360.00
    */
@@ -51,21 +49,19 @@ export class DebtsDto {
   valor_total: number;
 
   /**
-   * Método de pagamento.
-   * Exemplo: 'Boleto', 'Dinheiro', 'Cartão'
+   * Banco.
+   * Exemplo: Santander, Itaú, Bradesco
    */
-  @IsString({ message: 'O método de pagamento deve ser uma string.' })
-  @Length(3, 180, { message: 'O método de pagamento deve ter entre 3 e 180 caracteres.' })
-  metodo_pagamento: string;
+  @IsString({ message: 'O banco deve ser uma string.' })
+  @Length(3, 90, { message: 'O banco deve ter entre 3 e 90 caracteres.' })
+  conta: string;
 
   /**
-   * Datas de vencimento (caso seja apenas uma, repita a mesma).
-   * Exemplo: '2025-01-16, 2025-01-23, 2025-01-30'
+   * Data de vencimento.
+   * Exemplo: '2025-01-16'
    */
-  @IsOptional()
-  @IsString({ each: true, message: 'Cada data de vencimento deve ser uma string.' })
-  @Length(10, 10, { each: true, message: 'Cada data de vencimento deve ter exatamente 10 caracteres (formato YYYY-MM-DD).' })
-  datas_vencimento: string[];
+  @IsDateString({}, { message: 'A data de criação deve estar em formato de data válido (YYYY-MM-DD).' })
+  data_vencimento: string;
 
   /**
    * Juros do débito.
@@ -87,15 +83,47 @@ export class DebtsDto {
    * Nome do departamento.
    * Exemplo: 'Financeiro'
    */
+  @IsOptional()
   @IsString({ message: 'O nome do departamento deve ser uma string.' })
-  @Length(3, 90, { message: 'O nome do departamento deve ter entre 3 e 90 caracteres.' })
-  departamento_nome: string;
+  @Length(3, 90, {
+    message: 'O nome do departamento deve ter entre 3 e 90 caracteres.',
+    each: false,
+  })
+  departamento_nome?: string;
 
   /**
    * Nome doa categoria.
    * Exemplo: 'Financeiro'
    */
-  @IsString({ message: 'O nome doa categoria deve ser uma string.' })
-  @Length(3, 90, { message: 'O nome do categoria deve ter entre 3 e 90 caracteres.' })
-  categoria_nome: string;
+  @IsOptional()
+  @IsString({ message: 'O nome da categoria deve ser uma string.' })
+  @Length(3, 90, {
+    message: 'O nome da categoria deve ter entre 3 e 90 caracteres.',
+    each: false,
+  })
+  categoria_nome?: string;
+
+  /**
+   * Peridisidade do débito.
+   * Exemplo: 30
+   */
+  @IsOptional()
+  @IsInt({ message: 'A periodicidade deve ser um inteiro.' })
+  periodicidade?: number;
+
+  /**
+   * Empresa Grupo.
+   * Exemplo: 'Azzo Distribuidora'
+   */
+  @IsString({ message: 'O nome do grupo deve ser uma string.' })
+  @Length(3, 90, { message: 'O nome do grupo deve ter entre 3 e 90 caracteres.' })
+  empresa_grupo: string;
+
+  /**
+   * Despesa Grupo.
+   * Exemplo: 1
+   */
+  @IsOptional()
+  @IsInt({ message: 'O despesa grupo deve ser um inteiro.' })
+  despesa_grupo?: number;
 }

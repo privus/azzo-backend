@@ -1,7 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
 import { CategoriaDebito, ParcelaDebito, StatusPagamento, Departamento } from './';
 
-
 @Entity('debito')
 export class Debito {
   @PrimaryGeneratedColumn('increment')
@@ -10,8 +9,14 @@ export class Debito {
   @Column({ type: 'int', nullable: true })
   numero_parcelas: number;
 
+  @Column({ type: 'varchar', length: 180, nullable: true })
+  nome: string;
+
   @Column({ type: 'date' })
   data_criacao: Date;
+
+  @Column({ type: 'date', nullable: true, default: null })
+  data_competencia: Date;
 
   @Column({ type: 'date', nullable: true })
   data_pagamento: Date;
@@ -29,10 +34,19 @@ export class Debito {
   valor_total: number;
 
   @Column({ type: 'varchar', length: 180, nullable: true })
-  metodo_pagamento: string;
+  atualizado_por: string;
 
-  @Column('simple-json', { nullable: true })
-  datas_vencimento?: string[][];
+  @Column({ type: 'varchar', length: 180, nullable: true })
+  conta: string;
+
+  @Column({ type: 'varchar', length: 180, nullable: true })
+  empresa: string;
+
+  @Column({ type: 'tinyint', nullable: true })
+  despesa_grupo: number;
+
+  @Column('json', { nullable: true })
+  datas_vencimento?: string[];
 
   @OneToMany(() => ParcelaDebito, (parcela) => parcela.debito, { cascade: true })
   parcela_debito: ParcelaDebito[];

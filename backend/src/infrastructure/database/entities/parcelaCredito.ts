@@ -25,7 +25,7 @@ export class ParcelaCredito {
   @Column({ type: 'date', nullable: true })
   data_pagamento: Date;
 
-  @Column({ type: 'varchar', length: 180 })
+  @Column({ type: 'varchar', length: 180, nullable: true })
   atualizado_por: string;
 
   @ManyToOne(() => StatusPagamento)

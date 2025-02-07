@@ -27,8 +27,8 @@ export class Venda {
   @Column({ type: 'varchar', length: 180 })
   forma_pagamento: string;
 
-  @Column({ type: 'json', nullable: true })
-  datas_vencimento: string[][];
+  @Column('json', { nullable: true })
+  datas_vencimento: string[];
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   valor_pedido: number;
