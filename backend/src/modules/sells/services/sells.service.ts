@@ -3,7 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, MoreThanOrEqual, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido } from '../../../infrastructure/database/entities';
-import { SellsApiResponse } from '../dto/sells.dto';
+import { SellsApiResponse, UpdateSellStatusDto } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository } from '../../../domain/repositories';
 
 @Injectable()
@@ -191,11 +191,12 @@ export class SellsService implements ISellsRepository {
     const baseDate = new Date(sell.order_date);
     const datasVencimentoArray = validPaymentDays.map((days) => {
       const data = new Date(baseDate);
-      data.setDate(data.getDate() + days); // Adiciona os dias de prazo
+      data.setDate(data.getDate() + days);
       return data.toISOString().split('T')[0]; // Formato "YYYY-MM-DD"
     });
 
-    const datasVencimentoMatriz = datasVencimentoArray.map((data) => [data]);
+    // Agora é um array de strings, não um array de arrays
+    const datas_vencimento = datasVencimentoArray;
 
     // Criar as parcelas de crédito
     const parcela_credito = validPaymentDays.map((days, index) => {
@@ -242,7 +243,7 @@ export class SellsService implements ISellsRepository {
       valor_final: Number(sell.amount_final),
       flex_gerado: Number(sell.no_financial) || 0,
       desconto: sell.discount_total | 0,
-      datas_vencimento: datasVencimentoMatriz,
+      datas_vencimento,
       cliente,
       vendedor,
       itensVenda,
@@ -287,5 +288,29 @@ export class SellsService implements ISellsRepository {
         'tipo_pedido',
       ],
     });
+  }
+
+  async updateSellStatus(UpdateSellStatusDto: UpdateSellStatusDto): Promise<string> {
+    const { venda_id, status_venda_id } = UpdateSellStatusDto;
+
+    const venda = await this.vendaRepository.findOne({
+      where: { venda_id },
+      relations: ['status_venda'],
+    });
+
+    if (!venda) {
+      throw new Error(`Venda com ID ${venda_id} não encontrada.`);
+    }
+
+    const novoStatus = await this.statusVendaRepository.findOne({ where: { status_venda_id } });
+
+    if (!novoStatus) {
+      throw new Error(`Status de venda com ID ${status_venda_id} não encontrado.`);
+    }
+
+    venda.status_venda = novoStatus;
+    await this.vendaRepository.save(venda);
+
+    return `Status da venda ${venda.codigo} atualizado para ${novoStatus.nome}.`;
   }
 }

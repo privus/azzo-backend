@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ParcelaCredito, StatusPagamento, Venda } from '../../../infrastructure/database/entities';
 import { ICreditsRepository } from '../../../domain/repositories';
+import { UpdateParcelaDto } from '../dto/update-parcela.dto';
 @Injectable()
 export class CreditsService implements ICreditsRepository {
   constructor(
@@ -112,5 +113,59 @@ export class CreditsService implements ICreditsRepository {
 
     await this.vendaRepository.save(venda);
     console.log(`Status da venda ${venda.codigo} atualizado para ${venda.status_pagamento.nome}`);
+  }
+
+  async updateParcelaStatus(updateParcelaDto: UpdateParcelaDto): Promise<string> {
+    const { parcela_id, status_pagamento_id, data_pagamento, juros } = updateParcelaDto;
+
+    const dataPagamentoConvertida = new Date(`${data_pagamento}T00:00:00Z`);
+    const hoje = new Date();
+    if (dataPagamentoConvertida > hoje) {
+      throw new Error('A data de pagamento não pode ser no futuro.');
+    }
+
+    // Busca a parcela de crédito
+    const parcela = await this.parcelaRepository.findOne({
+      where: { parcela_id },
+      relations: ['status_pagamento', 'venda'],
+    });
+
+    if (!parcela) {
+      throw new Error(`Parcela com ID ${parcela_id} não encontrada.`);
+    }
+
+    // Verifica o novo status
+    const novoStatus = await this.statusRepository.findOne({
+      where: { status_pagamento_id },
+    });
+
+    if (!novoStatus) {
+      throw new Error(`Status de pagamento com ID ${status_pagamento_id} não encontrado.`);
+    }
+
+    // Converter valores para números
+    const parcelaValor = parseFloat(parcela.valor.toString());
+    const jurosDecimal = parseFloat(juros.toString());
+
+    if (isNaN(parcelaValor) || isNaN(jurosDecimal)) {
+      throw new Error('Os valores de parcela ou juros são inválidos.');
+    }
+
+    // Atualiza o valor da parcela somando os juros corretamente
+    parcela.valor = parseFloat((parcelaValor + jurosDecimal).toFixed(2));
+    parcela.data_pagamento = dataPagamentoConvertida;
+    parcela.status_pagamento = novoStatus;
+    parcela.juros = jurosDecimal;
+
+    // Atualiza o valor final da venda
+    if (parcela.venda) {
+      const vendaValorFinal = parseFloat(parcela.venda.valor_final.toString());
+      parcela.venda.valor_final = parseFloat((vendaValorFinal + jurosDecimal).toFixed(2));
+      await this.vendaRepository.save(parcela.venda); // Atualiza o valor total da venda
+    }
+
+    await this.parcelaRepository.save(parcela); // Salva a atualização da parcela
+
+    return `Status da parcela ${parcela_id} atualizado para ${novoStatus.nome}. Juros adicionados: ${jurosDecimal.toFixed(2)}.`;
   }
 }

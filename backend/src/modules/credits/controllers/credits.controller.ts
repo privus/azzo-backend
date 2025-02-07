@@ -1,6 +1,7 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { CreditsService } from '../services/credits.service';
+import { UpdateParcelaDto } from '../dto/update-parcela.dto';
 
 @ApiTags('credits')
 @Controller('credits')
@@ -13,6 +14,13 @@ export class CreditsController {
     return this.creditsService.getAllCredits();
   }
 
+  @ApiOperation({ summary: 'Atualizar status de uma parcela' })
+  @Patch('installment')
+  async updateParcelaStatus(@Body() updateParcelaDto: UpdateParcelaDto) {
+    const resultMessage = await this.creditsService.updateParcelaStatus(updateParcelaDto);
+    return { message: resultMessage };
+  }
+
   @ApiOperation({ summary: 'Obter crédito por Data' })
   @Get('date')
   async getCreditByDate(@Query('fromDate') fromDate?: string, @Query('toDate') toDate?: string) {
@@ -23,5 +31,4 @@ export class CreditsController {
   async getCreditById(@Param('id') id: number) {
     return this.creditsService.getCreditById(id);
   }
-
 }

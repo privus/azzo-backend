@@ -1,6 +1,7 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SellsService } from '../services/sells.service';
+import { UpdateSellStatusDto } from '../dto';
 
 @ApiTags('sells')
 @Controller('sells')
@@ -11,6 +12,13 @@ export class SellsController {
   @Get()
   async sellsByDate(@Query('fromDate') fromDate?: string) {
     return this.sellsService.sellsByDate(fromDate);
+  }
+
+  @ApiOperation({ summary: 'Atualizar status de uma venda' })
+  @Patch('status')
+  async updateSellStatus(@Body() updateStatusDto: UpdateSellStatusDto) {
+    const resultMessage = await this.sellsService.updateSellStatus(updateStatusDto);
+    return { message: resultMessage };
   }
 
   @ApiOperation({ summary: 'Sincronizar todas as vendas' })
