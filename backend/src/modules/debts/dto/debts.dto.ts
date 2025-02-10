@@ -21,7 +21,8 @@ export class DebtsDto {
    * Data de competencia do débito (formato ISO ou YYYY-MM-DD).
    * Exemplo: '2025-01-08'
    */
-  @IsDateString({}, { message: 'A data de criação deve estar em formato de data válido (YYYY-MM-DD).' })
+  @IsString({ message: 'A data de competencia deve ser uma string.' })
+  @Length(3, 90, { message: 'O banco deve ter entre 3 e 180 caracteres.' })
   data_competencia: string;
 
   /**
@@ -60,7 +61,8 @@ export class DebtsDto {
    * Data de vencimento.
    * Exemplo: '2025-01-16'
    */
-  @IsDateString({}, { message: 'A data de criação deve estar em formato de data válido (YYYY-MM-DD).' })
+  @IsString({ message: 'A data de vencimento deve ser uma string.' })
+  @Length(3, 90, { message: 'O banco deve ter entre 3 e 180 caracteres.' })
   data_vencimento: string;
 
   /**
@@ -126,4 +128,8 @@ export class DebtsDto {
   @IsOptional()
   @IsInt({ message: 'O despesa grupo deve ser um inteiro.' })
   despesa_grupo?: number;
+
+  @IsString({ message: 'O userEmail deve ser uma string.' })
+  @Length(3, 90, { message: 'O banco deve ter entre 3 e 90 caracteres.' })
+  criado_por: string;
 }

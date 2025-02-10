@@ -33,7 +33,7 @@ export class DebtsService {
       await this.categoriaDebitoRepository.save(categoria);
     }
 
-    const datas_vencimento = this.generateInstallmentDates(new Date(debtDto.data_vencimento), debtDto.numero_parcelas, debtDto.periodicidade || 30);
+    const datas_vencimento = this.generateInstallmentDates(new Date(debtDto.data_vencimento), debtDto.numero_parcelas, debtDto.periodicidade || 31);
 
     const debitoEntity = this.debtRepository.create({
       nome: debtDto.nome,
@@ -52,6 +52,7 @@ export class DebtsService {
       empresa: debtDto.empresa_grupo,
       despesa_grupo: debtDto.despesa_grupo,
       datas_vencimento,
+      criado_por: debtDto.criado_por,
     });
 
     const savedDebt = await this.debtRepository.save(debitoEntity);
@@ -132,6 +133,9 @@ export class DebtsService {
   }
 
   getDebtById(id: number): Promise<Debito> {
-    return this.debtRepository.findOne({ where: { debito_id: id } });
+    return this.debtRepository.findOne({
+      where: { debito_id: id },
+      relations: ['parcela_debito.status_pagamento', 'status_pagamento', 'categoria', 'departamento'],
+    });
   }
 }

@@ -42,6 +42,9 @@ export class Debito {
   @Column({ type: 'varchar', length: 180, nullable: true })
   empresa: string;
 
+  @Column({ type: 'varchar', length: 180 })
+  criado_por: string;
+
   @Column({ type: 'tinyint', nullable: true })
   despesa_grupo: number;
 
