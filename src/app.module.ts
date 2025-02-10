@@ -25,19 +25,18 @@ import { CreditsModule } from './modules/credits/credits.module';
     }),
     // Configuração assíncrona do TypeOrmModule
     TypeOrmModule.forRootAsync({
-      imports: [ConfigModule], // Importa o ConfigModule
-      inject: [ConfigService], // Injeta o ConfigService
-      useFactory: async (configService: ConfigService): Promise<TypeOrmModuleOptions> => ({
-        type: 'mysql',
-        host: '152.53.39.254', // Nome do serviço MySQL no Docker Compose
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        type: 'mongodb',
+        host: '152.53.39.254',
         port: 27017,
-        username: 'azzo-user',
-        password: 'privus123',
         database: 'azzo-database',
-        entities: Object.values(entities), // Importa todas as entidades
-        migrations: [__dirname + '/infrastructure/database/migrations/*.{ts,js}'],
-        synchronize: true, // Use sincronização apenas para desenvolvimento
-        logging: configService.get<string>('DB_LOGGING') === 'true', // Controle de logging via variável de ambiente
+        password: 'privus123',
+        username: 'azzo-user',
+        useUnifiedTopology: true, // Recomendado para versões modernas do driver MongoDB
+        synchronize: true, // Somente em dev
+        entities: Object.values(entities),
       }),
     }),
     // Registrando os repositórios
