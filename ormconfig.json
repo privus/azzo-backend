@@ -1,12 +1,16 @@
 {
-  "type": "mongodb",
+  "type": "mysql",
   "host": "152.53.39.254",
-  "port": 27017,
-  "database": "azzo-database",
+  "port": 3306,
   "username": "azzo-user",
   "password": "privus123",
-  "useUnifiedTopology": true,
-  "entities": ["dist/**/*.entity{.ts,.js}"],
-  "synchronize": true,
-  "logging": true
+  "database": "azzo-database",
+  "entities": ["src/entity/**/*.ts"],
+  "migrations": ["src/migration/**/*.ts"],
+  "subscribers": ["src/subscriber/**/*.ts"],
+  "cli": {
+    "entitiesDir": "src/entity",
+    "migrationsDir": "src/migration",
+    "subscribersDir": "src/subscriber"
+  }
 }
