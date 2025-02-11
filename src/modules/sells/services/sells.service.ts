@@ -229,7 +229,7 @@ export class SellsService implements ISellsRepository {
       });
     }
 
-    const tipo_pedido = await this.tipoPedidoRepository.findOne({ where: { id: new ObjectId(sell.order_type_i) } });
+    const tipo_pedido = await this.tipoPedidoRepository.findOne({ where: { id: new ObjectId(sell.order_type_id) } });
 
     const novaVenda = this.vendaRepository.create({
       codigo: Number(sell.code),
