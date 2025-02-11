@@ -1,14 +1,28 @@
 import { DataSource } from 'typeorm';
 
-export const AppDataSource = new DataSource({
-  type: 'mysql',
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT, 10) || 3306,
-  username: process.env.DB_USERNAME || 'usuario',
-  password: process.env.DB_PASSWORD || 'senha',
-  database: process.env.DB_NAME || 'meu_banco',
-  entities: [`${__dirname}**/entities/*.{ts,js}`],
-  migrations: ['dist/infrastructure/database/migrations/*.js'],
-  synchronize: false, // Defina como false em produção e use migrações
-  logging: process.env.DB_LOGGING === 'true', // Controle de logging via variável de ambiente
+const mongoDataSource = new DataSource({
+  type: 'mongodb',
+  host: '152.53.39.254',
+  port: 27017,
+  database: 'azzo-database',
+  username: 'azzo-user',
+  password: 'privus123',
+  useUnifiedTopology: true,
+  synchronize: true,
+  entities: [__dirname + '/../**/*.entity.{js,ts}'],
 });
+
+async function seedDatabase() {
+  try {
+    await mongoDataSource.initialize();
+    console.log('Database connection established.');
+
+    // Aqui você pode adicionar seus dados iniciais
+    console.log('Seeding completed.');
+    await mongoDataSource.destroy();
+  } catch (error) {
+    console.error('Error during database seeding:', error);
+  }
+}
+
+seedDatabase();
