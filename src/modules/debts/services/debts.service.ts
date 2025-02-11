@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan } from 'typeorm';
+import { Repository, LessThan, ObjectId } from 'typeorm';
 import { CategoriaDebito, Debito, Departamento, ParcelaDebito, StatusPagamento } from '../../../infrastructure/database/entities';
 import { DebtsDto } from '../dto/debts.dto';
 
@@ -16,7 +16,7 @@ export class DebtsService {
 
   async createDebt(debtDto: DebtsDto): Promise<Debito> {
     const status_pagamento_id = debtDto.data_pagamento ? 2 : 1;
-    const status_pagamento = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id } });
+    const status_pagamento = await this.statusPagamentoRepository.findOne({ where: { id: new ObjectId(status_pagamento_id) }  });
     if (!status_pagamento) {
       throw new Error('Status de pagamento padrão não encontrado.');
     }
@@ -100,7 +100,7 @@ export class DebtsService {
 
     if (overdueParcels.length === 0) return;
 
-    const statusEmAtraso = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 3 } });
+    const statusEmAtraso = await this.statusPagamentoRepository.findOne({ where: { id: new ObjectId(3) } });
     if (!statusEmAtraso) {
       throw new Error('Status "Em Atraso" não encontrado.');
     }

@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, MoreThanOrEqual, Repository } from 'typeorm';
+import { In, MoreThanOrEqual, ObjectId, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido } from '../../../infrastructure/database/entities';
 import { SellsApiResponse, UpdateSellStatusDto } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository } from '../../../domain/repositories';
@@ -155,7 +155,7 @@ export class SellsService implements ISellsRepository {
 
         // Atualize os campos necessários
         existingSell.observacao = sell.obs;
-        existingSell.status_venda = await this.statusVendaRepository.findOne({ where: { status_venda_id: sell.status.id } });
+        existingSell.status_venda = await this.statusVendaRepository.findOne({ where: { id: new ObjectId(sell.status.id) } });
 
         // Atualizar itens de venda, parcelas, e outras associações, se necessário
         await this.vendaRepository.save(existingSell);
@@ -174,10 +174,10 @@ export class SellsService implements ISellsRepository {
     const cliente = await this.clienteService.findCostumerByCode(sell.store ? Number(sell.store.erp_id) : 0);
     const vendedor = await this.sellersSevice.findBy({ codigo: Number(sell.seller_code) });
     const status_pagamento = await this.statusPagamentoRepository.findOne({
-      where: { status_pagamento_id: 1 },
+      where: { id: new ObjectId(1) },
     });
     const status_venda = await this.statusVendaRepository.findOne({
-      where: { status_venda_id: sell.status.id },
+      where: { id: new ObjectId(sell.status.id) },
     });
     const regiao = await this.regiaoService.getRegionByCode(sell.region);
 
@@ -229,7 +229,7 @@ export class SellsService implements ISellsRepository {
       });
     }
 
-    const tipo_pedido = await this.tipoPedidoRepository.findOne({ where: { tipo_pedido_id: sell.order_type_id } });
+    const tipo_pedido = await this.tipoPedidoRepository.findOne({ where: { id: new ObjectId(sell.order_type_i) } });
 
     const novaVenda = this.vendaRepository.create({
       codigo: Number(sell.code),
@@ -302,7 +302,7 @@ export class SellsService implements ISellsRepository {
       throw new Error(`Venda com ID ${venda_id} não encontrada.`);
     }
 
-    const novoStatus = await this.statusVendaRepository.findOne({ where: { status_venda_id } });
+    const novoStatus = await this.statusVendaRepository.findOne({ where: { id: new ObjectId(status_venda_id) } });
 
     if (!novoStatus) {
       throw new Error(`Status de venda com ID ${status_venda_id} não encontrado.`);

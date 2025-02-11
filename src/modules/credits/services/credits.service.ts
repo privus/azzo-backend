@@ -21,7 +21,7 @@ export class CreditsService implements ICreditsRepository {
     });
 
     // Atualiza o status de parcelas vencidas
-    const statusAtraso = await this.statusRepository.findOne({ where: { id: new ObjectId('3') } }); // "Em Atraso"
+    const statusAtraso = await this.statusRepository.findOne({ where: { id: new ObjectId(3) } }); // "Em Atraso"
 
     for (const credit of credits) {
       const dataVencimento = new Date(credit.data_vencimento);
@@ -67,7 +67,7 @@ export class CreditsService implements ICreditsRepository {
     const filteredCredits = await queryBuilder.getMany();
 
     // Atualizar status das parcelas vencidas
-    const statusAtraso = await this.statusRepository.findOne({ where: { id: new ObjectId('3') } }); // "Em Atraso"
+    const statusAtraso = await this.statusRepository.findOne({ where: { id: new ObjectId(3) } }); // "Em Atraso"
 
     for (const credit of filteredCredits) {
       const dataVencimento = new Date(credit.data_vencimento);
@@ -104,11 +104,11 @@ export class CreditsService implements ICreditsRepository {
     );
 
     if (todasParcelasPagas) {
-      venda.status_pagamento = await this.statusRepository.findOne({ where: { id: new ObjectId('2') } }); // "Pago"
+      venda.status_pagamento = await this.statusRepository.findOne({ where: { id: new ObjectId(2) } }); // "Pago"
     } else if (todasParcelasAtrasadas) {
-      venda.status_pagamento = await this.statusRepository.findOne({ where: { id: new ObjectId('3') } }); // "Em Atraso"
+      venda.status_pagamento = await this.statusRepository.findOne({ where: { id: new ObjectId(3) } }); // "Em Atraso"
     } else {
-      venda.status_pagamento = await this.statusRepository.findOne({ where: { id: new ObjectId('1') } }); // "Pendente"
+      venda.status_pagamento = await this.statusRepository.findOne({ where: { id: new ObjectId(1) } }); // "Pendente"
     }
 
     await this.vendaRepository.save(venda);

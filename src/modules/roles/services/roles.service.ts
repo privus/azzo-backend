@@ -1,6 +1,6 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ObjectId, Repository } from 'typeorm';
 import { Cargo, Permissao, CargoPermissao, Usuario } from '../../../infrastructure/database/entities';
 import { IRolesRepository, IUserRepository } from '../../../domain/repositories';
 import { PermissaoDTO } from '../dto/pormission-role.dto';
@@ -51,7 +51,7 @@ export class RolesService implements IRolesRepository {
     }
 
     return this.cargoRepository.findOne({
-      where: { cargo_id: savedCargo.cargo_id },
+      where: { id: savedCargo.id },
       relations: ['cargoPermissoes', 'cargoPermissoes.permissao'],
     });
   }
@@ -61,7 +61,7 @@ export class RolesService implements IRolesRepository {
     permissoes?: { permissao_id: number; ler: number; editar: number; criar: number }[],
   ): Promise<Cargo> {
     const existingRole = await this.cargoRepository.findOne({
-      where: { cargo_id: id },
+      where: { id: new ObjectId(id) },
       relations: ['cargoPermissoes'],
     });
 
@@ -93,14 +93,14 @@ export class RolesService implements IRolesRepository {
     }
 
     return this.cargoRepository.findOne({
-      where: { cargo_id: id },
+      where: { id: new ObjectId(id) },
       relations: ['cargoPermissoes', 'cargoPermissoes.permissao'],
     });
   }
 
   async findRoleById(id: number): Promise<Cargo> {
     const cargo = await this.cargoRepository.findOne({
-      where: { cargo_id: id },
+      where: { id: new ObjectId(id) },
       relations: ['cargoPermissoes', 'cargoPermissoes.permissao'],
     });
 

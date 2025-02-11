@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ObjectId, Repository } from 'typeorm';
 import { Regiao } from '../../../infrastructure/database/entities';
 
 @Injectable()
@@ -12,7 +12,7 @@ export class RegionsService {
   }
 
   getRegionById(id: number): Promise<Regiao> {
-    return this.regiaoRepository.findOne({ where: { regiao_id: id } });
+    return this.regiaoRepository.findOne({ where: { id: new ObjectId(id) } });
   }
 
   getRegionByCode(codigo: number): Promise<Regiao> {
@@ -20,7 +20,7 @@ export class RegionsService {
   }
 
   async getRegionAllInfoById(id: number): Promise<Regiao> {
-    return this.regiaoRepository.findOne({ where: { regiao_id: id }, relations: ['vendedores', 'clientes.cidade'] });
+    return this.regiaoRepository.findOne({ where: { id: new ObjectId(id) }, relations: ['vendedores', 'clientes.cidade'] });
   }
 
   async getSellsByRegion(id: number, fromDate?: string): Promise<Regiao> {
