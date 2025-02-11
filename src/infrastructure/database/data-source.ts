@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
 
-const mongoDataSource = new DataSource({
+export const mongoDataSource = new DataSource({
   type: 'mongodb',
   host: '152.53.39.254',
   port: 27017,
