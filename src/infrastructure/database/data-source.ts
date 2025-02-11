@@ -9,7 +9,7 @@ export const mongoDataSource = new DataSource({
   password: 'privus123',
   useUnifiedTopology: true,
   synchronize: true,
-  entities: [__dirname + '/../**/*.entity.{js,ts}'],
+  entities: [`${__dirname}**/entities/*.{ts,js}`],
 });
 
 async function seedDatabase() {
