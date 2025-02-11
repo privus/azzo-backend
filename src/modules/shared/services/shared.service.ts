@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Like, Repository } from 'typeorm';
+import { Like, ObjectId, Repository } from 'typeorm';
 import { Cargo, Cidade, Regiao } from '../../../infrastructure/database/entities';
 import { ISharedRepository } from '../../../domain/repositories';
 
@@ -14,16 +14,16 @@ export class SharedService implements ISharedRepository {
 
   async getRelatedEntities(cargo_id?: number, cidade_id?: number, regiao_id?: number, isCreate = true) {
     if (isCreate) {
-      const cargo = await this.cargoRepository.findOne({ where: { cargo_id } });
-      const cidade = await this.cidadeRepository.findOne({ where: { cidade_id } });
-      const regiao = regiao_id ? await this.regiaoRepository.findOne({ where: { regiao_id } }) : null;
+      const cargo = await this.cargoRepository.findOne({ where: { id: new ObjectId(cargo_id) } });
+      const cidade = await this.cidadeRepository.findOne({ where: { id: new ObjectId(cidade_id) } });
+      const regiao = regiao_id ? await this.regiaoRepository.findOne({ where: { id: new ObjectId(regiao_id) } }) : null;
 
       return { cargo, cidade, regiao };
     }
     return {
-      cargo: cargo_id ? await this.cargoRepository.findOne({ where: { cargo_id } }) : null,
-      cidade: cidade_id ? await this.cidadeRepository.findOne({ where: { cidade_id } }) : null,
-      regiao: regiao_id ? await this.regiaoRepository.findOne({ where: { regiao_id } }) : null,
+      cargo: new ObjectId(cargo_id) ? await this.cargoRepository.findOne({ where: { id: new ObjectId(cargo_id) } }) : null,
+      cidade: cidade_id ? await this.cidadeRepository.findOne({ where: { id: new ObjectId(cidade_id) } }) : null,
+      regiao: regiao_id ? await this.regiaoRepository.findOne({ where: { id: new ObjectId(regiao_id) } }) : null,
     };
   }
 

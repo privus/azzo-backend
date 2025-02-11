@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ObjectId, Repository } from 'typeorm';
 import { ParcelaCredito, StatusPagamento, Venda } from '../../../infrastructure/database/entities';
 import { ICreditsRepository } from '../../../domain/repositories';
 import { UpdateParcelaDto } from '../dto/update-parcela.dto';
@@ -21,12 +21,12 @@ export class CreditsService implements ICreditsRepository {
     });
 
     // Atualiza o status de parcelas vencidas
-    const statusAtraso = await this.statusRepository.findOne({ where: { status_pagamento_id: 3 } }); // "Em Atraso"
+    const statusAtraso = await this.statusRepository.findOne({ where: { id: new ObjectId('3') } }); // "Em Atraso"
 
     for (const credit of credits) {
       const dataVencimento = new Date(credit.data_vencimento);
       const vencida = dataVencimento < now && !credit.data_pagamento;
-      const isPendente = credit.status_pagamento.status_pagamento_id === 1; // Pendente
+      const isPendente = +credit.status_pagamento.id === 1; // Pendente
 
       if (vencida && isPendente && statusAtraso) {
         console.log(`Atualizando parcela ${credit.parcela_id} para status 'Em Atraso'.`);
@@ -67,12 +67,12 @@ export class CreditsService implements ICreditsRepository {
     const filteredCredits = await queryBuilder.getMany();
 
     // Atualizar status das parcelas vencidas
-    const statusAtraso = await this.statusRepository.findOne({ where: { status_pagamento_id: 3 } }); // "Em Atraso"
+    const statusAtraso = await this.statusRepository.findOne({ where: { id: new ObjectId('3') } }); // "Em Atraso"
 
     for (const credit of filteredCredits) {
       const dataVencimento = new Date(credit.data_vencimento);
       const vencida = dataVencimento < now && !credit.data_pagamento;
-      const isPendente = credit.status_pagamento.status_pagamento_id === 1; // Pendente
+      const isPendente = +credit.status_pagamento.id === 1; // Pendente
 
       if (vencida && isPendente && statusAtraso) {
         console.log(`Atualizando parcela ${credit.parcela_id} para status 'Em Atraso'.`);
@@ -96,19 +96,19 @@ export class CreditsService implements ICreditsRepository {
     if (!venda) return;
 
     const todasParcelasPagas = venda.parcela_credito.every(
-      (parcela) => parcela.status_pagamento.status_pagamento_id === 2, // "Pago"
+      (parcela) => +parcela.status_pagamento.id === 2, // "Pago"
     );
 
     const todasParcelasAtrasadas = venda.parcela_credito.every(
-      (parcela) => parcela.status_pagamento.status_pagamento_id === 3, // "Em Atraso"
+      (parcela) => +parcela.status_pagamento.id === 3, // "Em Atraso"
     );
 
     if (todasParcelasPagas) {
-      venda.status_pagamento = await this.statusRepository.findOne({ where: { status_pagamento_id: 2 } }); // "Pago"
+      venda.status_pagamento = await this.statusRepository.findOne({ where: { id: new ObjectId('2') } }); // "Pago"
     } else if (todasParcelasAtrasadas) {
-      venda.status_pagamento = await this.statusRepository.findOne({ where: { status_pagamento_id: 3 } }); // "Em Atraso"
+      venda.status_pagamento = await this.statusRepository.findOne({ where: { id: new ObjectId('3') } }); // "Em Atraso"
     } else {
-      venda.status_pagamento = await this.statusRepository.findOne({ where: { status_pagamento_id: 1 } }); // "Pendente"
+      venda.status_pagamento = await this.statusRepository.findOne({ where: { id: new ObjectId('1') } }); // "Pendente"
     }
 
     await this.vendaRepository.save(venda);
@@ -136,7 +136,7 @@ export class CreditsService implements ICreditsRepository {
 
     // Verifica o novo status
     const novoStatus = await this.statusRepository.findOne({
-      where: { status_pagamento_id },
+      where: { id: new ObjectId(status_pagamento_id) },
     });
 
     if (!novoStatus) {

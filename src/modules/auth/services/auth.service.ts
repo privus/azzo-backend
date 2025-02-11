@@ -29,7 +29,7 @@ export class AuthService implements IAuthRepository {
     }
 
     const payload = {
-      userId: user.usuario_id,
+      userId: user.id,
       email: user.email,
       cargo: user.cargo,
     };

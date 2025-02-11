@@ -1,7 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Usuario } from '../../../infrastructure/database/entities';
+import { ObjectId, Repository } from 'typeorm';
+import { Cargo, Usuario } from '../../../infrastructure/database/entities';
 import { IUserRepository, ISharedRepository } from '../../../domain/repositories';
 import { UpdateUserDto } from '../dto/update-user.dto';
 
@@ -19,7 +19,7 @@ export class UsersService implements IUserRepository {
   }
 
   async findById(id: number): Promise<Usuario> {
-    return this.userRepository.findOne({ where: { usuario_id: id }, relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'] });
+    return this.userRepository.findOne({ where: { id: new ObjectId(id) }, relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'] });
   }
 
   async register(user: Partial<Usuario>): Promise<Usuario> {
@@ -55,9 +55,21 @@ export class UsersService implements IUserRepository {
     return { message: 'Usuário deletado com sucesso.' };
   }
 
-  findUsersByRole(cargo_id: number): Promise<Usuario[]> {
-    return this.userRepository.find({ where: { cargo: { cargo_id } }, relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'] });
+  async findUsersByRole(cargo_id: number): Promise<Usuario[]> {
+    // Buscando o cargo pelo ID fornecido
+    const cargo = await this.userRepository.manager.getRepository(Cargo).findOneBy({ id: new ObjectId(cargo_id) });
+  
+    if (!cargo) {
+      throw new NotFoundException('Cargo não encontrado.');
+    }
+  
+    // Buscar os usuários associados ao cargo encontrado
+    return this.userRepository.find({
+      where: { cargo },
+      relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'],
+    });
   }
+  
 
   async updateUserPhotoUrl(id: number, fotoUrl: string): Promise<void> {
     const usuario = await this.findById(id);
