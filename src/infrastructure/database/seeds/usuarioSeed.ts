@@ -1,4 +1,4 @@
-import { DataSource } from 'typeorm';
+import { DataSource, ObjectId } from 'typeorm';
 import { Seeder } from 'typeorm-extension';
 import { Cargo, Cidade, Regiao, Usuario } from '../entities';
 import * as bcrypt from 'bcryptjs';
@@ -52,9 +52,10 @@ export class UsuarioSeed implements Seeder {
 
       if (!userExists) {
         // Busque a cidade e o cargo pelos IDs antes de criar o usuário
-        const cidade = await cidadeRepository.findOneBy({ cidade_id: user.cidade_id });
-        const cargo = await cargoRepository.findOneBy({ cargo_id: user.cargo_id });
-        const regiao = user.regiao_id ? await regiaoRepository.findOneBy({ regiao_id: user.regiao_id }) : null;
+        const cidade = await cidadeRepository.findOneBy({ id: new ObjectId(user.cidade_id) });
+        const cargo = await cargoRepository.findOneBy({ id: new ObjectId(user.cargo_id) });
+        const regiao = user.regiao_id ? await regiaoRepository.findOneBy({ id: new ObjectId(user.regiao_id) }) : null;
+        
 
         if (cidade && cargo) {
           const newUser = userRepository.create({
