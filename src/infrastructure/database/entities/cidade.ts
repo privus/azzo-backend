@@ -1,11 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, JoinColumn, ManyToOne, Unique } from 'typeorm';
+import { Entity, Column, OneToMany, JoinColumn, ManyToOne, Unique, ObjectId, ObjectIdColumn } from 'typeorm';
 import { Cliente, Usuario, Estado, Regiao } from './';
 
 @Entity('cidade')
 @Unique(['nome', 'estado'])
 export class Cidade {
-  @PrimaryGeneratedColumn('increment')
-  cidade_id: number;
+  @ObjectIdColumn()
+  id: ObjectId;
 
   @Column({ type: 'varchar', length: 45 })
   nome: string;

@@ -1,10 +1,10 @@
-import { Entity, Column, OneToMany, PrimaryColumn } from 'typeorm';
+import { Entity, Column, OneToMany, PrimaryColumn, ObjectIdColumn, ObjectId } from 'typeorm';
 import { Venda } from './venda';
 
 @Entity('status_venda')
 export class StatusVenda {
-  @PrimaryColumn()
-  status_venda_id: number;
+  @ObjectIdColumn()
+  id: ObjectId;
 
   @Column({ type: 'varchar', length: 45 })
   nome: string;

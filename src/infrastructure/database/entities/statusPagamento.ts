@@ -1,10 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ObjectIdColumn, ObjectId } from 'typeorm';
 import { ParcelaCredito } from './';
 
 @Entity('status_pagamento')
 export class StatusPagamento {
-  @PrimaryGeneratedColumn('increment')
-  status_pagamento_id: number;
+  @ObjectIdColumn()
+  id: ObjectId;
 
   @Column({ type: 'varchar', length: 45 })
   nome: string;

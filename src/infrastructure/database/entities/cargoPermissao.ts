@@ -1,10 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, ManyToOne, Column, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, ManyToOne, Column, JoinColumn, ObjectIdColumn, ObjectId } from 'typeorm';
 import { Permissao, Cargo } from './';
 
 @Entity('cargo_permissao')
 export class CargoPermissao {
-  @PrimaryGeneratedColumn('increment')
-  id: number;
+  @ObjectIdColumn()
+  id: ObjectId;
 
   @Column({ type: 'int' })
   cargo_id: number;

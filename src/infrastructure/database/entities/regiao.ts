@@ -1,10 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, Column, OneToMany, ObjectIdColumn, ObjectId } from 'typeorm';
 import { Cidade, Cliente, Venda, Vendedor } from './';
 
 @Entity('regiao')
 export class Regiao {
-  @PrimaryGeneratedColumn('increment')
-  regiao_id: number;
+  @ObjectIdColumn()
+  id: ObjectId;
 
   @Column({ type: 'int' })
   codigo: number;

@@ -15,7 +15,7 @@ export class CidadeSeed implements Seeder {
     for (const cidadeData of jsonData) {
       // Carregar a entidade Estado
       const estado = await estadoRepository.findOne({
-        where: { estado_id: cidadeData.estado_id },
+        where: { id: cidadeData.estado_id },
       });
 
       if (!estado) {

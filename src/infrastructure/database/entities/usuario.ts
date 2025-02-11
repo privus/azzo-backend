@@ -1,10 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn, ObjectIdColumn, ObjectId } from 'typeorm';
 import { Cidade, Cargo, Regiao } from './';
 
 @Entity('usuario')
 export class Usuario {
-  @PrimaryGeneratedColumn('increment')
-  usuario_id: number;
+  @ObjectIdColumn()
+  id: ObjectId;
 
   @Column({ type: 'varchar', length: 90 })
   nome: string;

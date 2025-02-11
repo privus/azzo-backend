@@ -1,11 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, ObjectIdColumn, ObjectId } from 'typeorm';
 import { CategoriaCliente, Cidade, Regiao, StatusCliente } from './';
 
 @Entity('cliente')
 export class Cliente {
-  @PrimaryGeneratedColumn('increment')
-  cliente_id: number;
-
+  @ObjectIdColumn()
+  id: ObjectId;
+  
   @Column({ type: 'int', nullable: false, unique: true })
   codigo: number;
 
