@@ -27,7 +27,7 @@ export class CidadeSeed implements Seeder {
       const cidadeExistente = await cidadeRepository.findOne({
         where: {
           nome: cidadeData.nome,
-          estado: { estado_id: estado.estado_id },
+          estado: { id: estado.id },
         },
         relations: ['estado'],
       });
