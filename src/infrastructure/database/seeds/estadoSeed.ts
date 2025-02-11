@@ -14,9 +14,7 @@ export class EstadoSeed implements Seeder {
 
     // Itera sobre os dados e insere no banco de dados
     for (const estado of jsonData) {
-      const estadoExists = await estadoRepository.findOne({
-        where: { nome: estado.nome }
-      });
+      const estadoExists = await estadoRepository.findOneBy({ nome: estado.nome });
 
       if (estadoExists) {
         console.log(`Estado ${estado.nome} já existe. Nenhuma alteração foi feita.`);
