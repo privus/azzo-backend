@@ -14,9 +14,7 @@ export class CidadeSeed implements Seeder {
 
     for (const cidadeData of jsonData) {
       // Carregar a entidade Estado
-      const estado = await estadoRepository.findOne({
-        where: { id: cidadeData.estado_id },
-      });
+      const estado = await estadoRepository.findOneBy({ id: cidadeData.estado_id });
 
       if (!estado) {
         console.error(`Estado com ID ${cidadeData.estado_id} não encontrado. Cidade ${cidadeData.nome} não será adicionada.`);
@@ -24,12 +22,9 @@ export class CidadeSeed implements Seeder {
       }
 
       // Verificar se a cidade já existe com o mesmo nome e estado
-      const cidadeExistente = await cidadeRepository.findOne({
-        where: {
-          nome: cidadeData.nome,
-          estado: { id: estado.id },
-        },
-        relations: ['estado'],
+      const cidadeExistente = await cidadeRepository.findOneBy({
+        nome: cidadeData.nome,
+        estado: { id: estado.id },
       });
 
       if (cidadeExistente) {

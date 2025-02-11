@@ -30,7 +30,7 @@ export class CargoPermissaoSeed implements Seeder {
 
     for (const association of associations) {
       try {
-        const cargo = await cargoRepository.findOne({ where: { nome: association.cargo } });
+        const cargo = await cargoRepository.findOneBy({ nome: association.cargo });
 
         if (!cargo) {
           console.error(`Cargo ${association.cargo} não encontrado.`);
@@ -38,7 +38,7 @@ export class CargoPermissaoSeed implements Seeder {
         }
 
         for (const perm of association.permissoes) {
-          const permissao = await permissaoRepository.findOne({ where: { nome: perm.nome } });
+          const permissao = await permissaoRepository.findOneBy( { nome: perm.nome } );
 
           if (!permissao) {
             console.error(`Permissão ${perm.nome} não encontrada.`);
