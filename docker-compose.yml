@@ -4,10 +4,10 @@ services:
     container_name: mysql-container
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: rootsenha
-      MYSQL_DATABASE: meu_banco
-      MYSQL_USER: usuario
-      MYSQL_PASSWORD: senha
+      MYSQL_ROOT_PASSWORD: privus123
+      MYSQL_DATABASE: azzo-database
+      MYSQL_USER: azzo-user
+      MYSQL_PASSWORD: privus123
     ports:
       - '3306:3306'
     volumes:
@@ -28,9 +28,9 @@ services:
     environment:
       DATABASE_HOST: mysql
       DATABASE_PORT: 3306
-      DATABASE_USER: usuario
-      DATABASE_PASSWORD: senha
-      DATABASE_NAME: meu_banco
+      DATABASE_USER: azzo-user
+      DATABASE_PASSWORD: privus123
+      DATABASE_NAME: azzo-database
     command: npm run start:dev
     working_dir: /usr/src/app
     networks:
