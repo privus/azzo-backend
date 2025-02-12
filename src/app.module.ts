@@ -29,7 +29,7 @@ import { CreditsModule } from './modules/credits/credits.module';
       inject: [ConfigService], // Injeta o ConfigService
       useFactory: async (configService: ConfigService): Promise<TypeOrmModuleOptions> => ({
         type: 'mysql',
-        host: 'mysql-container', // Nome do serviço MySQL no Docker Compose
+        host: '152.53.39.254', // Nome do serviço MySQL no Docker Compose
         port: 3306,
         username: 'azzo-user',
         password: 'privus123',
