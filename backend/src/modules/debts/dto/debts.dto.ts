@@ -76,10 +76,19 @@ export class DebtsDto {
 
   /**
    * Categoria ID do débito.
-   * Exemplo: 'Energia', 'Água', 'Telefone'
+   * Exemplo: '1', '2', '3'
    */
+  @IsOptional()
   @IsNumber({}, { message: 'A categoria ID deve ser um número.' })
-  categoria_id: number;
+  categoria_id?: number;
+
+  /**
+   * Departamento ID do débito.
+   * Exemplo: '1', '2', '3'
+   */
+  @IsOptional()
+  @IsNumber({}, { message: 'A departamento ID deve ser um número.' })
+  departamento_id?: number;
 
   /**
    * Nome do departamento.

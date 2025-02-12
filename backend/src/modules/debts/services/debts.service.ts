@@ -15,25 +15,26 @@ export class DebtsService {
   ) {}
 
   async createDebt(debtDto: DebtsDto): Promise<Debito> {
-    const status_pagamento_id = debtDto.data_pagamento ? 2 : 1;
-    const status_pagamento = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id } });
-    if (!status_pagamento) {
-      throw new Error('Status de pagamento padrão não encontrado.');
+    const statusPagamentoNormal = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 1 } });
+    const statusPagamentoPago = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 2 } });
+
+    if (!statusPagamentoNormal || !statusPagamentoPago) {
+      throw new Error('Status de pagamento padrão ou pago não encontrado.');
     }
 
-    let departamento = await this.departamentoRepository.findOne({ where: { nome: debtDto.departamento_nome } });
+    let departamento = await this.departamentoRepository.findOne({ where: { departamento_id: debtDto.departamento_id } });
     if (!departamento && debtDto.departamento_nome) {
       departamento = this.departamentoRepository.create({ nome: debtDto.departamento_nome });
       await this.departamentoRepository.save(departamento);
     }
 
-    let categoria = await this.categoriaDebitoRepository.findOne({ where: { nome: debtDto.categoria_nome } });
+    let categoria = await this.categoriaDebitoRepository.findOne({ where: { categoria_id: debtDto.categoria_id } });
     if (!categoria && debtDto.categoria_nome) {
       categoria = this.categoriaDebitoRepository.create({ nome: debtDto.categoria_nome });
       await this.categoriaDebitoRepository.save(categoria);
     }
 
-    const datas_vencimento = this.generateInstallmentDates(new Date(debtDto.data_vencimento), debtDto.numero_parcelas, debtDto.periodicidade || 31);
+    const datasVencimento = this.generateInstallmentDates(new Date(debtDto.data_vencimento), debtDto.numero_parcelas, debtDto.periodicidade || 31);
 
     const debitoEntity = this.debtRepository.create({
       nome: debtDto.nome,
@@ -45,27 +46,27 @@ export class DebtsService {
       numero_parcelas: debtDto.numero_parcelas,
       juros: debtDto.juros || 0,
       valor_parcela: Number(debtDto.valor_total / debtDto.numero_parcelas),
-      status_pagamento,
+      status_pagamento: statusPagamentoNormal,
       departamento,
       categoria,
       conta: debtDto.conta,
       empresa: debtDto.empresa_grupo,
       despesa_grupo: debtDto.despesa_grupo,
-      datas_vencimento,
+      datas_vencimento: datasVencimento,
       criado_por: debtDto.criado_por,
     });
 
     const savedDebt = await this.debtRepository.save(debitoEntity);
 
-    const parcelas = datas_vencimento.map((dataVencimento, index) => {
+    const parcelas = datasVencimento.map((dataVencimento, index) => {
       return this.parcelaRepository.create({
         numero: index + 1,
         valor: Number(debtDto.valor_total / debtDto.numero_parcelas),
         data_criacao: new Date(),
         data_competencia: new Date(debtDto.data_competencia),
         data_vencimento: new Date(dataVencimento),
-        status_pagamento,
-        data_pagamento: debtDto.data_pagamento ? new Date(debtDto.data_pagamento) : null,
+        status_pagamento: index === 0 && debtDto.data_pagamento ? statusPagamentoPago : statusPagamentoNormal,
+        data_pagamento: index === 0 && debtDto.data_pagamento ? new Date(debtDto.data_pagamento) : null,
         juros: debtDto.juros || 0,
         debito: savedDebt,
       });
@@ -75,9 +76,6 @@ export class DebtsService {
     return savedDebt;
   }
 
-  /**
-   * Gera um array de datas de vencimento baseado na primeira parcela, número de parcelas e periodicidade.
-   */
   private generateInstallmentDates(startDate: Date, numberOfInstallments: number, periodicity: number): string[] {
     const dates: string[] = [];
     for (let i = 0; i < numberOfInstallments; i++) {
@@ -102,13 +100,21 @@ export class DebtsService {
     if (overdueParcels.length === 0) return;
 
     const statusEmAtraso = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 3 } });
-    if (!statusEmAtraso) {
-      throw new Error('Status "Em Atraso" não encontrado.');
+    const statusPago = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 2 } });
+    const statusPendente = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 1 } });
+
+    if (!statusEmAtraso || !statusPago || !statusPendente) {
+      throw new Error('Erro ao buscar status de pagamento.');
     }
 
     const updatedDebts = new Set<number>();
 
     for (const parcela of overdueParcels) {
+      if (parcela.data_pagamento) {
+        return;
+      }
+
+      // Marca a parcela como "Em Atraso"
       parcela.status_pagamento = statusEmAtraso;
       updatedDebts.add(parcela.debito.debito_id);
     }
@@ -116,11 +122,31 @@ export class DebtsService {
     await this.parcelaRepository.save(overdueParcels);
 
     for (const debitoId of updatedDebts) {
-      await this.debtRepository.update(debitoId, { status_pagamento: statusEmAtraso });
+      const parcelasDebito = await this.parcelaRepository.find({
+        where: { debito: { debito_id: debitoId } },
+        relations: ['status_pagamento'],
+      });
+
+      // Verifica se todas as parcelas estão pagas
+      const todasPagas = parcelasDebito.every((parcela) => parcela.status_pagamento?.status_pagamento_id === 2);
+
+      // Verifica se pelo menos uma parcela está em atraso
+      const temAtraso = parcelasDebito.some((parcela) => parcela.status_pagamento?.status_pagamento_id === 3);
+
+      let novoStatus = statusPendente; // Status padrão
+
+      if (todasPagas) {
+        novoStatus = statusPago; // Se todas estão pagas, o débito é "Pago"
+      } else if (temAtraso) {
+        novoStatus = statusEmAtraso; // Se tem pelo menos uma em atraso, o débito é "Em Atraso"
+      }
+
+      await this.debtRepository.update(debitoId, { status_pagamento: novoStatus });
     }
   }
 
   async getAllDebts(): Promise<Debito[]> {
+    this.updateOverdueParcels();
     return this.debtRepository.find({ relations: ['parcela_debito', 'status_pagamento', 'categoria', 'departamento'] });
   }
 
