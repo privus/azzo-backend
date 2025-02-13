@@ -8,7 +8,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = new Logger('Bootstrap');
 
-  const allowedOrigins = ['http://localhost:4200', 'http://azzo.geecom.com.br', 'http://azzo.geecom.com.br:4200'];
+  const allowedOrigins = ['http://localhost:4200', 'http://geecom.com.br', 'http://geecom.com.br:4200'];
 
   // Configurar CORS
   app.use(
