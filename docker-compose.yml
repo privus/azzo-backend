@@ -26,11 +26,11 @@ services:
     volumes:
       - .:/usr/src/app
     environment:
-      DATABASE_HOST: mysql
-      DATABASE_PORT: 3306
-      DATABASE_USER: azzo-user
-      DATABASE_PASSWORD: privus123
-      DATABASE_NAME: azzo-database
+      DB_HOST: localhost
+      DB_PORT: 3306
+      DB_USERNAME: azzo-user
+      DB_PASSWORD: privus123
+      DB_NAME: azzo-database
     command: npm run start:dev
     working_dir: /usr/src/app
     networks:
@@ -41,4 +41,4 @@ volumes:
 
 networks:
   app-network:
-    external: true 
+    driver: bridge

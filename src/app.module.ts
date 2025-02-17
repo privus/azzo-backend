@@ -20,8 +20,8 @@ import { CreditsModule } from './modules/credits/credits.module';
   imports: [
     // Configuração do ConfigModule
     ConfigModule.forRoot({
-      isGlobal: true, // Torna o módulo de configuração global
-      envFilePath: '.env', // Caminho para o arquivo .env
+      isGlobal: true,
+      envFilePath: '.env',
     }),
     // Configuração assíncrona do TypeOrmModule
     TypeOrmModule.forRootAsync({
@@ -29,15 +29,15 @@ import { CreditsModule } from './modules/credits/credits.module';
       inject: [ConfigService], // Injeta o ConfigService
       useFactory: async (configService: ConfigService): Promise<TypeOrmModuleOptions> => ({
         type: 'mysql',
-        host: 'mysql-container', // Nome do serviço MySQL no Docker Compose
-        port: 3306,
-        username: 'azzo-user',
-        password: 'privus123',
-        database: 'azzo-database',
+        host: configService.get<string>('DB_HOST'),
+        port: configService.get<number>('DB_PORT'),
+        username: configService.get<string>('DB_USERNAME'),
+        password: configService.get<string>('DB_PASSWORD'),
+        database: configService.get<string>('DB_NAME'),
         entities: Object.values(entities), // Importa todas as entidades
         migrations: [__dirname + '/infrastructure/database/migrations/*.{ts,js}'],
-        synchronize: true, // Use sincronização apenas para desenvolvimento
-        logging: configService.get<string>('DB_LOGGING') === 'true', // Controle de logging via variável de ambiente
+        synchronize: configService.get<boolean>('DB_SYNC', false),
+        logging: configService.get<string>('DB_LOGGING', 'false') === 'true',
       }),
     }),
     // Registrando os repositórios

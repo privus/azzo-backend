@@ -51,7 +51,7 @@ export class SellsService implements ISellsRepository {
       }
 
       // Construa a URL manualmente
-      const url = `${this.apiUrl}${this.apiTag}?${params.join('&')}`;
+      const url = params ? `${this.apiUrl}${this.apiTag}?${params.join('&')}` :  `${this.apiUrl}${this.apiTag}`;
       console.log('URL gerada para a requisição:', url);
 
       const response = await this.httpService.axiosRef.get<{ data: SellsApiResponse[] }>(url, {

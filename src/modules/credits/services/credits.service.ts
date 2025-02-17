@@ -1,15 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { ParcelaCredito, StatusPagamento, Venda } from '../../../infrastructure/database/entities';
+import { In, Repository } from 'typeorm';
+import { CategoriaCredito, ParcelaCredito, StatusPagamento, Venda } from '../../../infrastructure/database/entities';
 import { ICreditsRepository } from '../../../domain/repositories';
-import { UpdateParcelaDto } from '../dto/update-parcela.dto';
+import { UpdateInstalmentDto } from '../dto';
+import { CreditDto } from '../dto/credit.dto';
 @Injectable()
 export class CreditsService implements ICreditsRepository {
   constructor(
     @InjectRepository(ParcelaCredito) private readonly parcelaRepository: Repository<ParcelaCredito>,
     @InjectRepository(StatusPagamento) private readonly statusRepository: Repository<StatusPagamento>,
     @InjectRepository(Venda) private readonly vendaRepository: Repository<Venda>,
+    @InjectRepository(CategoriaCredito) private readonly categoriaRepository: Repository<CategoriaCredito>,
   ) {}
 
   async getAllCredits(): Promise<ParcelaCredito[]> {
@@ -17,7 +19,7 @@ export class CreditsService implements ICreditsRepository {
 
     // Busca todas as parcelas com os relacionamentos necessários
     const credits = await this.parcelaRepository.find({
-      relations: ['status_pagamento', 'venda', 'venda.cliente'],
+      relations: ['status_pagamento', 'venda', 'venda.cliente', 'categoria'],
     });
 
     // Atualiza o status de parcelas vencidas
@@ -43,7 +45,7 @@ export class CreditsService implements ICreditsRepository {
   getCreditById(id: number): Promise<ParcelaCredito> {
     return this.parcelaRepository.findOne({
       where: { parcela_id: id },
-      relations: ['status_pagamento', 'venda.cliente'],
+      relations: ['status_pagamento', 'venda.cliente', 'categoria'],
     });
   }
 
@@ -115,8 +117,8 @@ export class CreditsService implements ICreditsRepository {
     console.log(`Status da venda ${venda.codigo} atualizado para ${venda.status_pagamento.nome}`);
   }
 
-  async updateParcelaStatus(updateParcelaDto: UpdateParcelaDto): Promise<string> {
-    const { parcela_id, status_pagamento_id, data_pagamento, juros } = updateParcelaDto;
+  async updateInstalmentStatus(UpdateInstalmentDto: UpdateInstalmentDto): Promise<string> {
+    const { parcela_id, status_pagamento_id, data_pagamento, juros } = UpdateInstalmentDto;
 
     const dataPagamentoConvertida = new Date(`${data_pagamento}T00:00:00Z`);
     const hoje = new Date();
@@ -168,4 +170,34 @@ export class CreditsService implements ICreditsRepository {
 
     return `Status da parcela ${parcela_id} atualizado para ${novoStatus.nome}. Juros adicionados: ${jurosDecimal.toFixed(2)}.`;
   }
+
+  getAllCategories(): Promise<CategoriaCredito[]> {
+    return this.categoriaRepository.find();
+  }
+
+  async createCredit(creditDto: CreditDto): Promise<ParcelaCredito> {
+    const statusPagamentoNormal = await this.statusRepository.findOne({ where: { status_pagamento_id: 1 } });
+    const statusPagamentoPago = await this.statusRepository.findOne({ where: { status_pagamento_id: 2 } });
+    
+    let categoria = await this.categoriaRepository.findOne({ where: { categoria_id: creditDto.categoria_id } });
+    if (!categoria && creditDto.categoria_nome) {
+      categoria = this.categoriaRepository.create({ nome: creditDto.categoria_nome });
+      await this.categoriaRepository.save(categoria);
+    }
+
+    const creditoEntity = this.parcelaRepository.create({
+      nome: creditDto.nome,
+      descricao: creditDto.descricao,
+      valor: creditDto.valor,
+      data_criacao: new Date(),
+      data_competencia: new Date(creditDto.data_competencia),
+      data_vencimento: new Date(creditDto.data_vencimento),
+      data_pagamento: creditDto.data_pagamento ? new Date(creditDto.data_pagamento) : null,
+      status_pagamento: creditDto.data_pagamento ? statusPagamentoPago : statusPagamentoNormal,
+      categoria,
+      atualizado_por: creditDto.criado_por,
+      conta: creditDto.conta,
+    });
+    return this.parcelaRepository.save(creditoEntity);
+  } 
 }

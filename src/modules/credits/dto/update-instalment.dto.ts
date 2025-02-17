@@ -1,6 +1,6 @@
 import { IsNumber, IsOptional, IsString } from 'class-validator';
 
-export class UpdateParcelaDto {
+export class UpdateInstalmentDto {
   /**
    * ID da parcela.
    * Exemplo: 123
