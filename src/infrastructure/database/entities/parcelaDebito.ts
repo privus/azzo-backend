@@ -27,6 +27,12 @@ export class ParcelaDebito {
   @Column({ type: 'date', nullable: true })
   data_pagamento: Date;
 
+  @Column({ type: 'varchar', length: 90, nullable: true })
+  conta: string;
+
+  @Column({ type: 'varchar', length: 90, nullable: true })
+  atualizado_por: string;
+
   @ManyToOne(() => StatusPagamento)
   @JoinColumn({ name: 'status_pagamento_id' })
   status_pagamento: StatusPagamento;

@@ -26,7 +26,7 @@ services:
     volumes:
       - .:/usr/src/app
     environment:
-      DB_HOST: localhost
+      DB_HOST: mysql
       DB_PORT: 3306
       DB_USERNAME: azzo-user
       DB_PASSWORD: privus123
@@ -41,4 +41,4 @@ volumes:
 
 networks:
   app-network:
-    driver: bridge
+    external: true

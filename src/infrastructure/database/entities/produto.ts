@@ -6,6 +6,9 @@ export class Produto {
   @PrimaryGeneratedColumn('increment')
   produto_id: number;
 
+  @Column({ type: 'int'})
+  sellent_id: number;
+
   @Column({ type: 'varchar', length: 255, nullable: false, unique: true })
   codigo: string;
 
@@ -41,6 +44,12 @@ export class Produto {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   descricao_uni: string;
+
+  @Column({ type: 'int', nullable: true })
+  tiny_sp: number;
+
+  @Column({ type: 'int', nullable: true })
+  tiny_mg: number;
 
   @ManyToOne(() => CategoriaProduto)
   @JoinColumn({ name: 'categoria_id' })

@@ -70,5 +70,5 @@ export class CreditDto {
      * Exemplo: "andre@example.com"
      */
     @IsString({ message: 'O campo criado por deve ser uma string.' })
-    criado_por: string;
+    atualizado_por: string;
 }

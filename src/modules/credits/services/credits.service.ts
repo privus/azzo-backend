@@ -118,15 +118,16 @@ export class CreditsService implements ICreditsRepository {
   }
 
   async updateInstalmentStatus(UpdateInstalmentDto: UpdateInstalmentDto): Promise<string> {
-    const { parcela_id, status_pagamento_id, data_pagamento, juros } = UpdateInstalmentDto;
+    const { parcela_id, status_pagamento_id, data_pagamento, juros, atualizado_por } = UpdateInstalmentDto;
 
-    const dataPagamentoConvertida = new Date(`${data_pagamento}T00:00:00Z`);
+    
+    const dataPagamentoConvertida = data_pagamento ? new Date(`${data_pagamento}T00:00:00Z`) : null;
     const hoje = new Date();
     if (dataPagamentoConvertida > hoje) {
       throw new Error('A data de pagamento não pode ser no futuro.');
     }
 
-    // Busca a parcela de crédito
+    // Buscar a parcela
     const parcela = await this.parcelaRepository.findOne({
       where: { parcela_id },
       relations: ['status_pagamento', 'venda'],
@@ -136,7 +137,7 @@ export class CreditsService implements ICreditsRepository {
       throw new Error(`Parcela com ID ${parcela_id} não encontrada.`);
     }
 
-    // Verifica o novo status
+    // Buscar novo status de pagamento
     const novoStatus = await this.statusRepository.findOne({
       where: { status_pagamento_id },
     });
@@ -145,30 +146,26 @@ export class CreditsService implements ICreditsRepository {
       throw new Error(`Status de pagamento com ID ${status_pagamento_id} não encontrado.`);
     }
 
-    // Converter valores para números
-    const parcelaValor = parseFloat(parcela.valor.toString());
-    const jurosDecimal = parseFloat(juros.toString());
+    // Assegurar que valores numéricos não sejam null/undefined
+    const parcelaValor = parcela.valor ?? 0;
+    const jurosDecimal = juros ?? 0;
 
-    if (isNaN(parcelaValor) || isNaN(jurosDecimal)) {
-      throw new Error('Os valores de parcela ou juros são inválidos.');
-    }
-
-    // Atualiza o valor da parcela somando os juros corretamente
-    parcela.valor = parseFloat((parcelaValor + jurosDecimal).toFixed(2));
+    // Atualizar a parcela
+    parcela.valor = parcelaValor + jurosDecimal;
     parcela.data_pagamento = dataPagamentoConvertida;
     parcela.status_pagamento = novoStatus;
     parcela.juros = jurosDecimal;
+    parcela.atualizado_por = atualizado_por;
 
-    // Atualiza o valor final da venda
+    // Atualizar o valor total da venda, se existir
     if (parcela.venda) {
-      const vendaValorFinal = parseFloat(parcela.venda.valor_final.toString());
-      parcela.venda.valor_final = parseFloat((vendaValorFinal + jurosDecimal).toFixed(2));
-      await this.vendaRepository.save(parcela.venda); // Atualiza o valor total da venda
+      parcela.venda.valor_final = (parcela.venda.valor_final ?? 0) + jurosDecimal;
+      await this.vendaRepository.save(parcela.venda);
     }
 
-    await this.parcelaRepository.save(parcela); // Salva a atualização da parcela
+    await this.parcelaRepository.save(parcela);
 
-    return `Status da parcela ${parcela_id} atualizado para ${novoStatus.nome}. Juros adicionados: ${jurosDecimal.toFixed(2)}.`;
+    return `Status da parcela ${parcela_id} atualizado para ${novoStatus.nome}. Juros adicionados: ${jurosDecimal}.`;
   }
 
   getAllCategories(): Promise<CategoriaCredito[]> {
@@ -195,7 +192,7 @@ export class CreditsService implements ICreditsRepository {
       data_pagamento: creditDto.data_pagamento ? new Date(creditDto.data_pagamento) : null,
       status_pagamento: creditDto.data_pagamento ? statusPagamentoPago : statusPagamentoNormal,
       categoria,
-      atualizado_por: creditDto.criado_por,
+      atualizado_por: creditDto.atualizado_por,
       conta: creditDto.conta,
     });
     return this.parcelaRepository.save(creditoEntity);

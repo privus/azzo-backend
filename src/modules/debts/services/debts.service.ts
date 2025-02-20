@@ -15,10 +15,10 @@ export class DebtsService {
   ) {}
 
   async createDebt(debtDto: DebtsDto): Promise<Debito> {
-    const statusPagamentoNormal = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 1 } });
+    const statusPagamentoPendente = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 1 } });
     const statusPagamentoPago = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 2 } });
 
-    if (!statusPagamentoNormal || !statusPagamentoPago) {
+    if (!statusPagamentoPendente || !statusPagamentoPago) {
       throw new Error('Status de pagamento padrão ou pago não encontrado.');
     }
 
@@ -46,7 +46,7 @@ export class DebtsService {
       numero_parcelas: debtDto.numero_parcelas,
       juros: debtDto.juros || 0,
       valor_parcela: Number(debtDto.valor_total / debtDto.numero_parcelas),
-      status_pagamento: statusPagamentoNormal,
+      status_pagamento: debtDto.data_pagamento && debtDto.numero_parcelas <= 1 ? statusPagamentoPago : statusPagamentoPendente,
       departamento,
       categoria,
       conta: debtDto.conta,
@@ -65,7 +65,7 @@ export class DebtsService {
         data_criacao: new Date(),
         data_competencia: new Date(debtDto.data_competencia),
         data_vencimento: new Date(dataVencimento),
-        status_pagamento: index === 0 && debtDto.data_pagamento ? statusPagamentoPago : statusPagamentoNormal,
+        status_pagamento: index === 0 && debtDto.data_pagamento ? statusPagamentoPago : statusPagamentoPendente,
         data_pagamento: index === 0 && debtDto.data_pagamento ? new Date(debtDto.data_pagamento) : null,
         juros: debtDto.juros || 0,
         debito: savedDebt,
@@ -89,12 +89,13 @@ export class DebtsService {
   async updateOverdueParcels(): Promise<void> {
     const today = new Date();
 
+    // Buscar todas as parcelas vencidas e não pagas
     const overdueParcels = await this.parcelaRepository.find({
-      where: {
-        data_vencimento: LessThan(today),
-        data_pagamento: null,
-      },
-      relations: ['debito', 'status_pagamento'],
+        where: {
+            data_vencimento: LessThan(today),
+            data_pagamento: null,
+        },
+        relations: ['debito', 'status_pagamento'],
     });
 
     if (overdueParcels.length === 0) return;
@@ -104,50 +105,47 @@ export class DebtsService {
     const statusPendente = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 1 } });
 
     if (!statusEmAtraso || !statusPago || !statusPendente) {
-      throw new Error('Erro ao buscar status de pagamento.');
+        throw new Error('Erro ao buscar status de pagamento.');
     }
 
     const updatedDebts = new Set<number>();
 
     for (const parcela of overdueParcels) {
-      if (parcela.data_pagamento) {
-        return;
-      }
-
-      // Marca a parcela como "Em Atraso"
-      parcela.status_pagamento = statusEmAtraso;
-      updatedDebts.add(parcela.debito.debito_id);
+        if (!parcela.data_pagamento) {
+            parcela.status_pagamento = statusEmAtraso;
+            updatedDebts.add(parcela.debito.debito_id);
+        }
     }
 
     await this.parcelaRepository.save(overdueParcels);
 
     for (const debitoId of updatedDebts) {
-      const parcelasDebito = await this.parcelaRepository.find({
-        where: { debito: { debito_id: debitoId } },
-        relations: ['status_pagamento'],
-      });
+        const parcelasDebito = await this.parcelaRepository.find({
+            where: { debito: { debito_id: debitoId } },
+            relations: ['status_pagamento'],
+        });
 
-      // Verifica se todas as parcelas estão pagas
-      const todasPagas = parcelasDebito.every((parcela) => parcela.status_pagamento?.status_pagamento_id === 2);
+        // **Verifica se todas as parcelas foram pagas**
+        const todasPagas = parcelasDebito.every(parcela => parcela.status_pagamento?.status_pagamento_id === 2);
+        const temAtraso = parcelasDebito.some(parcela => parcela.status_pagamento?.status_pagamento_id === 3);
 
-      // Verifica se pelo menos uma parcela está em atraso
-      const temAtraso = parcelasDebito.some((parcela) => parcela.status_pagamento?.status_pagamento_id === 3);
+        let novoStatus = statusPendente; // Status padrão "Pendente"
 
-      let novoStatus = statusPendente; // Status padrão
+        if (todasPagas) {
+            novoStatus = statusPago;
+        } else if (temAtraso) {
+            novoStatus = statusEmAtraso;
+        }
 
-      if (todasPagas) {
-        novoStatus = statusPago; // Se todas estão pagas, o débito é "Pago"
-      } else if (temAtraso) {
-        novoStatus = statusEmAtraso; // Se tem pelo menos uma em atraso, o débito é "Em Atraso"
-      }
-
-      await this.debtRepository.update(debitoId, { status_pagamento: novoStatus });
+        // **Atualiza o status da despesa no banco**
+        await this.debtRepository.update(debitoId, { status_pagamento: novoStatus });
     }
   }
 
+
   async getAllDebts(): Promise<Debito[]> {
     this.updateOverdueParcels();
-    return this.debtRepository.find({ relations: ['parcela_debito', 'status_pagamento', 'categoria', 'departamento'] });
+    return this.debtRepository.find({ relations: ['parcela_debito', 'status_pagamento', 'categoria', 'departamento', 'parcela_debito.status_pagamento'] });
   }
 
   getAllDepartments(): Promise<Departamento[]> {

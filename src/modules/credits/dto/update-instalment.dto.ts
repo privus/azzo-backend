@@ -19,6 +19,7 @@ export class UpdateInstalmentDto {
    * Data de pagamento.
    * Exemplo: 2021-09-01
    */
+  @IsOptional()
   @IsString({ message: 'A data de pagamento deve ser uma data válida.' })
   data_pagamento: string;
 

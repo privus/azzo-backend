@@ -2,8 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CategoriaProduto, Produto } from '../../../infrastructure/database/entities';
+import { CategoriaProduto, Fornecedor, Produto } from '../../../infrastructure/database/entities';
 import { ProdutoAPIResponse } from '../dto/products.dto';
+import * as fs from 'fs';
 
 @Injectable()
 export class ProductsService {
@@ -15,6 +16,7 @@ export class ProductsService {
   constructor(
     @InjectRepository(Produto) private readonly produtoRepository: Repository<Produto>,
     @InjectRepository(CategoriaProduto) private readonly categoriaRepository: Repository<CategoriaProduto>,
+    @InjectRepository(Fornecedor) private readonly fornecedorRepository: Repository<Fornecedor>,
     private readonly httpService: HttpService,
   ) {
     this.token = process.env.SELLENTT_API_TOKEN;
@@ -100,6 +102,7 @@ export class ProductsService {
     }
 
     const novoProduto = this.produtoRepository.create({
+      sellent_id: item.id,
       codigo: item.code,
       nome: item.name,
       ativo: item.is_active,
@@ -120,12 +123,119 @@ export class ProductsService {
     console.log(`Produto ${novoProduto.nome} salvo com sucesso!`);
   }
 
+  async syncroSupplier(): Promise<void> {
+    try {
+      const totalProdutos = await this.produtoRepository.count();
+      console.log(`Total de produtos cadastrados: ${totalProdutos}`);
+  
+      let page = 1;
+      const limit = 100; // Ajuste conforme necessário
+  
+      while ((page - 1) * limit < totalProdutos) {
+        const url = `${this.apiUrl}custom_values?page=${page}`;
+        console.log(`Buscando fornecedores de: ${url}`);
+  
+        const response = await this.httpService.axiosRef.get<{ data: any[] }>(url, {
+          headers: { Authorization: `Bearer ${this.token}` },
+        });
+  
+        const fornecedoresData = response.data.data;
+  
+        if (!fornecedoresData || fornecedoresData.length === 0) {
+          console.log(`Nenhum fornecedor encontrado na página ${page}. Encerrando...`);
+          break;
+        }
+  
+        console.log(`Página ${page} => ${fornecedoresData.length} fornecedores recebidos.`);
+  
+        for (const item of fornecedoresData) {
+  
+          // Se o campo `value` for numérico, encerra a sincronização
+          if (!isNaN(Number(item.value))) {
+            console.log(`Valor numérico encontrado (${item.value}). Encerrando sincronização.`);
+            return;
+          }
+  
+          const produto = await this.produtoRepository.findOne({
+            where: { sellent_id: item.product_id },
+            relations: ['fornecedor'],
+          });
+  
+          if (!produto) {
+            console.log(`Produto com sellent_id ${item.product_id} não encontrado.`);
+            continue;
+          }
+  
+          // Busca ou cria o fornecedor
+          let fornecedor = await this.fornecedorRepository.findOne({
+            where: { nome: item.value },
+          });
+  
+          if (!fornecedor) {
+            fornecedor = this.fornecedorRepository.create({ nome: item.value });
+            await this.fornecedorRepository.save(fornecedor);
+            console.log(`Fornecedor ${fornecedor.nome} salvo.`);
+          }
+  
+          // Atualiza o produto com o fornecedor correto
+          produto.fornecedor = fornecedor;
+          await this.produtoRepository.save(produto);
+          console.log(`Produto ${produto.nome} atualizado com fornecedor ${fornecedor.nome}.`);
+        }
+  
+        page++; // Passa para a próxima página
+      }
+      console.log('Sincronização de produtos finalizada!');
+    } catch (error) {
+      console.error('Erro ao sincronizar produtos:', error.message);
+      throw error;
+    }
+  }
+
+  async syncroTinyIds(): Promise<void> {
+    const jsonFilePath = 'src/utils/tabela-final-produtos-com-tiny.json'; // Caminho do JSON gerado
+
+    // 1) Verifica se o arquivo JSON existe
+    if (!fs.existsSync(jsonFilePath)) {
+      console.error(`Erro: Arquivo '${jsonFilePath}' não encontrado.`);
+      return;
+    }
+
+    // 2) Lê o arquivo JSON
+    const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
+    const tinyData = JSON.parse(jsonData);
+
+    console.log(`Lidos ${tinyData.length} registros de IDs Tiny do JSON.`);
+
+    for (const item of tinyData) {
+      // 3) Encontra o produto no banco pelo código
+      const produto = await this.produtoRepository.findOne({
+        where: { codigo: item.codigo },
+      });
+
+      if (!produto) {
+        console.log(`Produto com código ${item.codigo} não encontrado no banco.`);
+        continue;
+      }
+
+      // 4) Atualiza os IDs Tiny apenas se existirem no JSON
+      produto.tiny_mg = item.id_tiny_mg || produto.tiny_mg;
+      produto.tiny_sp = item.id_tiny_sp || produto.tiny_sp;
+
+      await this.produtoRepository.save(produto);
+      console.log(`Produto ${produto.codigo} atualizado com IDs Tiny MG: ${produto.tiny_mg}, SP: ${produto.tiny_sp}.`);
+    }
+
+    console.log('Sincronização de IDs Tiny finalizada com sucesso!');
+  }
+  
+
   findAllProducts(): Promise<Produto[]> {
-    return this.produtoRepository.find({ relations: ['categoria'] });
+    return this.produtoRepository.find({ relations: ['categoria', 'fornecedor'] });
   }
 
   findProductById(id: number): Promise<Produto> {
-    return this.produtoRepository.findOne({ where: { produto_id: id }, relations: ['categoria'] });
+    return this.produtoRepository.findOne({ where: { produto_id: id }, relations: ['categoria', 'fornecedor'] });
   }
 
   async findBy(param: Partial<Produto>): Promise<Produto | null> {

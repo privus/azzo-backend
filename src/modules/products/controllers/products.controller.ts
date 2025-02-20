@@ -13,6 +13,18 @@ export class ProductsController {
     return this.productsService.syncroProducts();
   }
 
+  @ApiOperation({ summary: 'Sincronizar todos os produtos' })
+  @Get('syncroSupplier')
+  async syncroAllSupplier() {
+    return this.productsService.syncroSupplier();
+  }
+
+  @ApiOperation({ summary: 'Sincronizar todos os ids Tiny' })
+  @Get('syncroTiny')
+  async syncroTiny() {
+    return this.productsService.syncroTinyIds();
+  }
+
   @ApiOperation({ summary: 'Listar todos os produtos' })
   @Get()
   async findAllProducts() {
