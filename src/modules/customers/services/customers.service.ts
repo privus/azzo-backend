@@ -99,7 +99,7 @@ export class CustomersService implements ICustomersRepository{
     }
 
     const status = await this.statusClienteRepository.findOne({
-      where: { status_cliente_id: Number(client.tags) },
+      where: { status_cliente_id: Number(client.tags) || null },
     });
 
     const novoCliente = this.clienteRepository.create({
