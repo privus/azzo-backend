@@ -9,6 +9,9 @@ export class Cliente {
   @Column({ type: 'int', nullable: false, unique: true })
   codigo: number;
 
+  @Column({ type: 'int', nullable: false })
+  tiny_id: number;
+
   @Column({ type: 'varchar', length: 240 })
   nome: string;
 

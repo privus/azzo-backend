@@ -15,6 +15,7 @@ import { SellsModule } from './modules/sells/sells.module';
 import { RegionsModule } from './modules/regions/regions.module';
 import { DebtsModule } from './modules/debts/debts.module';
 import { CreditsModule } from './modules/credits/credits.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -53,7 +54,7 @@ import { CreditsModule } from './modules/credits/credits.module';
     RegionsModule,
     DebtsModule,
     CreditsModule,
-    // Outros módulos podem ser adicionados aqui
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -3,14 +3,18 @@ import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, MoreThanOrEqual, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido } from '../../../infrastructure/database/entities';
-import { SellsApiResponse, UpdateSellStatusDto } from '../dto';
+import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository } from '../../../domain/repositories';
+import { TinyAuthService } from './tiny-auth.service';
 
 @Injectable()
 export class SellsService implements ISellsRepository {
-  private readonly apiUrl: string;
-  private readonly token: string;
-  private readonly apiTag = 'orders';
+  private readonly apiUrlSellentt: string;
+  private readonly apiUrlTiny: string;
+  private readonly tokenSellentt: string;
+  private readonly tokenTiny: string;
+  private readonly apiTagSellentt = 'orders';
+  private readonly apiTagTiny = 'pedidos';
 
   constructor(
     @Inject('ICustomersRepository') private readonly clienteService: ICustomersRepository,
@@ -24,9 +28,12 @@ export class SellsService implements ISellsRepository {
     @InjectRepository(Venda) private readonly vendaRepository: Repository<Venda>,
     @InjectRepository(TipoPedido) private readonly tipoPedidoRepository: Repository<TipoPedido>,
     private readonly httpService: HttpService,
+    private readonly tinyAuthService: TinyAuthService,
   ) {
-    this.token = process.env.SELLENTT_API_TOKEN;
-    this.apiUrl = process.env.SELLENTT_API_URL;
+    this.tokenSellentt = process.env.SELLENTT_API_TOKEN;
+    this.tokenTiny = process.env.TINY_API_TOKEN;
+    this.apiUrlSellentt = process.env.SELLENTT_API_URL;
+    this.apiUrlTiny= process.env.TINY_API_URL;
   }
 
   async syncroSells(): Promise<string> {
@@ -51,12 +58,12 @@ export class SellsService implements ISellsRepository {
       }
 
       // Construa a URL manualmente
-      const url = params ? `${this.apiUrl}${this.apiTag}?${params.join('&')}` :  `${this.apiUrl}${this.apiTag}`;
+      const url = params ? `${this.apiUrlSellentt}${this.apiTagSellentt}?${params.join('&')}` :  `${this.apiUrlSellentt}${this.apiTagSellentt}`;
       console.log('URL gerada para a requisição:', url);
 
       const response = await this.httpService.axiosRef.get<{ data: SellsApiResponse[] }>(url, {
         headers: {
-          Authorization: `Bearer ${this.token}`,
+          Authorization: `Bearer ${this.tokenSellentt}`,
         },
       });
 
@@ -279,7 +286,6 @@ export class SellsService implements ISellsRepository {
       relations: [
         'cliente',
         'vendedor',
-        'itensVenda',
         'itensVenda.produto',
         'status_pagamento',
         'status_venda',
@@ -313,4 +319,64 @@ export class SellsService implements ISellsRepository {
 
     return `Status da venda ${venda.codigo} atualizado para ${novoStatus.nome}.`;
   }
+
+  async exportTiny(id: number): Promise<string> {
+    try {
+        const order = await this.vendaRepository.findOne({
+          where: { venda_id: id },
+          relations: ['cliente.cidade.estado', 'itensVenda.produto', 'parcela_credito', 'tipo_pedido'],
+        });
+
+        if (!order.cliente.tiny_id) {
+            throw new Error(`🚨 Cliente com ID ${order.cliente.codigo} não possui um ID no Tiny.`);
+        }
+
+        const uf = order.cliente.cidade.estado.sigla
+        const accessToken = await this.tinyAuthService.getAccessToken(uf);
+
+        if (!accessToken) {
+            throw new Error("🚨 Não foi possível obter um token válido para exportação.");
+        }
+
+        if (!order) {
+            throw new Error(`🚨 Pedido com ID ${id} não encontrado.`);
+        }
+
+        const body: OrderTinyDto = {
+            idContato: order.cliente.tiny_id,
+            numeroOrdemCompra: order.codigo.toString(),
+            data: order.data_criacao.toISOString().split('T')[0],
+            meioPagamento: 2,
+            parcelas: order.parcela_credito.map(parcela => ({
+                dias: Math.floor((new Date(parcela.data_vencimento).getTime() - new Date(order.data_criacao).getTime()) / (1000 * 60 * 60 * 24)), 
+                data: parcela.data_vencimento,
+                valor: parcela.valor
+            })),
+            itens: order.itensVenda.map(item => ({
+                produto: {
+                    id: uf === 'MG' ? item.produto.tiny_mg : item.produto.tiny_sp,
+                },
+                quantidade: item.quantidade,
+                valorUnitario: item.valor_unitario,
+            })),
+        };
+
+
+
+        const apiUrl = `${this.apiUrlTiny}${this.apiTagTiny}`;
+        console.log('BODY==================>', body);
+
+        const response = await this.httpService.axiosRef.post(apiUrl, body, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+            },
+        });
+        console.log('RESPONSE==================>', response.data);
+        return `Pedido ${order.codigo} exportado com sucesso para o Tiny ${uf}`;
+    } catch (error) {
+        throw error.data;
+    }
+  }
 }
+

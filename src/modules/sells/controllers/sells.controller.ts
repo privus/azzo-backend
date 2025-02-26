@@ -21,6 +21,13 @@ export class SellsController {
     return { message: resultMessage };
   }
 
+  @ApiOperation({ summary: 'Exportar pedido para o Tiny'})
+  @Get('export/:id')
+  async exportToTiny(@Param('id') id: number) {
+    const resultMessage = await this.sellsService.exportTiny(id);
+    return { message: resultMessage };
+  }
+
   @ApiOperation({ summary: 'Sincronizar todas as vendas' })
   @Get('syncro')
   async syncroAllSells() {

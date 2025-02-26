@@ -13,6 +13,12 @@ export class CustomersController {
     return this.customersService.syncroCostumers();
   }
 
+  @ApiOperation({ summary: 'Sincronizar todos tiny ids' })
+  @Get('syncroTiny')
+  async syncroTinyIds() {
+    return this.customersService.syncroIdTiny();
+  }
+
   @ApiOperation({ summary: 'Listar todos os clientes' })
   @Get()
   async findAllCostumers() {

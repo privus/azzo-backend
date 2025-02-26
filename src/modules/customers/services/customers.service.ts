@@ -1,25 +1,33 @@
+import { TinyAuthService } from './../../sells/services/tiny-auth.service';
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CustomerAPIResponse } from '../dto/customers.dto';
+import { CustomerAPIResponse, TinyResponse } from '../dto/customers.dto';
 import { Regiao, StatusCliente, Cidade, Cliente } from '../../../infrastructure/database/entities';
+import { ICustomersRepository } from '../../../domain/repositories';
 
 @Injectable()
-export class CustomersService {
-  private readonly apiUrl: string;
-  private readonly token: string;
-  private readonly apiTag = 'stores'; // Initialize apiTag properly
+export class CustomersService implements ICustomersRepository{
+  private readonly apiUrlSellentt: string;
+  private readonly apiUrlTiny: string;
+  private readonly tokenSellentt: string;
+  private readonly tokenTiny: string;
+  private readonly storeTag = 'stores';
+  private readonly contactTag = 'contatos';
+
 
   constructor(
     @InjectRepository(Cliente) private readonly clienteRepository: Repository<Cliente>,
     @InjectRepository(Cidade) private readonly cidadeRepository: Repository<Cidade>,
     @InjectRepository(Regiao) private readonly regiaoRepository: Repository<Regiao>,
     @InjectRepository(StatusCliente) private readonly statusClienteRepository: Repository<StatusCliente>,
+    private readonly tinyAuthService: TinyAuthService,  
     private readonly httpService: HttpService,
   ) {
-    this.token = process.env.SELLENTT_API_TOKEN;
-    this.apiUrl = process.env.SELLENTT_API_URL;
+    this.tokenSellentt = process.env.SELLENTT_API_TOKEN;
+    this.apiUrlSellentt = process.env.SELLENTT_API_URL;
+    this.apiUrlTiny = process.env.TINY_API_URL;
   }
 
   async syncroCostumers(): Promise<void> {
@@ -28,13 +36,13 @@ export class CustomersService {
     while (true) {
       try {
         // Construct the request URL
-        const url = `${this.apiUrl}${this.apiTag}?page=${page}`;
+        const url = `${this.apiUrlSellentt}${this.storeTag}?page=${page}`;
         console.log(`Requesting: ${url}`); // Log the URL for debugging
 
         // Perform the HTTP request
         const response = await this.httpService.axiosRef.get<{ data: CustomerAPIResponse[] }>(url, {
           headers: {
-            Authorization: `Bearer ${this.token}`,
+            Authorization: `Bearer ${this.tokenSellentt}`,
           },
         });
 
@@ -133,4 +141,75 @@ export class CustomersService {
   findCostumersByStatus(id: number): Promise<StatusCliente[]> {
     return this.statusClienteRepository.find({ where: { status_cliente_id: id }, relations: ['clientes'] });
   }
+
+  async syncroIdTiny(): Promise<void> {
+    console.log("🔄 Iniciando sincronização de clientes do Tiny MG e SP...");
+
+    await this.syncroTinyForState("MG", this.apiUrlTiny);
+    await this.syncroTinyForState("SP", this.apiUrlTiny);
+
+    console.log("✅ Sincronização de clientes concluída!");
+  }
+
+  /**
+   * 🔁 **Sincroniza clientes do Tiny para um estado específico (MG ou SP)**
+   */
+  private async syncroTinyForState(uf: string, apiUrlTiny: string): Promise<void> {
+    let offset = 0;
+    const limit = 100;
+    
+    const token = await this.tinyAuthService.getAccessToken(uf);
+    if (!token) {
+      console.error(`❌ Erro ao obter token para ${uf}. Pulando sincronização.`);
+      return;
+    }
+
+    while (true) {
+      try {
+        const url = `${apiUrlTiny}${this.contactTag}?offset=${offset}`;
+        console.log(`📡 Buscando clientes ${uf}: ${url}`);
+
+        const response = await this.httpService.axiosRef.get<{ itens: TinyResponse[] }>(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const clientesData = response.data.itens;
+
+        if (!clientesData || clientesData.length === 0) {
+          console.log(`🚫 Nenhum cliente encontrado para ${uf} no offset ${offset}.`);
+          break;
+        }
+
+        console.log(`✅ ${clientesData.length} clientes recebidos de ${uf}.`);
+
+        for (const client of clientesData) {
+          await this.processarClienteTiny(client, uf);
+        }
+
+        offset += limit;
+      } catch (error: any) {
+        console.error(`❌ Erro ao sincronizar clientes ${uf}:`, error.message);
+        break;
+      }
+    }
+  }
+
+  /**
+   * 🛠 **Processa e atualiza clientes do Tiny**
+   */
+  private async processarClienteTiny(client: TinyResponse, uf: string): Promise<void> {
+    const normalizedCpfCnpj = client.cpfCnpj.replace(/[.\-\/]/g, '');
+    const cliente = await this.clienteRepository.findOne({ where: { numero_doc: normalizedCpfCnpj } });
+
+    if (cliente) {
+        cliente.tiny_id = client.id;
+
+
+      await this.clienteRepository.save(cliente);
+      console.log(`✅ Cliente atualizado: ${cliente.nome} (${uf})`);
+    } else {
+      console.warn(`⚠️ Cliente não encontrado no banco: CPF/CNPJ ${normalizedCpfCnpj} (${uf})`);
+    }
+  }
+
 }
