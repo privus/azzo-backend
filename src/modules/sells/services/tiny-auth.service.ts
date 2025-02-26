@@ -102,7 +102,6 @@ export class TinyAuthService {
             return access_token;
         } catch (error) {
             this.logger.error('❌ Erro ao renovar token:', error.response?.data || error.message);
-            this.autoRefreshToken()
             return '';
         }
     }
