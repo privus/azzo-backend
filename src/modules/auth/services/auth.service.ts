@@ -41,7 +41,7 @@ export class AuthService implements IAuthRepository {
     
     const expiresIn = this.configService.get<string>('JWT_EXPIRES_IN') || '5h';
 
-    const accessToken = jwt.sign(payload, secret, { expiresIn: expiresIn as string });
+    const accessToken = jwt.sign(payload, secret as jwt.Secret, { expiresIn });
 
     return { accessToken };
   }
