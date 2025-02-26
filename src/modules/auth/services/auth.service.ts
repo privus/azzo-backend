@@ -34,10 +34,14 @@ export class AuthService implements IAuthRepository {
       cargo: user.cargo,
     };
 
-    const secret = this.configService.get<string>('JWT_SECRET') || 'your_jwt_secret';
+    const secret = this.configService.get<string>('JWT_SECRET');
+    if (!secret) {
+      throw new Error('JWT_SECRET não foi definido nas variáveis de ambiente!');
+    }
+    
     const expiresIn = this.configService.get<string>('JWT_EXPIRES_IN') || '5h';
 
-    const accessToken = jwt.sign(payload, secret as jwt.Secret, { expiresIn });
+    const accessToken = jwt.sign(payload, secret, { expiresIn: expiresIn as string });
 
     return { accessToken };
   }
