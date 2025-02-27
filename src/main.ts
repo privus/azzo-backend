@@ -5,6 +5,8 @@ import * as cors from 'cors';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
+  process.env.TZ = 'America/Sao_Paulo';
+  console.log('Fuso horário atual:', new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }));
   const app = await NestFactory.create(AppModule);
   const logger = new Logger('Bootstrap');
 

@@ -1,11 +1,11 @@
-import { Injectable, Logger, UseFilters } from '@nestjs/common';
+import { Inject, Injectable, Logger, UseFilters } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { TinyTokenService } from './tiny-token.service';
 import { TinyTokens } from '../../../infrastructure/database/entities';
+import { ITinyAuthRepository, ITinyTokenRepository } from '../../../domain/repositories';
 
 @Injectable()
-export class TinyAuthService {
+export class TinyAuthService implements ITinyAuthRepository {
     private readonly logger = new Logger(TinyAuthService.name);
     private clientIdMg: string;
     private clientIdSp: string;
@@ -16,7 +16,7 @@ export class TinyAuthService {
 
     constructor(
         private readonly httpService: HttpService,
-        private readonly tinyTokenService: TinyTokenService
+        @Inject('ITinyTokenRepository') private readonly tinyTokenService: ITinyTokenRepository
     ) {
         this.clientIdMg = process.env.TINY_CLIENT_ID_MG;
         this.clientIdSp = process.env.TINY_CLIENT_ID_SP;
@@ -26,14 +26,14 @@ export class TinyAuthService {
         this.initialRefreshTokenSp = process.env.TINY_REFRESH_TOKEN_SP;
     }
 
-    @Cron(CronExpression.EVERY_DAY_AT_3PM)
+    @Cron(CronExpression.EVERY_DAY_AT_9AM)
     async autoRefreshToken(): Promise<void> {
         this.logger.log('🔄 Iniciando renovação automática do token...');
     
         const mg = 'MG';
         const sp = 'SP';
-        let lastTokenMg = await this.tinyTokenService.getLastToken(sp);
-        let lastTokenSp = await this.tinyTokenService.getLastToken(mg);
+        let lastTokenSp = await this.tinyTokenService.getLastToken(sp);
+        let lastTokenMg = await this.tinyTokenService.getLastToken(mg);
     
         if (!lastTokenMg) {
             lastTokenMg = {

@@ -1,3 +1,4 @@
+import { TinyAuthController } from './controllers/tiny-auth.controller';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SellsService } from './services/sells.service';
@@ -41,17 +42,21 @@ import { ScheduleModule } from '@nestjs/schedule';
     SellersModule,
     RegionsModule,
   ],
-  controllers: [SellsController],
+  controllers: [SellsController, TinyAuthController],
   providers: [
     SellsService,
     TinyAuthService,
     TinyTokenService,
+    { provide: 'ITinyAuthRepository', useClass: TinyAuthService },
+    { provide: 'ITinyTokenRepository', useClass: TinyTokenService },
     { provide: 'ISellsRepository', useClass: SellsService },
   ],
   exports: [
     SellsService,
     TinyAuthService, // ✅ Agora exporta a autenticação para outros módulos
     TinyTokenService, // ✅ Agora exporta o gerenciamento de tokens para outros módulos
+    'ITinyAuthRepository',
+    'ITinyTokenRepository',
     'ISellsRepository',
   ],
 })

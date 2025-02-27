@@ -78,21 +78,31 @@ export class DebtsService {
 
   private generateInstallmentDates(startDate: Date, numberOfInstallments: number, periodicity: number): string[] {
     const dates: string[] = [];
+    let installmentDate = new Date(startDate); 
+
     for (let i = 0; i < numberOfInstallments; i++) {
-      const installmentDate = new Date(startDate);
-      installmentDate.setDate(installmentDate.getDate() + i * periodicity);
-      dates.push(installmentDate.toISOString().split('T')[0]);
+        if (i === 0) {
+            // Garante que a primeira parcela nunca seja no dia anterior
+            installmentDate.setDate(installmentDate.getDate() + 1); 
+        } else {
+            installmentDate = new Date(dates[i - 1]); // Usa a última data como referência
+            installmentDate.setDate(installmentDate.getDate() + periodicity);
+        }
+        dates.push(installmentDate.toISOString().split('T')[0]); // Formato "YYYY-MM-DD"
     }
+    
     return dates;
   }
 
+
   async updateOverdueParcels(): Promise<void> {
     const today = new Date();
+    today.setDate(today.getDate() - 1); // Permite que a parcela só fique em atraso no dia seguinte ao vencimento
 
     // Buscar todas as parcelas vencidas e não pagas
     const overdueParcels = await this.parcelaRepository.find({
         where: {
-            data_vencimento: LessThan(today),
+            data_vencimento: LessThan(today), // Só marca como "Atrasada" se a data for anterior a HOJE
             data_pagamento: null,
         },
         relations: ['debito', 'status_pagamento'],
@@ -141,7 +151,6 @@ export class DebtsService {
         await this.debtRepository.update(debitoId, { status_pagamento: novoStatus });
     }
   }
-
 
   async getAllDebts(): Promise<Debito[]> {
     this.updateOverdueParcels();

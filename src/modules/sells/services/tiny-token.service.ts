@@ -2,9 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TinyTokens } from '../../../infrastructure/database/entities';
+import { ITinyTokenRepository } from '../../../domain/repositories';
 
 @Injectable()
-export class TinyTokenService {
+export class TinyTokenService implements ITinyTokenRepository {
     constructor(
         @InjectRepository(TinyTokens)
         private readonly tokenRepository: Repository<TinyTokens>,
@@ -39,5 +40,7 @@ export class TinyTokenService {
         await this.tokenRepository.save(tokenEntry);
     }
     
-
+    async deleteToken(): Promise<void> {
+        await this.tokenRepository.delete({});
+    }
 }

@@ -39,5 +39,5 @@ export class SellsController {
   @Get(':id')
   async getSellById(@Param('id') id: number) {
     return this.sellsService.getSellById(id);
-  }
+  }  
 }

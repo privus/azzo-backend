@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CustomerAPIResponse, TinyResponse } from '../dto/customers.dto';
+import { CustomerAPIResponse, TinyCustomerDto, TinyCustomerResponse } from '../dto';
 import { Regiao, StatusCliente, Cidade, Cliente } from '../../../infrastructure/database/entities';
 import { ICustomersRepository } from '../../../domain/repositories';
 
@@ -12,7 +12,6 @@ export class CustomersService implements ICustomersRepository{
   private readonly apiUrlSellentt: string;
   private readonly apiUrlTiny: string;
   private readonly tokenSellentt: string;
-  private readonly tokenTiny: string;
   private readonly storeTag = 'stores';
   private readonly contactTag = 'contatos';
 
@@ -30,7 +29,7 @@ export class CustomersService implements ICustomersRepository{
     this.apiUrlTiny = process.env.TINY_API_URL;
   }
 
-  async syncroCostumers(): Promise<void> {
+  async syncroCustomers(): Promise<void> {
     let page = 1;
 
     while (true) {
@@ -130,15 +129,15 @@ export class CustomersService implements ICustomersRepository{
     console.log(`Customer ${novoCliente.nome} saved successfully!`);
   }
 
-  findAllCostumers(): Promise<Cliente[]> {
+  findAllCustomers(): Promise<Cliente[]> {
     return this.clienteRepository.find({ relations: ['cidade.estado', 'regiao', 'status_cliente'] });
   }
 
-  findCostumerByCode(codigo: number): Promise<Cliente> {
+  findCustomerByCode(codigo: number): Promise<Cliente> {
     return this.clienteRepository.findOne({ where: { codigo }, relations: ['cidade.estado', 'regiao', 'status_cliente'] });
   }
 
-  findCostumersByStatus(id: number): Promise<StatusCliente[]> {
+  findCustomersByStatus(id: number): Promise<StatusCliente[]> {
     return this.statusClienteRepository.find({ where: { status_cliente_id: id }, relations: ['clientes'] });
   }
 
@@ -169,7 +168,7 @@ export class CustomersService implements ICustomersRepository{
         const url = `${apiUrlTiny}${this.contactTag}?offset=${offset}`;
         console.log(`📡 Buscando clientes ${uf}: ${url}`);
 
-        const response = await this.httpService.axiosRef.get<{ itens: TinyResponse[] }>(url, {
+        const response = await this.httpService.axiosRef.get<{ itens: TinyCustomerResponse[] }>(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -194,22 +193,69 @@ export class CustomersService implements ICustomersRepository{
     }
   }
 
-  /**
-   * 🛠 **Processa e atualiza clientes do Tiny**
-   */
-  private async processarClienteTiny(client: TinyResponse, uf: string): Promise<void> {
+  private async processarClienteTiny(client: TinyCustomerResponse, uf: string): Promise<void> {
     const normalizedCpfCnpj = client.cpfCnpj.replace(/[.\-\/]/g, '');
     const cliente = await this.clienteRepository.findOne({ where: { numero_doc: normalizedCpfCnpj } });
 
     if (cliente) {
         cliente.tiny_id = client.id;
 
-
-      await this.clienteRepository.save(cliente);
-      console.log(`✅ Cliente atualizado: ${cliente.nome} (${uf})`);
+        await this.clienteRepository.save(cliente);
+        console.log(`✅ Cliente atualizado: ${cliente.nome} (${uf})`);
     } else {
       console.warn(`⚠️ Cliente não encontrado no banco: CPF/CNPJ ${normalizedCpfCnpj} (${uf})`);
     }
   }
 
+  async registerCustomerTiny(codigo: number): Promise<number> {
+    try {
+        const customer = await this.findCustomerByCode(codigo);
+
+        if (!customer) {
+          throw new Error(`🚨 Cliente com código ${codigo} não encontrado.`);
+        }
+
+        const uf = customer.cidade.estado.sigla;
+        const accessToken = await this.tinyAuthService.getAccessToken(uf);
+
+        if (!accessToken) {
+          throw new Error("🚨 Não foi possível obter um token válido para exportação.");
+        }
+
+        const body: TinyCustomerDto = {
+          nome: customer.nome,
+          fantasia: customer.nome_empresa,
+          tipoPessoa: customer.tipo_doc === 'cnpj' ? 'J' : 'F',
+          cpfCnpj: customer.numero_doc,
+          inscricaoEstadual: customer.ie,
+          celular: customer.celular,
+          email: customer.email,
+          endereco: {
+            endereco: customer.endereco,
+            numero: customer.num_endereco,
+            complemento: customer.complemento,
+            bairro: customer.bairro,
+            municipio: customer.cidade_string,
+            cep: customer.cep,
+            uf: customer.cidade.estado.sigla,
+            pais: 'Brasil',
+          },
+          situacao: 'A',
+        };
+        const apiUrl = this.apiUrlTiny + this.contactTag;
+
+        const response = await this.httpService.axiosRef.post(apiUrl, body, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+
+        console.log(`✅ Cliente ${codigo} registrado no Tiny com sucesso!`); 
+        customer.tiny_id = response.data.id
+        await this.clienteRepository.save(customer);
+        return response.data.id;   
+
+    } catch (error) {
+          console.error(`❌ Erro ao registrar cliente ${codigo} no Tiny:`, error.message);
+          throw error;
+      }
+  }
 }
