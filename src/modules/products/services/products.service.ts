@@ -165,6 +165,11 @@ export class ProductsService {
             console.log(`Produto com sellent_id ${item.product_id} não encontrado.`);
             continue;
           }
+
+          if (produto.fornecedor) {
+            console.log(`Produto ${produto.nome} já possui fornecedor, pulando...`);
+            continue;
+          }
   
           // Busca ou cria o fornecedor
           let fornecedor = await this.fornecedorRepository.findOne({
@@ -241,4 +246,10 @@ export class ProductsService {
   async findBy(param: Partial<Produto>): Promise<Produto | null> {
     return this.produtoRepository.findOne({ where: param });
   }
+
+  async updateTinyCodes(id: number, updateTinyDto: { tiny_mg: number; tiny_sp: number }): Promise<string> {
+    await this.produtoRepository.update(id, updateTinyDto);
+    return 'Produtos atualizados com Sucesso!';
+  }
+  
 }

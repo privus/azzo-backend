@@ -10,7 +10,7 @@ export class CustomersController {
   @ApiOperation({ summary: 'Sincronizar todos os clientes' })
   @Get('syncro')
   async syncroAllCostumers() {
-    return this.customersService.syncroCostumers();
+    return this.customersService.syncroCustomers();
   }
 
   @ApiOperation({ summary: 'Sincronizar todos tiny ids' })
@@ -22,18 +22,18 @@ export class CustomersController {
   @ApiOperation({ summary: 'Listar todos os clientes' })
   @Get()
   async findAllCostumers() {
-    return this.customersService.findAllCostumers();
+    return this.customersService.findAllCustomers;
   }
 
   @ApiOperation({ summary: 'Buscar cliente por Código' })
   @Get(':id')
   async findCostumerById(@Param('id') codigo: number) {
-    return this.customersService.findCostumerByCode(codigo);
+    return this.customersService.findCustomerByCode(codigo);
   }
 
   @ApiOperation({ summary: 'Buscar cliente por Status' })
   @Get('/status/:id')
   async findCostumerByStatus(@Param('id') id: number) {
-    return this.customersService.findCostumersByStatus(id);
+    return this.customersService.findCustomersByStatus(id);
   }
 }

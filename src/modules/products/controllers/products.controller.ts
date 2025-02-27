@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ProductsService } from '../services/products.service';
 
@@ -13,7 +13,17 @@ export class ProductsController {
     return this.productsService.syncroProducts();
   }
 
-  @ApiOperation({ summary: 'Sincronizar todos os produtos' })
+
+  @ApiOperation({ summary: 'Salvar códigos Tiny.' })
+  @Patch(':id/tiny-codes')
+  async updateTinyCodes(
+    @Param('id') id: number, 
+    @Body() updateTinyDto: { tiny_mg: number; tiny_sp: number }) {
+      const resultMessage = await this.productsService.updateTinyCodes(id, updateTinyDto);
+      return { message: resultMessage };
+  }
+
+  @ApiOperation({ summary: 'Sincronizar todos os forncedores' })
   @Get('syncroSupplier')
   async syncroAllSupplier() {
     return this.productsService.syncroSupplier();

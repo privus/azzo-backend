@@ -4,8 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, MoreThanOrEqual, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido } from '../../../infrastructure/database/entities';
 import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto } from '../dto';
-import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository } from '../../../domain/repositories';
-import { TinyAuthService } from './tiny-auth.service';
+import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository } from '../../../domain/repositories';
 
 @Injectable()
 export class SellsService implements ISellsRepository {
@@ -14,7 +13,7 @@ export class SellsService implements ISellsRepository {
   private readonly tokenSellentt: string;
   private readonly tokenTiny: string;
   private readonly apiTagSellentt = 'orders';
-  private readonly apiTagTiny = 'pedidos';
+  private readonly orderTag = 'pedidos';
 
   constructor(
     @Inject('ICustomersRepository') private readonly clienteService: ICustomersRepository,
@@ -27,8 +26,8 @@ export class SellsService implements ISellsRepository {
     @InjectRepository(Syncro) private readonly syncroRepository: Repository<Syncro>,
     @InjectRepository(Venda) private readonly vendaRepository: Repository<Venda>,
     @InjectRepository(TipoPedido) private readonly tipoPedidoRepository: Repository<TipoPedido>,
+    @Inject('ITinyAuthRepository') private readonly tinyAuthService: ITinyAuthRepository,
     private readonly httpService: HttpService,
-    private readonly tinyAuthService: TinyAuthService,
   ) {
     this.tokenSellentt = process.env.SELLENTT_API_TOKEN;
     this.tokenTiny = process.env.TINY_API_TOKEN;
@@ -178,7 +177,7 @@ export class SellsService implements ISellsRepository {
     console.log('Criando nova venda =>', sell.code);
 
     // Busque e associe os dados necessários
-    const cliente = await this.clienteService.findCostumerByCode(sell.store ? Number(sell.store.erp_id) : 0);
+    const cliente = await this.clienteService.findCustomerByCode(sell.store ? Number(sell.store.erp_id) : 0);
     const vendedor = await this.sellersSevice.findBy({ codigo: Number(sell.seller_code) });
     const status_pagamento = await this.statusPagamentoRepository.findOne({
       where: { status_pagamento_id: 1 },
@@ -201,6 +200,7 @@ export class SellsService implements ISellsRepository {
       data.setDate(data.getDate() + days);
       return data.toISOString().split('T')[0]; // Formato "YYYY-MM-DD"
     });
+   
 
     // Agora é um array de strings, não um array de arrays
     const datas_vencimento = datasVencimentoArray;
@@ -208,15 +208,16 @@ export class SellsService implements ISellsRepository {
     // Criar as parcelas de crédito
     const parcela_credito = validPaymentDays.map((days, index) => {
       const data = new Date(baseDate);
-      data.setDate(data.getDate() + days); // Adiciona os dias de prazo
+      data.setDate(data.getDate() + days + 1); // Adiciona os dias de prazo + 1 dia extra
       return this.parcelaRepository.create({
-        numero: index + 1,
-        valor: Number(sell.installment_value),
-        data_criacao: sell.order_date,
-        data_vencimento: data,
-        status_pagamento,
+          numero: index + 1,
+          valor: Number(sell.installment_value),
+          data_criacao: sell.order_date,
+          data_vencimento: data,
+          status_pagamento,
       });
-    });
+  });
+  
 
     let itensVenda = [];
     if (sell.products && sell.products.length > 0) {
@@ -272,11 +273,11 @@ export class SellsService implements ISellsRepository {
         where: {
           data_criacao: MoreThanOrEqual(new Date(fromDate)),
         },
-        relations: ['cliente', 'vendedor', 'status_pagamento', 'status_venda', 'itensVenda.produto', 'tipo_pedido'],
+        relations: ['cliente.cidade.estado', 'vendedor', 'status_pagamento', 'status_venda', 'itensVenda.produto', 'tipo_pedido'],
       });
     }
     return this.vendaRepository.find({
-      relations: ['cliente', 'vendedor', 'status_pagamento', 'status_venda', 'itensVenda.produto', 'tipo_pedido'],
+      relations: ['cliente.cidade.estado', 'vendedor', 'status_pagamento', 'status_venda', 'itensVenda.produto', 'tipo_pedido'],
     });
   }
 
@@ -327,8 +328,9 @@ export class SellsService implements ISellsRepository {
           relations: ['cliente.cidade.estado', 'itensVenda.produto', 'parcela_credito', 'tipo_pedido'],
         });
 
-        if (!order.cliente.tiny_id) {
-            throw new Error(`🚨 Cliente com ID ${order.cliente.codigo} não possui um ID no Tiny.`);
+        let idContato = order.cliente.tiny_id;
+        if (!idContato) {
+            idContato = await this.clienteService.registerCustomerTiny(order.cliente.codigo);
         }
 
         const uf = order.cliente.cidade.estado.sigla
@@ -343,15 +345,18 @@ export class SellsService implements ISellsRepository {
         }
 
         const body: OrderTinyDto = {
-            idContato: order.cliente.tiny_id,
-            numeroOrdemCompra: order.codigo.toString(),
+            idContato: idContato,
+            numeroOrdemCompra: `${order.codigo}_sell`,
             data: order.data_criacao.toISOString().split('T')[0],
             meioPagamento: 2,
-            parcelas: order.parcela_credito.map(parcela => ({
-                dias: Math.floor((new Date(parcela.data_vencimento).getTime() - new Date(order.data_criacao).getTime()) / (1000 * 60 * 60 * 24)), 
-                data: parcela.data_vencimento,
-                valor: parcela.valor
-            })),
+            parcelas: order.datas_vencimento.map((dataVencimento, index) => ({
+              dias: Math.floor(
+                  (new Date(dataVencimento).getTime() - new Date(order.data_criacao).getTime()) / (1000 * 60 * 60 * 24)
+              ),
+              data: new Date(dataVencimento), // Convertendo string para Date
+              valor: order.parcela_credito[index]?.valor || 0, // Pega o valor correto da parcela ou usa 0 como fallback
+          })),
+                 
             itens: order.itensVenda.map(item => ({
                 produto: {
                     id: uf === 'MG' ? item.produto.tiny_mg : item.produto.tiny_sp,
@@ -361,22 +366,22 @@ export class SellsService implements ISellsRepository {
             })),
         };
 
+        order.exportado = 1;
+        await this.vendaRepository.save(order);
 
+        const apiUrl = this.apiUrlTiny + this.orderTag;
 
-        const apiUrl = `${this.apiUrlTiny}${this.apiTagTiny}`;
-        console.log('BODY==================>', body);
-
-        const response = await this.httpService.axiosRef.post(apiUrl, body, {
+        await this.httpService.axiosRef.post(apiUrl, body, {
             headers: {
                 Authorization: `Bearer ${accessToken}`,
                 'Content-Type': 'application/json',
             },
         });
-        console.log('RESPONSE==================>', response.data);
+
         return `Pedido ${order.codigo} exportado com sucesso para o Tiny ${uf}`;
     } catch (error) {
         throw error.data;
-    }
+      }
   }
 }
 

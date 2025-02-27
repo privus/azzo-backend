@@ -9,7 +9,14 @@ import { TinyTokenService } from '../sells/services/tiny-token.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Cliente, Cidade, Estado, Regiao, StatusCliente, TinyTokens]), HttpModule],
-  providers: [CustomersService, { provide: 'ICustomersRepository', useClass: CustomersService },TinyAuthService, TinyTokenService],
+  providers: [
+    CustomersService, 
+    { provide: 'ICustomersRepository', useClass: CustomersService }, 
+    TinyAuthService, 
+    { provide: 'ITinyAuthRepository', useClass: TinyAuthService }, 
+    TinyTokenService,
+    { provide: 'ITinyTokenRepository', useClass: TinyTokenService }, 
+  ],
   controllers: [CustomersController],
   exports: [CustomersService, 'ICustomersRepository'],
 })

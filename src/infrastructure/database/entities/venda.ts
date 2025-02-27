@@ -42,6 +42,9 @@ export class Venda {
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   desconto: number;
 
+  @Column({ type: 'tinyint', nullable: true })
+  exportado: number;
+
   @ManyToOne(() => Cliente)
   @JoinColumn({ name: 'cliente_id' })
   cliente: Cliente;

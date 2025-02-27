@@ -6,4 +6,5 @@ export interface IProductsRepository {
   findAllProducts(): Promise<Produto[]>;
   findProductById(id: number): Promise<Produto>;
   findBy(param: Partial<Produto>): Promise<Produto | null>;
+  updateTinyCodes(id: number, updateTinyDto: { tiny_mg: number; tiny_sp: number }): Promise<void>;
 }

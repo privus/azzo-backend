@@ -37,8 +37,9 @@ export class DebtsDto {
    * Descrição do débito.
    * Exemplo: 'Conta de luz'
    */
+  @IsOptional()
   @IsString({ message: 'A descrição deve ser uma string.' })
-  @Length(3, 90, { message: 'A descrição deve ter entre 3 e 90 caracteres.' })
+  @Length(0, 180, { message: 'A descrição deve ter entre 3 e 180 caracteres.' })
   descricao: string;
 
   /**
