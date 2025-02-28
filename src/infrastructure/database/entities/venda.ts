@@ -12,7 +12,7 @@ export class Venda {
   @Column({ type: 'timestamp', nullable: false })
   data_criacao: Date;
 
-  @Column({ type: 'varchar', length: 240, nullable: true })
+  @Column({ type: 'varchar', length: 480, nullable: true })
   observacao: string;
 
   @Column({ type: 'int', nullable: true })
