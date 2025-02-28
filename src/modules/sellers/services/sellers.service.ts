@@ -53,7 +53,7 @@ export class SellersService {
       nome: seller.name,
       ativo: seller.is_active,
       data_criacao: seller.created_at,
-      regiao: regiao || null, // Se não encontrar a região, salva null ou trate como desejar
+      regiao: regiao,
     });
 
     // 3) Salva no banco

@@ -22,7 +22,7 @@ export class CustomersController {
   @ApiOperation({ summary: 'Listar todos os clientes' })
   @Get()
   async findAllCostumers() {
-    return this.customersService.findAllCustomers;
+    return this.customersService.findAllCustomers();
   }
 
   @ApiOperation({ summary: 'Buscar cliente por Código' })

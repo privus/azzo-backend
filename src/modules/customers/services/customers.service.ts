@@ -79,28 +79,40 @@ export class CustomersService implements ICustomersRepository{
       return;
     }
 
+    // Fetch or create the city
     const cidade = await this.cidadeRepository.findOne({
       where: { nome: client.address_city },
       relations: ['estado'],
     });
 
+    // Fetch the region
     let regiao = await this.regiaoRepository.findOne({
       where: { codigo: client.region_code },
+      relations: ['cidades'],  // Ensure we get the list of associated cities
     });
 
-    if (!regiao && client.region_code == 9) {
-      regiao = this.regiaoRepository.create({
-        nome: 'Região Geral',
-        codigo: 9,
-        cidades: cidade ? [cidade] : [],
-      });
-      await this.regiaoRepository.save(regiao);
+    // If the region does not exist and it's code 9, create it
+    if (!regiao && client.region_code === 9) {
+        regiao = this.regiaoRepository.create({
+            nome: 'Região Geral',
+            codigo: 9,
+            cidades: cidade ? [cidade] : [], // Add city if found
+        });
+        await this.regiaoRepository.save(regiao);
     }
 
+    // If the region exists but the city is not in it, add the city
+    if (regiao && cidade && !regiao.cidades.some(c => c.nome === cidade.nome)) {
+        regiao.cidades.push(cidade);
+        await this.regiaoRepository.save(regiao);
+    }
+
+    // Fetch the customer status
     const status = await this.statusClienteRepository.findOne({
       where: { status_cliente_id: Number(client.tags) || null },
     });
 
+    // Create the new customer
     const novoCliente = this.clienteRepository.create({
       nome: client.name,
       codigo: client.code,
@@ -119,7 +131,7 @@ export class CustomersService implements ICustomersRepository{
       celular: client.phone_number_1,
       telefone_comercial: client.phone_number_2,
       ativo: client.is_active,
-      regiao,
+      regiao, // Ensure customer is assigned to the region
       data_criacao: new Date(client.created_at),
       data_atualizacao: new Date(client.updated_at),
       status_cliente: status || null,
@@ -130,7 +142,7 @@ export class CustomersService implements ICustomersRepository{
   }
 
   findAllCustomers(): Promise<Cliente[]> {
-    return this.clienteRepository.find({ relations: ['cidade.estado', 'regiao', 'status_cliente'] });
+    return this.clienteRepository.find({ relations: ['cidade.estado', 'regiao', 'status_cliente', 'regiao.vendedores'] });
   }
 
   findCustomerByCode(codigo: number): Promise<Cliente> {

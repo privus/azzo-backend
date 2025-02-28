@@ -15,29 +15,29 @@ export class CreditsService implements ICreditsRepository {
   ) {}
 
   async getAllCredits(): Promise<ParcelaCredito[]> {
-    const now = new Date();
-
-    // Busca todas as parcelas com os relacionamentos necessários
     const credits = await this.parcelaRepository.find({
       relations: ['status_pagamento', 'venda', 'venda.cliente', 'categoria'],
     });
-
-    // Atualiza o status de parcelas vencidas
+    const now = new Date();
     const statusAtraso = await this.statusRepository.findOne({ where: { status_pagamento_id: 3 } }); // "Em Atraso"
 
     for (const credit of credits) {
-      const dataVencimento = new Date(credit.data_vencimento);
-      const vencida = dataVencimento < now && !credit.data_pagamento;
+      const dataVencimentoAjustada = new Date(credit.data_vencimento);
+      dataVencimentoAjustada.setDate(dataVencimentoAjustada.getDate() + 1); // Adiciona um dia extra
+
+      const vencida = dataVencimentoAjustada < now && !credit.data_pagamento;
       const isPendente = credit.status_pagamento.status_pagamento_id === 1; // Pendente
 
       if (vencida && isPendente && statusAtraso) {
         console.log(`Atualizando parcela ${credit.parcela_id} para status 'Em Atraso'.`);
         credit.status_pagamento = statusAtraso; // Atualiza a referência de status_pagamento
         await this.parcelaRepository.save(credit); // Salva a parcela com o novo status
+
         // Atualizar o status da venda associada
         await this.updateVendaStatus(credit.venda.venda_id);
       }
     }
+
 
     return credits;
   }

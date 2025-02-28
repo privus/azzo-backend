@@ -197,18 +197,18 @@ export class SellsService implements ISellsRepository {
     const baseDate = new Date(sell.order_date);
     const datasVencimentoArray = validPaymentDays.map((days) => {
       const data = new Date(baseDate);
-      data.setDate(data.getDate() + days);
+      data.setDate(data.getDate() + days + 1); // Adiciona um dia extra
       return data.toISOString().split('T')[0]; // Formato "YYYY-MM-DD"
     });
+    
    
-
     // Agora é um array de strings, não um array de arrays
     const datas_vencimento = datasVencimentoArray;
 
     // Criar as parcelas de crédito
     const parcela_credito = validPaymentDays.map((days, index) => {
       const data = new Date(baseDate);
-      data.setDate(data.getDate() + days + 1); // Adiciona os dias de prazo + 1 dia extra
+      data.setDate(data.getDate() + days + 1); // Adiciona um dia extra
       return this.parcelaRepository.create({
           numero: index + 1,
           valor: Number(sell.installment_value),
@@ -216,7 +216,7 @@ export class SellsService implements ISellsRepository {
           data_vencimento: data,
           status_pagamento,
       });
-  });
+    });   
   
 
     let itensVenda = [];
@@ -239,13 +239,24 @@ export class SellsService implements ISellsRepository {
 
     const tipo_pedido = await this.tipoPedidoRepository.findOne({ where: { tipo_pedido_id: sell.order_type_id } });
 
+    // Split the string into two parts: before and after "dias"
+    const paymentParts = sell.payment_term_text.split(/(dias)/);
+    const firstPart = paymentParts[0]; // Contains numbers before "dias"
+    const secondPart = paymentParts.slice(1).join(''); // Everything after "dias"
+
+    // Process only the first part (increment numbers and replace '/' with ', ')
+    const updatedFirstPart = firstPart.replace(/\d+/g, (match) => (Number(match) + 1).toString()).replace(/\//g, ', ');
+
+    // Reconstruct the full string
+    const formattedPaymentTermText = updatedFirstPart + secondPart;
+
     const novaVenda = this.vendaRepository.create({
       codigo: Number(sell.code),
       observacao: sell.obs,
       numero_parcelas: sell.installment_qty,
       valor_parcela: Number(sell.installment_value),
-      metodo_pagamento: sell.payment_method_text || '',
-      forma_pagamento: sell.payment_term_text || '',
+      metodo_pagamento: sell.payment_method_text,
+      forma_pagamento: formattedPaymentTermText,
       data_criacao: sell.order_date,
       valor_pedido: Number(sell.amount),
       valor_final: Number(sell.amount_final),
