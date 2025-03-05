@@ -91,15 +91,8 @@ export class CustomersService implements ICustomersRepository{
       relations: ['cidades'],  // Ensure we get the list of associated cities
     });
 
-    // If the region does not exist and it's code 9, create it
     if (!regiao) {
-        regiao = this.regiaoRepository.create({
-            nome: 'Região Geral',
-            codigo: 9,
-            cidades: cidade ? [cidade] : [], // Add city if found
-        });
-        await this.regiaoRepository.save(regiao);
-        existingClient.regiao.regiao_id = 9;
+      existingClient.regiao.regiao_id = 9 
     }
 
     if (existingClient) {
