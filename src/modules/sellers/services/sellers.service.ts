@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Vendedor, Regiao } from '../../../infrastructure/database/entities';
 import { ConfigService } from '@nestjs/config';
 import { SellerAPIResponse } from '../dto/sellers.dto';
@@ -32,33 +32,44 @@ export class SellersService {
 
       const sellersData = response.data.data;
       console.log('Vendedores recebidos =>', sellersData);
+
+      const existingSellers = await this.vendedorRepository.find({ relations: ['regiao'] });
+      const existingCodes = existingSellers.map(seller => seller.codigo);
+      const receivedCodes = sellersData.map(seller => seller.code);
+
+      const sellersToDelete = existingSellers.filter(seller => !receivedCodes.includes(seller.codigo));
+      if (sellersToDelete.length > 0) {
+        await this.vendedorRepository.delete({ codigo: In(sellersToDelete.map(seller => seller.codigo)) });
+        console.log('Vendedores removidos =>', sellersToDelete.map(seller => seller.codigo));
+      }
+
       for (const seller of sellersData) {
-        await this.processSeller(seller);
+        const existingSeller = existingSellers.find(s => s.codigo === seller.code);
+        const regiao = await this.regiaoRepository.findOne({ where: { codigo: seller.region_code } });
+
+        if (existingSeller) {
+          if (existingSeller.regiao?.codigo !== seller.region_code) {
+            console.log(`Atualizando região do vendedor ${seller.code}`);
+            existingSeller.regiao = regiao;
+            await this.vendedorRepository.save(existingSeller);
+          }
+          continue;
+        }
+
+        const novoVendedor = this.vendedorRepository.create({
+          codigo: seller.code,
+          nome: seller.name,
+          ativo: seller.is_active,
+          data_criacao: seller.created_at,
+          regiao: regiao,
+        });
+        await this.vendedorRepository.save(novoVendedor);
+        console.log('Vendedor sincronizado =>', novoVendedor);
       }
     } catch (error) {
       console.error('Erro ao sincronizar vendedores:', error);
       throw error;
     }
-  }
-
-  private async processSeller(seller: SellerAPIResponse) {
-    // 1) Busca a região pelo ID (ou, se preferir, pelo campo 'nome')
-    const regiao = await this.regiaoRepository.findOne({
-      where: { codigo: seller.region_code },
-    });
-
-    // 2) Cria ou atualiza o vendedor
-    const novoVendedor = this.vendedorRepository.create({
-      codigo: seller.code,
-      nome: seller.name,
-      ativo: seller.is_active,
-      data_criacao: seller.created_at,
-      regiao: regiao,
-    });
-
-    // 3) Salva no banco
-    await this.vendedorRepository.save(novoVendedor);
-    console.log('Vendedor sincronizado =>', novoVendedor);
   }
 
   findBy(param: Partial<Vendedor>): Promise<Vendedor | null> {

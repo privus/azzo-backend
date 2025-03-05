@@ -149,8 +149,14 @@ export class SellsService implements ISellsRepository {
     await this.syncroRepository.save(metadata);
   }
 
+  private generateInstallments(orderTypeId: number): boolean {
+    return orderTypeId === 10438;
+  }
   private async processSell(sell: SellsApiResponse): Promise<string> {
     const existingSell = await this.vendaRepository.findOne({ where: { codigo: Number(sell.code) } });
+    const status_pagamento = await this.statusPagamentoRepository.findOne({
+      where: { status_pagamento_id: 1 },
+    });
 
     if (existingSell) {
       // Verifique se há alterações no registro (com base na lógica de atualização)
@@ -158,7 +164,22 @@ export class SellsService implements ISellsRepository {
       if (updatedDate > existingSell.data_criacao) {
         // Compare com o campo de última atualização no banco
         console.log(`Atualizando venda existente => ${sell.code}`);
-
+        if (+sell.order_type_id === 10438) {
+          const baseDate = new Date(sell.order_date);
+          const paymentTerms = sell.payment_term_text.match(/\d+/g) || [];
+          const paymentDays = paymentTerms.map(Number);
+          existingSell.parcela_credito = paymentDays.map((days, index) => {
+            const data = new Date(baseDate);
+            data.setDate(data.getDate() + days + 1);
+            return this.parcelaRepository.create({
+              numero: index + 1,
+              valor: Number(sell.installment_value),
+              data_criacao: sell.order_date,
+              data_vencimento: data,
+              status_pagamento: status_pagamento,
+            });
+          });
+        }
         // Atualize os campos necessários
         existingSell.observacao = sell.obs;
         existingSell.status_venda = await this.statusVendaRepository.findOne({ where: { status_venda_id: sell.status.id } });
@@ -179,9 +200,6 @@ export class SellsService implements ISellsRepository {
     // Busque e associe os dados necessários
     const cliente = await this.clienteService.findCustomerByCode(sell.store ? Number(sell.store.erp_id) : 0);
     const vendedor = await this.sellersSevice.findBy({ codigo: Number(sell.seller_code) });
-    const status_pagamento = await this.statusPagamentoRepository.findOne({
-      where: { status_pagamento_id: 1 },
-    });
     const status_venda = await this.statusVendaRepository.findOne({
       where: { status_venda_id: sell.status.id },
     });
@@ -204,19 +222,20 @@ export class SellsService implements ISellsRepository {
    
     // Agora é um array de strings, não um array de arrays
     const datas_vencimento = datasVencimentoArray;
-
-    // Criar as parcelas de crédito
-    const parcela_credito = validPaymentDays.map((days, index) => {
-      const data = new Date(baseDate);
-      data.setDate(data.getDate() + days + 1); // Adiciona um dia extra
-      return this.parcelaRepository.create({
-          numero: index + 1,
-          valor: Number(sell.installment_value),
-          data_criacao: sell.order_date,
-          data_vencimento: data,
-          status_pagamento,
+    let parcela_credito
+    if (+sell.order_type_id === 10438) {
+      parcela_credito = validPaymentDays.map((days, index) => {
+        const data = new Date(baseDate);
+        data.setDate(data.getDate() + days + 1); // Adiciona um dia extra
+        return this.parcelaRepository.create({
+            numero: index + 1,
+            valor: Number(sell.installment_value),
+            data_criacao: sell.order_date,
+            data_vencimento: data,
+            status_pagamento,
+        });
       });
-    });   
+    } 
   
 
     let itensVenda = [];
