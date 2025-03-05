@@ -19,4 +19,5 @@ export interface CustomerAPIResponse {
   updated_at: Date;
   region_code: number;
   tags: string;
+  segment_id: string;
 }

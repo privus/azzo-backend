@@ -14,16 +14,13 @@ export class CargoPermissaoSeed implements Seeder {
         permissoes: [
           { nome: 'Gerenciamento de Usuários', ler: 1, editar: 1, criar: 1 },
           { nome: 'Gerenciamento Financeiro', ler: 1, editar: 1, criar: 1 },
-          { nome: 'Gerenciamento de Estoque', ler: 1, editar: 1, criar: 1 },
-          { nome: 'Relatórios', ler: 1, editar: 1, criar: 1 },
         ],
       },
       {
-        cargo: 'Gerente',
+        cargo: 'Financeiro',
         permissoes: [
           { nome: 'Gerenciamento de Usuários', ler: 1, editar: 1, criar: 1 },
           { nome: 'Gerenciamento Financeiro', ler: 1, editar: 1, criar: 0 },
-          { nome: 'Gerenciamento de Estoque', ler: 1, editar: 1, criar: 1 },
         ],
       },
     ];

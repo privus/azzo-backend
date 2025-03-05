@@ -8,7 +8,6 @@ export class PermissaoSeed implements Seeder {
 
     const permissoes = [
       { nome: 'Gerenciamento de Usuários' },
-      { nome: 'Gerenciamento de Estoque' },
       { nome: 'Gerenciamento Financeiro' },
       { nome: 'Relatórios' },
     ];

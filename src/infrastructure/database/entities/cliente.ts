@@ -12,6 +12,9 @@ export class Cliente {
   @Column({ type: 'int', nullable: true })
   tiny_id: number;
 
+  @Column({ type: 'int', nullable: true })
+  segmento_id: number;
+
   @Column({ type: 'varchar', length: 240 })
   nome: string;
 

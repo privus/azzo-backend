@@ -7,13 +7,8 @@ export class CargoSeed implements Seeder {
     const cargoRepository = dataSource.getRepository(Cargo);
 
     const cargos = [
-      { nome: 'Desenvolvedor' },
-      { nome: 'Vendedor' },
-      { nome: 'Designer' },
-      { nome: 'Gerente' },
-      { nome: 'Analista' },
-      { nome: 'Estagiário' },
       { nome: 'Administrador' },
+      { nome: 'Financeiro' },
     ];
 
     for (const cargo of cargos) {

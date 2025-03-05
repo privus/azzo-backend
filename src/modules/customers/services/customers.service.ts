@@ -135,6 +135,7 @@ export class CustomersService implements ICustomersRepository{
       data_criacao: new Date(client.created_at),
       data_atualizacao: new Date(client.updated_at),
       status_cliente: status || null,
+      segmento_id: +client.segment_id,
     });
 
     await this.clienteRepository.save(novoCliente);

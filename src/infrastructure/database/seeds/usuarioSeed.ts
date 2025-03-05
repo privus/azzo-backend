@@ -8,42 +8,39 @@ export class UsuarioSeed implements Seeder {
     const userRepository = dataSource.getRepository(Usuario);
     const cidadeRepository = dataSource.getRepository(Cidade);
     const cargoRepository = dataSource.getRepository(Cargo);
-    const regiaoRepository = dataSource.getRepository(Regiao);
 
     const users = [
       {
         nome: 'André Juan',
-        email: 'andre.jvb@example.com',
-        celular: '(35) 99999-9999',
-        endereco: 'Rua Exemplo, 123',
+        email: 'andre.jvb@azzo.com',
+        celular: '(35) 99134-0446',
+        endereco: 'Rua Goiania, 363',
         senha: await bcrypt.hash('senha123', 10),
-        nascimento: '20/04/1993',
+        nascimento: '05/04/1993',
         username: 'andrejvb',
         cidade_id: 1, // ID da cidade
         cargo_id: 1, // ID do cargo
       },
       {
-        nome: 'Maria Oliveira',
-        email: 'maria.oliveira@example.com',
+        nome: 'Talita',
+        email: 'talita@azzo.com',
         celular: '(21) 88888-8888',
         endereco: 'Av. Exemplo, 456',
         senha: await bcrypt.hash('senha45', 10),
         nascimento: '15/05/1990',
-        username: 'mariaoliveira',
-        cidade_id: 3, // ID da cidade
+        username: 'talita',
+        cidade_id: 1, // ID da cidade
         cargo_id: 3, // ID do cargo
       },
       {
-        nome: 'Luan Alves',
-        email: 'luan.oliveira@example.com',
+        nome: 'Paloma',
+        email: 'paloma@azzo.com',
         celular: '(21) 88888-8888',
         endereco: 'Av. Exemplo, 99',
         senha: await bcrypt.hash('senha45', 10),
         nascimento: '15/05/1990',
-        username: 'luanalves',
-        cidade_id: 3, // ID da cidade
+        username: 'paloma',
         cargo_id: 2,
-        regiao_id: 2, // ID do cargo
       },
     ];
 
@@ -54,14 +51,12 @@ export class UsuarioSeed implements Seeder {
         // Busque a cidade e o cargo pelos IDs antes de criar o usuário
         const cidade = await cidadeRepository.findOneBy({ cidade_id: user.cidade_id });
         const cargo = await cargoRepository.findOneBy({ cargo_id: user.cargo_id });
-        const regiao = user.regiao_id ? await regiaoRepository.findOneBy({ regiao_id: user.regiao_id }) : null;
-
+        
         if (cidade && cargo) {
           const newUser = userRepository.create({
             ...user,
             cidade,
             cargo,
-            regiao,
           });
           await userRepository.save(newUser);
           console.log(`Usuário ${user.nome} foi adicionado.`);
