@@ -394,5 +394,10 @@ export class SellsService implements ISellsRepository {
         throw error.data;
       }
   }
+
+  async limparTabela() {
+    await this.vendaRepository.clear();
+    return 'Tabela Limpa'  // Limpa todos os registros
+}
 }
 

@@ -35,6 +35,13 @@ export class SellsController {
     return { message: resultMessage };
   }
 
+  @ApiOperation({ summary: 'Sincronizar todas as vendas' })
+  @Get('drop')
+  async dropSells() {
+    const resultMessage = await this.sellsService.limparTabela();
+    return { message: resultMessage };
+  }
+
   @ApiOperation({ summary: 'Obter venda por ID' })
   @Get(':id')
   async getSellById(@Param('id') id: number) {
