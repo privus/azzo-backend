@@ -99,11 +99,11 @@ export class CustomersService implements ICustomersRepository{
             cidades: cidade ? [cidade] : [], // Add city if found
         });
         await this.regiaoRepository.save(regiao);
+        existingClient.regiao = regiao;
     }
 
     if (existingClient) {
       console.log(`Customer with code ${client.code} already exists. Skipping...`);
-      existingClient.regiao = regiao;
       return;
     }
 
