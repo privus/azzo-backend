@@ -99,7 +99,7 @@ export class CustomersService implements ICustomersRepository{
             cidades: cidade ? [cidade] : [], // Add city if found
         });
         await this.regiaoRepository.save(regiao);
-        existingClient.regiao = regiao;
+        existingClient.regiao.regiao_id = 9;
     }
 
     if (existingClient) {
