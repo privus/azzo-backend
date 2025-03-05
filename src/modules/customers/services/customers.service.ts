@@ -76,6 +76,7 @@ export class CustomersService implements ICustomersRepository{
 
     if (existingClient) {
       console.log(`Customer with code ${client.code} already exists. Skipping...`);
+      existingClient.segmento_id = +client.segment_id;
       return;
     }
 
