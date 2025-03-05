@@ -76,7 +76,6 @@ export class CustomersService implements ICustomersRepository{
 
     if (existingClient) {
       console.log(`Customer with code ${client.code} already exists. Skipping...`);
-      existingClient.segmento_id = +client.segment_id;
       return;
     }
 
@@ -93,7 +92,7 @@ export class CustomersService implements ICustomersRepository{
     });
 
     // If the region does not exist and it's code 9, create it
-    if (!regiao && client.region_code === 9) {
+    if (!regiao) {
         regiao = this.regiaoRepository.create({
             nome: 'Região Geral',
             codigo: 9,
@@ -101,6 +100,13 @@ export class CustomersService implements ICustomersRepository{
         });
         await this.regiaoRepository.save(regiao);
     }
+
+    if (existingClient) {
+      console.log(`Customer with code ${client.code} already exists. Skipping...`);
+      existingClient.regiao = regiao;
+      return;
+    }
+
 
     // If the region exists but the city is not in it, add the city
     if (regiao && cidade && !regiao.cidades.some(c => c.nome === cidade.nome)) {
