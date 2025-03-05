@@ -13,16 +13,6 @@ export class ProductsController {
     return this.productsService.syncroProducts();
   }
 
-
-  @ApiOperation({ summary: 'Salvar códigos Tiny.' })
-  @Patch(':id/tiny-codes')
-  async updateTinyCodes(
-    @Param('id') id: number, 
-    @Body() updateTinyDto: { tiny_mg: number; tiny_sp: number }) {
-      const resultMessage = await this.productsService.updateTinyCodes(id, updateTinyDto);
-      return { message: resultMessage };
-  }
-
   @ApiOperation({ summary: 'Sincronizar todos os forncedores' })
   @Get('syncroSupplier')
   async syncroAllSupplier() {
@@ -39,6 +29,15 @@ export class ProductsController {
   @Get()
   async findAllProducts() {
     return this.productsService.findAllProducts();
+  }
+
+  @ApiOperation({ summary: 'Salvar códigos Tiny.' })
+  @Patch(':id/tiny-codes')
+  async updateTinyCodes(
+    @Param('id') id: number, 
+    @Body() updateTinyDto: { tiny_mg: number; tiny_sp: number }) {
+      const resultMessage = await this.productsService.updateTinyCodes(id, updateTinyDto);
+      return { message: resultMessage };
   }
 
   @ApiOperation({ summary: 'Buscar produto por Código' })
