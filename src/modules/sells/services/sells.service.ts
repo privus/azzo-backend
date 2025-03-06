@@ -401,5 +401,20 @@ export class SellsService implements ISellsRepository {
         throw error.data;
       }
   }
+
+  async deleteSell(code: number): Promise<string> {
+    // Verifica se a venda existe
+    const venda = await this.vendaRepository.findOne({ where: { codigo: code } });
+
+    if (!venda) {
+        throw new Error(`Venda com ID ${code} não encontrada.`);
+    }
+
+    // Exclui a venda diretamente (parcelas serão excluídas automaticamente pelo cascade)
+    await this.vendaRepository.remove(venda);
+
+    return `Venda com ID ${code} e suas parcelas foram excluídas com sucesso.`;
+}
+
 }
 

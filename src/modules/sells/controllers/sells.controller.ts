@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SellsService } from '../services/sells.service';
 import { UpdateSellStatusDto } from '../dto';
@@ -34,6 +34,14 @@ export class SellsController {
     const resultMessage = await this.sellsService.syncroSells();
     return { message: resultMessage };
   }
+
+  @ApiOperation({ summary: 'Excluir venda e suas parcelas' })
+  @Delete(':id')
+  async deleteSell(@Param('id') id: number) {
+    const resultMessage = await this.sellsService.deleteSell(id);
+    return { message: resultMessage };
+  }
+
 
   @ApiOperation({ summary: 'Obter venda por ID' })
   @Get(':id')

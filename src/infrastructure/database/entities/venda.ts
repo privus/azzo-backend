@@ -53,15 +53,15 @@ export class Venda {
   @JoinColumn({ name: 'vendedor_id' })
   vendedor: Vendedor;
 
-  @OneToMany(() => ItensVenda, (vp) => vp.venda, { cascade: true })
-  itensVenda: ItensVenda[];
+  @OneToMany(() => ItensVenda, (item) => item.venda, { cascade: true, onDelete: 'CASCADE' })
+  itensVenda: ItensVenda[];  
 
   @ManyToOne(() => Regiao)
   @JoinColumn({ name: 'regiao_id' })
   regiao: Regiao;
 
-  @OneToMany(() => ParcelaCredito, (parcela) => parcela.venda, { cascade: true })
-  parcela_credito: ParcelaCredito[];
+  @OneToMany(() => ParcelaCredito, (parcela) => parcela.venda, { cascade: true, onDelete: 'CASCADE' })
+  parcela_credito: ParcelaCredito[];  
 
   @ManyToOne(() => StatusVenda)
   @JoinColumn({ name: 'status_venda_id' })

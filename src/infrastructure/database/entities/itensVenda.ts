@@ -15,7 +15,7 @@ export class ItensVenda {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   valor_total: number;
 
-  @ManyToOne(() => Venda)
+  @ManyToOne(() => Venda, (venda) => venda.itensVenda, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'venda_id' })
   venda: Venda;
 

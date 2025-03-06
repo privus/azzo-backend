@@ -271,8 +271,4 @@ export class CustomersService implements ICustomersRepository{
           throw error;
       }
   }
-
-  findCustomersByCity(city: string): Promise<Cliente[]> {
-    return this.clienteRepository.find({ where: { cidade_string: city }, relations: ['cidade.estado', 'regiao', 'status_cliente'] });
-  }
 }
