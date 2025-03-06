@@ -239,7 +239,7 @@ export class SellsService implements ISellsRepository {
 
     const tipo_pedido = await this.tipoPedidoRepository.findOne({ where: { tipo_pedido_id: sell.order_type_id } });
 
-   // Verifica se payment_term_text não é nulo ou indefinido
+    // Verifica se payment_term_text não é nulo ou indefinido
     if (sell.payment_term_text) {
       // Split the string into two parts: before and after "dias"
       const paymentParts = sell.payment_term_text.split(/(dias)/);
@@ -257,13 +257,12 @@ export class SellsService implements ISellsRepository {
       var formattedPaymentTermText = ''; // Retorna string vazia se for nulo ou indefinido
     }
 
-
     const novaVenda = this.vendaRepository.create({
       codigo: Number(sell.code),
       observacao: sell.obs,
       numero_parcelas: sell.installment_qty,
       valor_parcela: Number(sell.installment_value),
-      metodo_pagamento: sell.payment_method_text,
+      metodo_pagamento: sell.payment_method_text || '',  // Corrigido para evitar valor NULL
       forma_pagamento: formattedPaymentTermText,
       data_criacao: sell.order_date,
       valor_pedido: Number(sell.amount),
