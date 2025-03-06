@@ -239,16 +239,24 @@ export class SellsService implements ISellsRepository {
 
     const tipo_pedido = await this.tipoPedidoRepository.findOne({ where: { tipo_pedido_id: sell.order_type_id } });
 
-    // Split the string into two parts: before and after "dias"
-    const paymentParts = sell.payment_term_text.split(/(dias)/);
-    const firstPart = paymentParts[0]; // Contains numbers before "dias"
-    const secondPart = paymentParts.slice(1).join(''); // Everything after "dias"
+   // Verifica se payment_term_text não é nulo ou indefinido
+    if (sell.payment_term_text) {
+      // Split the string into two parts: before and after "dias"
+      const paymentParts = sell.payment_term_text.split(/(dias)/);
+      const firstPart = paymentParts[0]; // Contains numbers before "dias"
+      const secondPart = paymentParts.slice(1).join(''); // Everything after "dias"
 
-    // Process only the first part (increment numbers and replace '/' with ', ')
-    const updatedFirstPart = firstPart.replace(/\d+/g, (match) => (Number(match) + 1).toString()).replace(/\//g, ', ');
+      // Process only the first part (increment numbers and replace '/' with ', ')
+      const updatedFirstPart = firstPart
+          .replace(/\d+/g, (match) => (Number(match) + 1).toString())
+          .replace(/\//g, ', ');
 
-    // Reconstruct the full string
-    const formattedPaymentTermText = updatedFirstPart + secondPart;
+      // Reconstruct the full string
+      var formattedPaymentTermText = updatedFirstPart + secondPart;
+    } else {
+      var formattedPaymentTermText = ''; // Retorna string vazia se for nulo ou indefinido
+    }
+
 
     const novaVenda = this.vendaRepository.create({
       codigo: Number(sell.code),

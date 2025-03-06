@@ -36,4 +36,10 @@ export class CustomersController {
   async findCostumerByStatus(@Param('id') id: number) {
     return this.customersService.findCustomersByStatus(id);
   }
+
+  @ApiOperation({ summary: 'Buscar Clientes por cidade' })
+  @Get('city')
+  async findCostumerByCity(@Param('city') city: string) {
+    return this.customersService.findCustomersByCity(city);
+  }
 }
