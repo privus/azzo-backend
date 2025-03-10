@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
 import { CategoriaDebito, Debito, Departamento, ParcelaDebito, StatusPagamento } from '../../../infrastructure/database/entities';
 import { DebtsDto } from '../dto/debts.dto';
+import { UpdateInstalmentDto } from '../dto/update-instalment.dto';
+import { UpdateDebtStatusDto } from '../dto';
 
 @Injectable()
 export class DebtsService {
@@ -170,5 +172,80 @@ export class DebtsService {
       where: { debito_id: id },
       relations: ['parcela_debito.status_pagamento', 'status_pagamento', 'categoria', 'departamento'],
     });
+  }
+
+  async updateInstalmentStatus(UpdateInstalmentDto: UpdateInstalmentDto): Promise<string> {
+    const { parcela_id, status_pagamento_id, data_pagamento, juros, atualizado_por } = UpdateInstalmentDto;
+
+    
+    const dataPagamentoConvertida = data_pagamento ? new Date(`${data_pagamento}T00:00:00Z`) : null;
+    const hoje = new Date();
+    if (dataPagamentoConvertida > hoje) {
+      throw new Error('A data de pagamento não pode ser no futuro.');
+    }
+
+    // Buscar a parcela
+    const parcela = await this.parcelaRepository.findOne({
+      where: { parcela_id },
+      relations: ['status_pagamento', 'debito'],
+    });
+
+    if (!parcela) {
+      throw new Error(`Parcela com ID ${parcela_id} não encontrada.`);
+    }
+
+    // Buscar novo status de pagamento
+    const novoStatus = await this.statusPagamentoRepository.findOne({
+      where: { status_pagamento_id },
+    });
+
+    if (!novoStatus) {
+      throw new Error(`Status de pagamento com ID ${status_pagamento_id} não encontrado.`);
+    }
+
+    // Assegurar que valores numéricos não sejam null/undefined
+    const parcelaValor = parcela.valor ?? 0;
+    const jurosDecimal = juros ?? 0;
+
+    // Atualizar a parcela
+    parcela.valor = parcelaValor + jurosDecimal;
+    parcela.data_pagamento = dataPagamentoConvertida;
+    parcela.status_pagamento = novoStatus;
+    parcela.juros = jurosDecimal;
+    parcela.atualizado_por = atualizado_por;
+
+    // Atualizar o valor total da venda, se existir
+    if (parcela.debito) {
+      parcela.debito.valor_total = (parcela.debito.valor_parcela ?? 0) + jurosDecimal;
+      await this.debtRepository.save(parcela.debito);
+    }
+
+    await this.parcelaRepository.save(parcela);
+
+    return `Status da parcela ${parcela_id} atualizado para ${novoStatus.nome}. Juros adicionados: ${jurosDecimal}.`;
+  }
+
+  async updateSellStatus(updateStatus: UpdateDebtStatusDto): Promise<string> {
+    const { debito_id, status_pagamento_id } = updateStatus;
+
+    const debt = await this.debtRepository.findOne({
+      where: { debito_id },
+      relations: ['status_pagamento'],
+    });
+
+    if (!debt) {
+      throw new Error(`Débito com ID ${debito_id} não encontrado.`);
+    }
+
+    const novoStatus = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id } });
+
+    if (!novoStatus) {
+      throw new Error(`Status de débito com o ID ${status_pagamento_id} não encontrado.`);
+    }
+
+    debt.status_pagamento = novoStatus;
+    await this.debtRepository.save(debt);
+
+    return `Status do débito ${debt.debito_id} atualizado para ${novoStatus.nome}.`;
   }
 }

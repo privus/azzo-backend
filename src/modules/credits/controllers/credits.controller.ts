@@ -26,7 +26,7 @@ export class CreditsController {
     return this.creditsService.getAllCategories();
   }
 
-  @ApiOperation({ summary: 'Atualizar status de uma Instalment' })
+  @ApiOperation({ summary: 'Atualizar status de uma parcela' })
   @Patch('installment')
   async updateInstalmentStatus(@Body() updateInstalmentDto: UpdateInstalmentDto) {
     const resultMessage = await this.creditsService.updateInstalmentStatus(updateInstalmentDto);
