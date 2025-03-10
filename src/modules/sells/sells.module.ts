@@ -22,6 +22,7 @@ import { RegionsModule } from '../regions/regions.module';
 import { TinyAuthService } from './services/tiny-auth.service';
 import { TinyTokenService } from './services/tiny-token.service';
 import { ScheduleModule } from '@nestjs/schedule';
+import { LabelService } from './services/label.service';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { ScheduleModule } from '@nestjs/schedule';
   ],
   controllers: [SellsController, TinyAuthController],
   providers: [
+    LabelService,
     SellsService,
     TinyAuthService,
     TinyTokenService,
@@ -52,9 +54,10 @@ import { ScheduleModule } from '@nestjs/schedule';
     { provide: 'ISellsRepository', useClass: SellsService },
   ],
   exports: [
+    LabelService,
     SellsService,
-    TinyAuthService, // ✅ Agora exporta a autenticação para outros módulos
-    TinyTokenService, // ✅ Agora exporta o gerenciamento de tokens para outros módulos
+    TinyAuthService,
+    TinyTokenService,
     'ITinyAuthRepository',
     'ITinyTokenRepository',
     'ISellsRepository',

@@ -1,12 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Patch, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SellsService } from '../services/sells.service';
 import { UpdateSellStatusDto } from '../dto';
+import { LabelService } from '../services/label.service';
 
 @ApiTags('sells')
 @Controller('sells')
 export class SellsController {
-  constructor(private readonly sellsService: SellsService) {}
+  constructor(private readonly sellsService: SellsService, private readonly labelService: LabelService) {}
 
   @ApiOperation({ summary: 'Sincronizar vendas por data' })
   @Get()
@@ -42,10 +44,23 @@ export class SellsController {
     return { message: resultMessage };
   }
 
-
   @ApiOperation({ summary: 'Obter venda por ID' })
   @Get(':id')
   async getSellById(@Param('id') id: number) {
     return this.sellsService.getSellById(id);
-  }  
+  }
+  
+  @ApiOperation({ summary: 'Gerar etiquetas para um pedido específico via POST' })
+  @Post(':id/label')
+  async postLabel(
+    @Param('id') id: number,
+    @Body('totalVolumes') totalVolumes: number,
+    @Body('responsible') responsible: string,
+    @Res() res: Response
+  ) {
+      const html = await this.labelService.generateLabelHtml(id, totalVolumes, responsible);
+
+      res.setHeader('Content-Type', 'text/html');
+      return res.send(html);
+  }
 }

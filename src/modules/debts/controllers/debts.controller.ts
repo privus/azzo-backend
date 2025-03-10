@@ -1,7 +1,9 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { DebtsService } from '../services/debts.service';
 import { DebtsDto } from '../dto/debts.dto';
+import { UpdateInstalmentDto } from '../dto/update-instalment.dto';
+import { UpdateDebtStatusDto } from '../dto';
 
 @ApiTags('debts')
 @Controller('debts')
@@ -26,6 +28,13 @@ export class DebtsController {
     return this.debtsService.getAllCategories();
   }
 
+  @ApiOperation({ summary: 'Atualizar status de uma parcela' })
+  @Patch('installment')
+  async updateInstalmentStatus(@Body() updateInstalmentDto: UpdateInstalmentDto) {
+    const resultMessage = await this.debtsService.updateInstalmentStatus(updateInstalmentDto);
+    return { message: resultMessage };
+  }
+
   @ApiOperation({ summary: 'Obter débito por ID' })
   @Get(':id')
   async getDebtById(@Param('id') id: number) {
@@ -37,4 +46,12 @@ export class DebtsController {
   async create(@Body() debtDto: DebtsDto) {
     return this.debtsService.createDebt(debtDto);
   }
+
+  @ApiOperation({ summary: 'Atualizar status de uma venda' })
+  @Patch('status')
+  async updateSellStatus(@Body() updateStatusDto: UpdateDebtStatusDto) {
+    const resultMessage = await this.debtsService.updateSellStatus(updateStatusDto);
+    return { message: resultMessage };
+  }
+
 }
