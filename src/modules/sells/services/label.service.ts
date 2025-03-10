@@ -22,32 +22,40 @@ export class LabelService {
     // Armazenar todos os HTMLs de volumes
     const htmlPages: string[] = [];
 
-    for (let volume = 1; volume <= totalVolumes; volume++) {
+    for (let volume = 1; volume <= totalVolumes; volume += 2) {
+      const firstLabel = this.createLabelHtml(logoSvg, order, volume, totalVolumes, responsible);
+      const secondLabel = volume + 1 <= totalVolumes 
+        ? this.createLabelHtml(logoSvg, order, volume + 1, totalVolumes, responsible) 
+        : ''; // Se for ímpar, deixa a segunda etiqueta vazia
+
       const html = `
         <html>
         <head>
           <style>
             @page {
-              size: 150mm 100mm landscape;
+              size: A4 portrait;
               margin: 0;
             }
-            body { 
-              font-family: Arial, sans-serif; 
-              margin: 0; 
+            body {
+              font-family: Arial, sans-serif;
+              margin: 0;
               padding: 0;
               display: flex;
+              flex-wrap: wrap;
               align-items: center;
               justify-content: center;
             }
             .label-container {
-              width: 150mm;
+              width: 148mm;
               height: 100mm;
               padding: 10mm;
               box-sizing: border-box;
               border: 1px solid #333;
-              display: flex;
-              flex-direction: column;
-              justify-content: space-between;
+              display: inline-block;
+              margin: 0;
+              flex: 0 0 50%;
+              box-shadow: 0 0 5px rgba(0,0,0,0.1);
+              page-break-inside: avoid;
             }
             .logo {
               width: 50mm;
@@ -78,19 +86,8 @@ export class LabelService {
           </style>
         </head>
         <body>
-          <div class="label-container">
-            <div class="logo">${logoSvg}</div>
-            <div class="info">
-              <h3>Pedido: #${order.codigo}</h3>
-              <p><strong>Cliente:</strong> ${order.cliente?.nome_empresa ?? 'Não informado'}</p>
-              <p>${order.cliente?.endereco ?? 'Endereço não informado'}</p>
-              <p>${order.cliente?.cidade?.nome ?? ''}</p>
-              <p>${order.cliente?.cidade?.estado?.sigla ?? ''} - ${order.cliente?.cep ?? ''}</p>
-              <p><strong>Responsável:</strong> ${responsible}</p>
-              <p><strong>Telefone:</strong> ${order.cliente?.telefone_comercial ?? 'Não informado'}</p>
-            </div>
-            <div class="volume">Volume: ${volume} / ${totalVolumes}</div>
-          </div>
+          ${firstLabel}
+          ${secondLabel}
         </body>
         </html>
       `;
@@ -99,5 +96,30 @@ export class LabelService {
 
     // Retorna todos os HTMLs concatenados
     return htmlPages.join('');
+  }
+
+  // Método auxiliar para criar uma etiqueta HTML
+  private createLabelHtml(
+    logoSvg: string,
+    order: any,
+    volume: number,
+    totalVolumes: number,
+    responsible: string
+  ): string {
+    return `
+      <div class="label-container">
+        <div class="logo">${logoSvg}</div>
+        <div class="info">
+          <h3>Pedido: #${order.codigo}</h3>
+          <p><strong>Cliente:</strong> ${order.cliente?.nome_empresa ?? 'Não informado'}</p>
+          <p>${order.cliente?.endereco ?? 'Endereço não informado'}</p>
+          <p>${order.cliente?.cidade?.nome ?? ''}</p>
+          <p>${order.cliente?.cidade?.estado?.sigla ?? ''} - ${order.cliente?.cep ?? ''}</p>
+          <p><strong>Responsável:</strong> ${responsible}</p>
+          <p><strong>Telefone:</strong> ${order.cliente?.telefone_comercial ?? 'Não informado'}</p>
+        </div>
+        <div class="volume">Volume: ${volume} / ${totalVolumes}</div>
+      </div>
+    `;
   }
 }
