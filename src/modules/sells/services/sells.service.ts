@@ -41,64 +41,67 @@ export class SellsService implements ISellsRepository {
     const updatedSales: string[] = [];
 
     try {
-      const lastSync = await this.getLastSyncDate('sells');
-      const lastUpdate = await this.getLastUpdateDate('sells');
+        const lastSync = await this.getLastSyncDate('sells');
+        const lastUpdate = await this.getLastUpdateDate('sells');
 
-      console.log('Última sincronização:', lastSync);
-      console.log('Última atualização:', lastUpdate);
+        console.log('Última sincronização:', lastSync);
+        console.log('Última atualização:', lastUpdate);
 
-      // Construa os parâmetros manualmente
-      const params = [];
-      if (lastSync) {
-        params.push(`after_created=${this.formatDateWithTime(lastSync)}`);
-      }
-      if (lastUpdate) {
-        params.push(`after_updated=${this.formatDateWithTime(lastUpdate)}`);
-      }
+        // Build query parameters
+        const params = [];
+        if (lastSync) params.push(`after_created=${this.formatDateWithTime(lastSync)}`);
+        if (lastUpdate) params.push(`after_updated=${this.formatDateWithTime(lastUpdate)}`);
 
-      // Construa a URL manualmente
-      const url = params ? `${this.apiUrlSellentt}${this.apiTagSellentt}?${params.join('&')}` :  `${this.apiUrlSellentt}${this.apiTagSellentt}`;
-      console.log('URL gerada para a requisição:', url);
+        let currentPage = 1;
+        let lastPage = 1;
 
-      const response = await this.httpService.axiosRef.get<{ data: SellsApiResponse[] }>(url, {
-        headers: {
-          Authorization: `Bearer ${this.tokenSellentt}`,
-        },
-      });
+        do {
+            // Construct URL with pagination
+            const url = `${this.apiUrlSellentt}${this.apiTagSellentt}?${params.join('&')}&page=${currentPage}`;
+            console.log('Fetching URL:', url);
 
-      const sellsData = response.data.data;
+            const response = await this.httpService.axiosRef.get<{ data: SellsApiResponse[], meta: { current_page: number, last_page: number } }>(url, {
+                headers: { Authorization: `Bearer ${this.tokenSellentt}` },
+            });
 
-      for (const sell of sellsData) {
-        const result = await this.processSell(sell);
+            const sellsData = response.data.data;
+            lastPage = response.data.meta.last_page; // Get last page
 
-        // Acumule os códigos de vendas sincronizadas ou atualizadas
-        if (result?.includes('Atualizada')) {
-          updatedSales.push(result.split(' ')[1]); // Extrai o código da venda atualizada
-        } else if (result?.includes('Recebida')) {
-          syncedSales.push(result.split(' ')[2]); // Extrai o código da venda sincronizada
+            for (const sell of sellsData) {
+                const result = await this.processSell(sell);
+
+                // Collect sales codes
+                if (result?.includes('Atualizada')) {
+                    updatedSales.push(result.split(' ')[1]); // Extract sale code
+                } else if (result?.includes('Recebida')) {
+                    syncedSales.push(result.split(' ')[2]); // Extract sale code
+                }
+            }
+
+            currentPage++; // Move to next page
+        } while (currentPage <= lastPage);
+
+        // Update sync timestamps
+        const now = new Date();
+        await this.updateLastSyncDate('sells', now);
+        await this.updateLastUpdateDate('sells', now);
+
+        // Add summary messages
+        if (syncedSales.length > 0) {
+            messages.push(`Código das vendas sincronizadas: ${syncedSales.join(', ')}.`);
         }
-      }
+        if (updatedSales.length > 0) {
+            messages.push(`Código das vendas atualizadas: ${updatedSales.join(', ')}.`);
+        }
 
-      const now = new Date();
-      await this.updateLastSyncDate('sells', now);
-      await this.updateLastUpdateDate('sells', now);
-
-      // Adicione mensagens de resumo
-      if (syncedSales.length > 0) {
-        messages.push(`Código das vendas sincronizadas: ${syncedSales.join(', ')}.`);
-      }
-      if (updatedSales.length > 0) {
-        messages.push(`Código das vendas atualizadas: ${updatedSales.join(', ')}.`);
-      }
-
-      console.log(messages.join(' | '));
-
-      return messages.join(' | '); // Retorna a mensagem consolidada
+        console.log(messages.join(' | '));
+        return messages.join(' | '); // Return consolidated message
     } catch (error) {
-      console.error('Erro ao sincronizar vendas:', error);
-      return 'Erro ao sincronizar vendas.';
+        console.error('Erro ao sincronizar vendas:', error);
+        return 'Erro ao sincronizar vendas.';
     }
   }
+
 
   private formatDateWithTime(date: Date): string {
     const offset = -3 * 60; // UTC-3 in minutes
@@ -412,7 +415,6 @@ export class SellsService implements ISellsRepository {
         throw new Error(error.message || "Erro desconhecido ao exportar pedido.");
     }
   }
-
 
   async deleteSell(code: number): Promise<string> {
     // Verifica se a venda existe
