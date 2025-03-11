@@ -266,6 +266,8 @@ export class CustomersService implements ICustomersRepository{
           headers: { Authorization: `Bearer ${accessToken}` },
         });
 
+        console.log('BODY ===========>', body)
+
         console.log(`✅ Cliente ${codigo} registrado no Tiny com sucesso!`); 
         customer.tiny_id = response.data.id
         await this.clienteRepository.save(customer);
