@@ -157,6 +157,7 @@ export class CreditsService implements ICreditsRepository {
     parcela.status_pagamento = novoStatus;
     parcela.atualizado_por = atualizado_por;
     parcela.data_vencimento = data_vencimento ? new Date(new Date(data_vencimento).getTime() + 86400000) : parcela.data_vencimento;
+    parcela.venda.status_pagamento = novoStatus;
 
     // Atualizar o valor total da venda, se existir
     if (parcela.venda && valor_total) {
