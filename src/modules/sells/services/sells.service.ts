@@ -347,7 +347,7 @@ export class SellsService implements ISellsRepository {
         });
 
         let idContato = order.cliente.tiny_id;
-        if (!idContato) {
+        if (!idContato || idContato === 0) {
             idContato = await this.clienteService.registerCustomerTiny(order.cliente.codigo);
         }
 
