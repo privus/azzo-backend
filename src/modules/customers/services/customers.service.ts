@@ -241,8 +241,8 @@ export class CustomersService implements ICustomersRepository{
         }
 
         const body: TinyCustomerDto = {
-          nome: customer.nome,
-          fantasia: customer.nome_empresa,
+          nome: customer.nome_empresa,
+          fantasia: customer.nome,
           tipoPessoa: customer.tipo_doc === 'cnpj' ? 'J' : 'F',
           cpfCnpj: customer.numero_doc,
           inscricaoEstadual: customer.ie,
