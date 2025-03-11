@@ -7,4 +7,5 @@ export interface ISellsRepository {
   getSellById(id: number): Promise<Venda>;
   exportTiny(id: number): Promise<string>;
   updateSellStatus(UpdateSellStatusDto: UpdateSellStatusDto): Promise<string>;
+  deleteSell(id: number): Promise<string>;
 }
