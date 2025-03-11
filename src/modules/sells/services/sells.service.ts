@@ -342,46 +342,56 @@ export class SellsService implements ISellsRepository {
   async exportTiny(id: number): Promise<string> {
     try {
         const order = await this.vendaRepository.findOne({
-          where: { venda_id: id },
-          relations: ['cliente.cidade.estado', 'itensVenda.produto', 'parcela_credito', 'tipo_pedido'],
+            where: { venda_id: id },
+            relations: ['cliente.cidade.estado', 'itensVenda.produto', 'parcela_credito', 'tipo_pedido'],
         });
 
-        let idContato = order.cliente.tiny_id;
-        if (!idContato || idContato === 0) {
+        if (!order) {
+            throw new Error(`🚨 Pedido com ID ${id} não encontrado.`);
+        }
+
+        if (!order.cliente) {
+            throw new Error(`🚨 Cliente não encontrado para o pedido ${id}.`);
+        }
+
+        let idContato = order.cliente.tiny_id || 0;
+        if (!idContato) {
             idContato = await this.clienteService.registerCustomerTiny(order.cliente.codigo);
         }
 
-        const uf = order.cliente.cidade.estado.sigla
+        if (!order.cliente.cidade?.estado?.sigla) {
+            throw new Error(`🚨 Estado não definido para o cliente ${order.cliente.codigo}.`);
+        }
+        const uf = order.cliente.cidade.estado.sigla;
         const accessToken = await this.tinyAuthService.getAccessToken(uf);
 
         if (!accessToken) {
             throw new Error("🚨 Não foi possível obter um token válido para exportação.");
         }
 
-        if (!order) {
-            throw new Error(`🚨 Pedido com ID ${id} não encontrado.`);
+        if (!Array.isArray(order.datas_vencimento)) {
+            throw new Error(`🚨 datas_vencimento não é uma lista válida para o pedido ${id}.`);
         }
 
         const body: OrderTinyDto = {
             idContato: idContato,
             numeroOrdemCompra: `${order.codigo}_sell`,
-            data: order.data_criacao.toISOString().split('T')[0],
+            data: order.data_criacao?.toISOString()?.split('T')[0] || new Date().toISOString().split('T')[0],
             meioPagamento: 2,
             parcelas: order.datas_vencimento.map((dataVencimento, index) => ({
-              dias: Math.floor(
-                  (new Date(dataVencimento).getTime() - new Date(order.data_criacao).getTime()) / (1000 * 60 * 60 * 24)
-              ),
-              data: new Date(dataVencimento), // Convertendo string para Date
-              valor: order.parcela_credito[index]?.valor || 0, // Pega o valor correto da parcela ou usa 0 como fallback
-          })),
-                 
-            itens: order.itensVenda.map(item => ({
+                dias: Math.floor(
+                    (new Date(dataVencimento).getTime() - new Date(order.data_criacao).getTime()) / (1000 * 60 * 60 * 24)
+                ),
+                data: new Date(dataVencimento), 
+                valor: order.parcela_credito?.[index]?.valor || 0, 
+            })),
+            itens: order.itensVenda?.map(item => ({
                 produto: {
                     id: uf === 'MG' ? item.produto.tiny_mg : item.produto.tiny_sp,
                 },
                 quantidade: item.quantidade,
                 valorUnitario: item.valor_unitario,
-            })),
+            })) || [],
         };
 
         order.exportado = 1;
@@ -398,23 +408,9 @@ export class SellsService implements ISellsRepository {
 
         return `Pedido ${order.codigo} exportado com sucesso para o Tiny ${uf}`;
     } catch (error) {
-        throw error.data;
-      }
-  }
-
-  async deleteSell(code: number): Promise<string> {
-    // Verifica se a venda existe
-    const venda = await this.vendaRepository.findOne({ where: { codigo: code } });
-
-    if (!venda) {
-        throw new Error(`Venda com ID ${code} não encontrada.`);
+        console.error("Erro ao exportar pedido:", error);
+        throw new Error(error.message || "Erro desconhecido ao exportar pedido.");
     }
-
-    // Exclui a venda diretamente (parcelas serão excluídas automaticamente pelo cascade)
-    await this.vendaRepository.remove(venda);
-
-    return `Venda com ID ${code} e suas parcelas foram excluídas com sucesso.`;
   }
-
 }
 
