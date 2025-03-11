@@ -118,55 +118,65 @@ export class CreditsService implements ICreditsRepository {
   }
 
   async updateInstalmentStatus(UpdateInstalmentDto: UpdateInstalmentDto): Promise<string> {
-    const { parcela_id, status_pagamento_id, data_pagamento, juros, atualizado_por } = UpdateInstalmentDto;
+    const { parcela_id, status_pagamento_id, data_pagamento, valor_total, atualizado_por, data_vencimento } = UpdateInstalmentDto;
 
-    
     const dataPagamentoConvertida = data_pagamento ? new Date(`${data_pagamento}T00:00:00Z`) : null;
     const hoje = new Date();
-    if (dataPagamentoConvertida > hoje) {
-      throw new Error('A data de pagamento não pode ser no futuro.');
+
+    if (dataPagamentoConvertida && dataPagamentoConvertida > hoje) {
+        throw new Error('A data de pagamento não pode ser no futuro.');
     }
 
     // Buscar a parcela
     const parcela = await this.parcelaRepository.findOne({
-      where: { parcela_id },
-      relations: ['status_pagamento', 'venda'],
+        where: { parcela_id },
+        relations: ['status_pagamento', 'venda'],
     });
 
     if (!parcela) {
-      throw new Error(`Parcela com ID ${parcela_id} não encontrada.`);
+        throw new Error(`Parcela com ID ${parcela_id} não encontrada.`);
     }
 
     // Buscar novo status de pagamento
     const novoStatus = await this.statusRepository.findOne({
-      where: { status_pagamento_id },
+        where: { status_pagamento_id },
     });
 
     if (!novoStatus) {
-      throw new Error(`Status de pagamento com ID ${status_pagamento_id} não encontrado.`);
+        throw new Error(`Status de pagamento com ID ${status_pagamento_id} não encontrado.`);
     }
+  
 
-    // Assegurar que valores numéricos não sejam null/undefined
-    const parcelaValor = parcela.valor ?? 0;
-    const jurosDecimal = juros ?? 0;
+    // Garantir que `parcela.valor` seja um número
+    const valorOriginal = parcela.valor
+    const novoValorTotal =  valor_total ?? valorOriginal;
 
-    // Atualizar a parcela
-    parcela.valor = parcelaValor + jurosDecimal;
+    // Atualizar a parcela com o novo valor_total
+    parcela.valor = novoValorTotal ? novoValorTotal : parcela.valor;
     parcela.data_pagamento = dataPagamentoConvertida;
     parcela.status_pagamento = novoStatus;
-    parcela.juros = jurosDecimal;
     parcela.atualizado_por = atualizado_por;
+    parcela.data_vencimento = data_vencimento ? new Date(new Date(data_vencimento).getTime() + 86400000) : parcela.data_vencimento;
 
     // Atualizar o valor total da venda, se existir
-    if (parcela.venda) {
-      parcela.venda.valor_final = (parcela.venda.valor_final ?? 0) + jurosDecimal;
-      await this.vendaRepository.save(parcela.venda);
+    if (parcela.venda && valor_total) {
+        const valorFinalAtual = typeof parcela.venda.valor_final === 'string' 
+            ? parseFloat(parcela.venda.valor_final) 
+            : parcela.venda.valor_final ?? 0;
+
+        const diferenca = novoValorTotal - valorOriginal;
+        const novoValorFinal = valorFinalAtual + diferenca;
+
+        parcela.venda.valor_final = parseFloat(novoValorFinal.toFixed(2)); // Garante 2 casas decimais
+        await this.vendaRepository.save(parcela.venda);
     }
 
     await this.parcelaRepository.save(parcela);
 
-    return `Status da parcela ${parcela_id} atualizado para ${novoStatus.nome}. Juros adicionados: ${jurosDecimal}.`;
-  }
+    return `Status da parcela ${parcela_id} atualizado para ${novoStatus.nome}.`;
+}
+
+
 
   getAllCategories(): Promise<CategoriaCredito[]> {
     return this.categoriaRepository.find();

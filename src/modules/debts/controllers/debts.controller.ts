@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { DebtsService } from '../services/debts.service';
 import { DebtsDto } from '../dto/debts.dto';
@@ -32,6 +32,13 @@ export class DebtsController {
   @Patch('installment')
   async updateInstalmentStatus(@Body() updateInstalmentDto: UpdateInstalmentDto) {
     const resultMessage = await this.debtsService.updateInstalmentStatus(updateInstalmentDto);
+    return { message: resultMessage };
+  }
+
+  @ApiOperation({ summary: 'Excluir debito e suas parcelas' })
+  @Delete(':id')
+  async deleteSell(@Param('id') id: number) {
+    const resultMessage = await this.debtsService.deleteDebt(id);
     return { message: resultMessage };
   }
 

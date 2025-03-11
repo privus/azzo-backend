@@ -28,8 +28,8 @@ export class UpdateInstalmentDto {
    * Exemplo: 10.50
    */
   @IsOptional()
-  @IsNumber({}, { message: 'O juros deve ser um número.' })
-  juros: number;
+  @IsNumber({}, { message: 'O valor total deve ser um número.' })
+  valor_total: number;
 
   /**
    * Usuário que atualizou a parcela.
@@ -37,4 +37,8 @@ export class UpdateInstalmentDto {
    */
   @IsString({ message: 'O usuário que atualizou a parcela deve ser uma string.' })
   atualizado_por: string;
+
+  @IsOptional()
+  @IsString({ message: 'A data de vencimento deve ser uma data válida.' })
+  data_vencimento: string;
 }

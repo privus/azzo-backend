@@ -414,7 +414,7 @@ export class SellsService implements ISellsRepository {
     await this.vendaRepository.remove(venda);
 
     return `Venda com ID ${code} e suas parcelas foram excluídas com sucesso.`;
-}
+  }
 
 }
 

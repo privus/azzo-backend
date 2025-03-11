@@ -51,7 +51,7 @@ export class Debito {
   @Column('json', { nullable: true })
   datas_vencimento?: string[];
 
-  @OneToMany(() => ParcelaDebito, (parcela) => parcela.debito, { cascade: true })
+  @OneToMany(() => ParcelaDebito, (parcela) => parcela.debito, { cascade: true, onDelete: 'CASCADE' })
   parcela_debito: ParcelaDebito[];
 
   @ManyToOne(() => CategoriaDebito, (categoria) => categoria.debitos)

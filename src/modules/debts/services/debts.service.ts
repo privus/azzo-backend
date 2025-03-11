@@ -248,4 +248,17 @@ export class DebtsService {
 
     return `Status do débito ${debt.debito_id} atualizado para ${novoStatus.nome}.`;
   }
+
+  async deleteDebt(code: number): Promise<string> {
+    const debito = await this.debtRepository.findOne({ where: { debito_id: code } });
+
+    if (!debito) {
+        throw new Error(`debito com ID ${code} não encontrada.`);
+    }
+
+    // Exclui a debito diretamente (parcelas serão excluídas automaticamente pelo cascade)
+    await this.debtRepository.remove(debito);
+
+    return `Debito com ID ${code} e suas parcelas foram excluídas com sucesso.`;
+  }
 }
