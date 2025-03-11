@@ -207,4 +207,18 @@ export class CreditsService implements ICreditsRepository {
     });
     return this.parcelaRepository.save(creditoEntity);
   } 
+
+  async deleteCredit(parcela_id: number): Promise<string> {
+
+    const credit = await this.parcelaRepository.findOne({ where: { parcela_id } });
+
+    if (!credit) {
+        throw new Error(`Credito com ID ${parcela_id} não encontrado.`);
+    }
+
+    // Exclui a credit diretamente (parcelas serão excluídas automaticamente pelo cascade)
+    await this.parcelaRepository.remove(credit);
+
+    return `credit com ID ${parcela_id} e suas parcelas foram excluídas com sucesso.`;
+  }  
 }

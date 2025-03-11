@@ -92,8 +92,13 @@ export class CustomersService implements ICustomersRepository{
     });
 
     if (!regiao) {
-      existingClient.regiao.regiao_id = 9 
-    }
+      regiao = this.regiaoRepository.create({
+          nome: 'Região Geral',
+          codigo: 9,
+          cidades: cidade ? [cidade] : [], // Add city if found
+      });
+      await this.regiaoRepository.save(regiao);
+  }
 
     if (existingClient) {
       console.log(`Customer with code ${client.code} already exists. Skipping...`);
