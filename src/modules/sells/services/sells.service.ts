@@ -36,6 +36,7 @@ export class SellsService implements ISellsRepository {
   }
 
   async syncroSells(): Promise<string> {
+    this.fixParcelIssues();
     const messages: string[] = [];
     const syncedSales: string[] = [];
     const updatedSales: string[] = [];
@@ -153,7 +154,6 @@ export class SellsService implements ISellsRepository {
   }
 
   private async processSell(sell: SellsApiResponse): Promise<string> {
-    this.fixParcelIssues();
     const existingSell = await this.vendaRepository.findOne({ where: { codigo: Number(sell.code) } });
 
     const status_venda = await this.statusVendaRepository.findOne({
