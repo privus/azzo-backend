@@ -36,7 +36,6 @@ export class SellsService implements ISellsRepository {
   }
 
   async syncroSells(): Promise<string> {
-    this.updateAllParcelValues()
     const messages: string[] = [];
     const syncedSales: string[] = [];
     const updatedSales: string[] = [];
@@ -154,7 +153,6 @@ export class SellsService implements ISellsRepository {
   }
 
   private async processSell(sell: SellsApiResponse): Promise<string> {
-    this.updateAllParcelValues()
     const existingSell = await this.vendaRepository.findOne({ where: { codigo: Number(sell.code) } });
 
     const status_venda = await this.statusVendaRepository.findOne({
@@ -171,7 +169,7 @@ export class SellsService implements ISellsRepository {
         console.log(`Atualizando venda existente => ${sell.code}`);
         existingSell.status_venda = status_venda;
         existingSell.observacao = sell.obs;
-        if (sell.amount < existingSell.valor_final || sell.amount > existingSell.valor_final) {
+        if (sell.amount_final != existingSell.valor_final) {
           const productCodes = sell.products.map((item) => item.code);
           const produtosEncontrados = await this.produtoRepository.find({
             where: { codigo: In(productCodes) },
@@ -187,13 +185,13 @@ export class SellsService implements ISellsRepository {
           });
           existingSell.itensVenda = itensVenda;
           existingSell.valor_pedido = Number(sell.amount);
-          existingSell.valor_final = Number(sell.amount);
+          existingSell.valor_final = Number(sell.amount_final);
           existingSell.desconto = sell.discount_total | 0;
         }
 
         // Atualizar itens de venda, parcelas, e outras associações, se necessário
         await this.vendaRepository.save(existingSell);
-
+        
         return `Venda ${sell.code} Atualizada`;
       } else {
         console.log(`Venda já existente e atualizada => ${sell.code}`);
