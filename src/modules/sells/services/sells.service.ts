@@ -428,11 +428,11 @@ export class SellsService implements ISellsRepository {
             },
         });
 
-
         return `Pedido ${order.codigo} exportado com sucesso para o Tiny ${uf}`;
+
     } catch (error) {
       console.error("Erro ao exportar pedido:", error.response?.data || error.message);
-      throw new Error(error.response?.data?.mensagem || 'Erro desconhecido ao exportar pedido');
+      throw new Error(error.message || 'Erro desconhecido ao exportar pedido');
     }
   }
 
