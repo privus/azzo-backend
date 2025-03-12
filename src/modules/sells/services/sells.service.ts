@@ -361,12 +361,18 @@ export class SellsService implements ISellsRepository {
 
         if (itensComErro.length > 0) {
           console.error("🚨 ERRO: Alguns produtos não possuem ID:");
+
+          // Criar mensagem para o frontend
+          let errorMessage = "Os seguintes produtos não possuem ID e precisam ser corrigidos:\n\n";
+
           itensComErro.forEach(item => {
-            console.error(`❌ Produto: ${item.produto.nome || 'NOME DESCONHECIDO'}`);
+              const nomeProduto = item.produto.nome || 'NOME DESCONHECIDO';
+              console.error(`❌ Produto: ${nomeProduto}`);
+              errorMessage += `• ${nomeProduto}\n`;
           });
-    
-          throw new Error("Erro de validação: Alguns produtos não possuem ID.");
-        }
+
+          throw new Error(errorMessage);
+      }
 
         let idContato = order.cliente.tiny_id || 0;
         if (!idContato) {
