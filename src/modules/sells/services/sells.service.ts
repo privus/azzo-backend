@@ -432,7 +432,7 @@ export class SellsService implements ISellsRepository {
 
     } catch (error) {
       console.error("Erro ao exportar pedido:", error.response?.data || error.message);
-      throw new Error(error.errorMessage || 'Erro desconhecido ao exportar pedido');
+      throw new Error(error.response?.data || 'Erro desconhecido ao exportar pedido');
     }
   }
 
