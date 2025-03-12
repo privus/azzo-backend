@@ -401,7 +401,9 @@ export class SellsService implements ISellsRepository {
         await this.vendaRepository.save(order);
 
         const apiUrl = this.apiUrlTiny + this.orderTag;
-
+        
+        console.log('Body ===========>', body);
+        
         await this.httpService.axiosRef.post(apiUrl, body, {
             headers: {
                 Authorization: `Bearer ${accessToken}`,
@@ -409,7 +411,6 @@ export class SellsService implements ISellsRepository {
             },
         });
 
-        console.log('Body ===========>', body);
 
         return `Pedido ${order.codigo} exportado com sucesso para o Tiny ${uf}`;
     } catch (error) {
