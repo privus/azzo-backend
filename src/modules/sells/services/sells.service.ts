@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, MoreThanOrEqual, Repository } from 'typeorm';
@@ -350,29 +350,30 @@ export class SellsService implements ISellsRepository {
         });
 
         if (!order) {
-            throw new Error(`🚨 Pedido com ID ${id} não encontrado.`);
+            throw new BadRequestException({ message: `🚨 Pedido com ID ${id} não encontrado.` });
         }
 
         if (!order.cliente) {
-            throw new Error(`🚨 Cliente não encontrado para o pedido ${id}.`);
+            throw new BadRequestException({ message: `🚨 Cliente não encontrado para o pedido ${id}.` });
         }
 
+        // Verifica se há produtos sem ID no Tiny
         const itensComErro = order.itensVenda.filter(item => !item.produto.tiny_mg && !item.produto.tiny_sp);
 
         if (itensComErro.length > 0) {
-          console.error("🚨 ERRO: Alguns produtos não possuem ID:");
+            console.error("🚨 ERRO: Alguns produtos não possuem ID:");
 
-          // Criar mensagem para o frontend
-          let errorMessage = "Os seguintes produtos não possuem ID e precisam ser corrigidos:\n\n";
+            // Criar mensagem para o frontend
+            let errorMessage = "Os seguintes produtos não possuem ID e precisam ser corrigidos:\n\n";
 
-          itensComErro.forEach(item => {
-              const nomeProduto = item.produto.nome || 'NOME DESCONHECIDO';
-              console.error(`❌ Produto: ${nomeProduto}`);
-              errorMessage += `• ${nomeProduto}\n`;
-          });
+            itensComErro.forEach(item => {
+                const nomeProduto = item.produto.nome || 'NOME DESCONHECIDO';
+                console.error(`❌ Produto: ${nomeProduto}`);
+                errorMessage += `• ${nomeProduto}\n`;
+            });
 
-          throw new Error(errorMessage);
-      }
+            throw new BadRequestException({ message: errorMessage });
+        }
 
         let idContato = order.cliente.tiny_id || 0;
         if (!idContato) {
@@ -380,17 +381,13 @@ export class SellsService implements ISellsRepository {
         }
 
         if (!order.cliente.cidade?.estado?.sigla) {
-            throw new Error(`🚨 Estado não definido para o cliente ${order.cliente.codigo}.`);
+            throw new BadRequestException({ message: `🚨 Estado não definido para o cliente ${order.cliente.codigo}.` });
         }
         const uf = order.cliente.cidade.estado.sigla;
         const accessToken = await this.tinyAuthService.getAccessToken(uf);
 
         if (!accessToken) {
-            throw new Error("🚨 Não foi possível obter um token válido para exportação.");
-        }
-
-        if (!Array.isArray(order.datas_vencimento)) {
-            throw new Error(`🚨 datas_vencimento não é uma lista válida para o pedido ${id}.`);
+            throw new BadRequestException({ message: "🚨 Não foi possível obter um token válido para exportação." });
         }
 
         const body: OrderTinyDto = {
@@ -402,8 +399,8 @@ export class SellsService implements ISellsRepository {
                 dias: Math.floor(
                     (new Date(dataVencimento).getTime() - new Date(order.data_criacao).getTime()) / (1000 * 60 * 60 * 24)
                 ),
-                data: new Date(dataVencimento), 
-                valor: order.parcela_credito?.[index]?.valor || 0, 
+                data: new Date(dataVencimento),
+                valor: order.parcela_credito?.[index]?.valor || 0,
             })),
             itens: order.itensVenda?.map(item => ({
                 produto: {
@@ -420,7 +417,7 @@ export class SellsService implements ISellsRepository {
         const apiUrl = this.apiUrlTiny + this.orderTag;
 
         console.log('Body ===========>', body);
-        
+
         await this.httpService.axiosRef.post(apiUrl, body, {
             headers: {
                 Authorization: `Bearer ${accessToken}`,
@@ -429,12 +426,12 @@ export class SellsService implements ISellsRepository {
         });
 
         return `Pedido ${order.codigo} exportado com sucesso para o Tiny ${uf}`;
-
     } catch (error) {
-      console.error("Erro ao exportar pedido:", error.response?.data || error.message);
-      throw new Error(error.response?.data || 'Erro desconhecido ao exportar pedido');
+        console.error("Erro ao exportar pedido:", error.response?.data || error.message);
+        throw new BadRequestException({ message: error.message || 'Erro desconhecido ao exportar pedido' });
     }
-  }
+}
+
 
   async deleteSell(code: number): Promise<string> {
     // Verifica se a venda existe
