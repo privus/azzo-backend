@@ -357,14 +357,10 @@ export class SellsService implements ISellsRepository {
             throw new BadRequestException({ message: `🚨 Cliente não encontrado para o pedido ${id}.` });
         }
 
-        // Verifica se há produtos sem ID no Tiny
         const itensComErro = order.itensVenda.filter(item => !item.produto.tiny_mg && !item.produto.tiny_sp);
 
         if (itensComErro.length > 0) {
-            console.error("🚨 ERRO: Alguns produtos não possuem ID:");
-
-            // Criar mensagem para o frontend
-            let errorMessage = "Os seguintes produtos não possuem ID e precisam ser corrigidos:\n\n";
+            let errorMessage = "Os seguintes produtos não possuem ID:\n\n";
 
             itensComErro.forEach(item => {
                 const nomeProduto = item.produto.nome || 'NOME DESCONHECIDO';
