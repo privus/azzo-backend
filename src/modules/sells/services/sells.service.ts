@@ -36,6 +36,7 @@ export class SellsService implements ISellsRepository {
   }
 
   async syncroSells(): Promise<string> {
+    this.updateAllParcelValues()
     const messages: string[] = [];
     const syncedSales: string[] = [];
     const updatedSales: string[] = [];
