@@ -357,6 +357,17 @@ export class SellsService implements ISellsRepository {
             throw new Error(`🚨 Cliente não encontrado para o pedido ${id}.`);
         }
 
+        const itensComErro = order.itensVenda.filter(item => !item.produto.tiny_mg && !item.produto.tiny_sp);
+
+        if (itensComErro.length > 0) {
+          console.error("🚨 ERRO: Alguns produtos não possuem ID:");
+          itensComErro.forEach(item => {
+            console.error(`❌ Produto: ${item.produto.nome || 'NOME DESCONHECIDO'}`);
+          });
+    
+          throw new Error("Erro de validação: Alguns produtos não possuem ID.");
+        }
+
         let idContato = order.cliente.tiny_id || 0;
         if (!idContato) {
             idContato = await this.clienteService.registerCustomerTiny(order.cliente.codigo);
@@ -401,7 +412,7 @@ export class SellsService implements ISellsRepository {
         await this.vendaRepository.save(order);
 
         const apiUrl = this.apiUrlTiny + this.orderTag;
-        
+
         console.log('Body ===========>', body);
         
         await this.httpService.axiosRef.post(apiUrl, body, {
