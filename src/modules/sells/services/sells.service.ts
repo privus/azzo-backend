@@ -153,7 +153,8 @@ export class SellsService implements ISellsRepository {
   }
 
   private async processSell(sell: SellsApiResponse): Promise<string> {
-    const existingSell = await this.vendaRepository.findOne({ where: { codigo: Number(sell.code) }, relations: ['itensVenda', 'parcela_credito']});
+    this.updateAllParcelValues()
+    const existingSell = await this.vendaRepository.findOne({ where: { codigo: Number(sell.code) } });
 
     const status_venda = await this.statusVendaRepository.findOne({
       where: { status_venda_id: sell.status.id },
@@ -186,14 +187,7 @@ export class SellsService implements ISellsRepository {
           existingSell.itensVenda = itensVenda;
           existingSell.valor_pedido = Number(sell.amount);
           existingSell.valor_final = Number(sell.amount);
-          existingSell.desconto = sell.discount_total || 0;
-          existingSell.flex_gerado = Number(sell.no_financial) || 0;
-          existingSell.numero_parcelas = sell.installment_qty
-          existingSell.valor_parcela = +sell.installment_value
-          
-          const parcela_credito = this.createParcelas(sell);
-
-          existingSell.parcela_credito = parcela_credito;
+          existingSell.desconto = sell.discount_total | 0;
         }
 
         // Atualizar itens de venda, parcelas, e outras associações, se necessário
@@ -269,13 +263,31 @@ export class SellsService implements ISellsRepository {
 
     const tipo_pedido = await this.tipoPedidoRepository.findOne({ where: { tipo_pedido_id: sell.order_type_id } });
 
+    // Verifica se payment_term_text não é nulo ou indefinido
+    if (sell.payment_term_text) {
+      // Split the string into two parts: before and after "dias"
+      const paymentParts = sell.payment_term_text.split(/(dias)/);
+      const firstPart = paymentParts[0]; // Contains numbers before "dias"
+      const secondPart = paymentParts.slice(1).join(''); // Everything after "dias"
+
+      // Process only the first part (increment numbers and replace '/' with ', ')
+      const updatedFirstPart = firstPart
+          .replace(/\d+/g, (match) => (Number(match) + 1).toString())
+          .replace(/\//g, ', ');
+
+      // Reconstruct the full string
+      var formattedPaymentTermText = updatedFirstPart + secondPart;
+    } else {
+      var formattedPaymentTermText = ''; // Retorna string vazia se for nulo ou indefinido
+    }
+
     const novaVenda = this.vendaRepository.create({
       codigo: Number(sell.code),
       observacao: sell.obs,
       numero_parcelas: sell.installment_qty,
       valor_parcela: Number(sell.installment_value),
       metodo_pagamento: sell.payment_method_text || '',  // Corrigido para evitar valor NULL
-      forma_pagamento: sell.payment_term_text,
+      forma_pagamento: formattedPaymentTermText,
       data_criacao: sell.order_date,
       valor_pedido: Number(sell.amount),
       valor_final: Number(sell.amount_final),
@@ -296,25 +308,6 @@ export class SellsService implements ISellsRepository {
     console.log('Venda sincronizada =>', novaVenda);
     return `Venda código ${sell.code} foi Recebida`;
   }
-
-  private createParcelas(sell: SellsApiResponse): ParcelaCredito[] {
-    const paymentTerms = sell.payment_term_text ? sell.payment_term_text.match(/\d+/g) : [];
-    const paymentDays = paymentTerms.map(Number);
-    const baseDate = new Date(sell.order_date);
-
-    return paymentDays.map((days, index) => {
-        const data = new Date(baseDate);
-        data.setDate(data.getDate() + days + 1);
-        return this.parcelaRepository.create({
-            numero: index + 1,
-            valor: Number(sell.installment_value),
-            data_criacao: sell.order_date,
-            data_vencimento: data,
-            status_pagamento: { status_pagamento_id: 1 },
-        });
-    });
-}
-
 
   async sellsByDate(fromDate?: string): Promise<Venda[]> {
     if (fromDate) {
@@ -471,5 +464,51 @@ export class SellsService implements ISellsRepository {
     return `Venda com ID ${code} e suas parcelas foram excluídas com sucesso.`;
   }
 
+
+  async updateAllParcelValues(): Promise<string> {
+    try {
+      console.log('🔄 Iniciando atualização dos valores das parcelas...');
+
+      // Busca todas as vendas com suas parcelas de crédito associadas
+      const vendas = await this.vendaRepository.find({
+        relations: ['parcela_credito'],
+      });
+
+      if (!vendas.length) {
+        console.log('⚠️ Nenhuma venda encontrada.');
+        return 'Nenhuma venda encontrada.';
+      }
+
+      let totalParcelsUpdated = 0;
+
+      for (const venda of vendas) {
+        if (!venda.parcela_credito || venda.parcela_credito.length === 0) {
+          console.log(`⚠️ Venda ${venda.codigo} não possui parcelas.`);
+          continue;
+        }
+
+        const totalParcelas = venda.parcela_credito.length;
+        if (totalParcelas === 0) continue;
+
+        // Calcula novo valor de parcela
+        const novoValorParcela = venda.valor_final / totalParcelas;
+
+        for (const parcela of venda.parcela_credito) {
+          parcela.valor = parseFloat(novoValorParcela.toFixed(2)); // Ajusta valor com duas casas decimais
+
+          await this.parcelaRepository.save(parcela);
+          totalParcelsUpdated++;
+        }
+
+        console.log(`✅ Parcelas da venda ${venda.codigo} atualizadas para ${novoValorParcela.toFixed(2)}.`);
+      }
+
+      console.log(`🎉 Atualização concluída. Total de parcelas modificadas: ${totalParcelsUpdated}.`);
+      return `Valores das parcelas foram atualizados. Total: ${totalParcelsUpdated}`;
+    } catch (error) {
+      console.error('❌ Erro ao atualizar parcelas:', error);
+      return 'Erro ao atualizar valores das parcelas.';
+    }
+  }
 }
 
