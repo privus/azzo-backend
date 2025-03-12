@@ -36,7 +36,7 @@ export class SellsService implements ISellsRepository {
   }
 
   async syncroSells(): Promise<string> {
-    this.fixParcelIssues();
+    this.updateAllParcelValues()
     const messages: string[] = [];
     const syncedSales: string[] = [];
     const updatedSales: string[] = [];
@@ -154,6 +154,7 @@ export class SellsService implements ISellsRepository {
   }
 
   private async processSell(sell: SellsApiResponse): Promise<string> {
+    this.updateAllParcelValues()
     const existingSell = await this.vendaRepository.findOne({ where: { codigo: Number(sell.code) } });
 
     const status_venda = await this.statusVendaRepository.findOne({
@@ -465,11 +466,11 @@ export class SellsService implements ISellsRepository {
   }
 
 
-  async fixParcelIssues(): Promise<string> {
+  async updateAllParcelValues(): Promise<string> {
     try {
-      console.log('🔄 Iniciando correção de parcelas...');
+      console.log('🔄 Iniciando atualização dos valores das parcelas...');
 
-      // Busca todas as vendas com suas parcelas associadas
+      // Busca todas as vendas com suas parcelas de crédito associadas
       const vendas = await this.vendaRepository.find({
         relations: ['parcela_credito'],
       });
@@ -479,7 +480,6 @@ export class SellsService implements ISellsRepository {
         return 'Nenhuma venda encontrada.';
       }
 
-      let totalParcelsDeleted = 0;
       let totalParcelsUpdated = 0;
 
       for (const venda of vendas) {
@@ -488,42 +488,27 @@ export class SellsService implements ISellsRepository {
           continue;
         }
 
-        const totalParcelasEsperado = venda.numero_parcelas;
-        const totalParcelasAtual = venda.numero_parcelas;
+        const totalParcelas = venda.numero_parcelas;
+        if (totalParcelas === 0) continue;
 
-        // Se há parcelas a mais, remover as extras
-        if (totalParcelasAtual > totalParcelasEsperado) {
-          const parcelasExcedentes = venda.parcela_credito.slice(totalParcelasEsperado);
-          
-          for (const parcela of parcelasExcedentes) {
-            await this.parcelaRepository.delete(parcela.parcela_id);
-            totalParcelsDeleted++;
-          }
+        // Calcula novo valor de parcela
+        const novoValorParcela = venda.valor_final / totalParcelas;
 
-          console.log(`🗑️ Removidas ${parcelasExcedentes.length} parcelas extras da venda ${venda.codigo}.`);
-        }
+        for (const parcela of venda.parcela_credito) {
+          parcela.valor = parseFloat(novoValorParcela.toFixed(2)); // Ajusta valor com duas casas decimais
 
-        // Atualizar valores das parcelas restantes
-        const parcelasRestantes = await this.parcelaRepository.find({
-          where: { venda: { venda_id: venda.venda_id } },
-        });
-
-        const novoValorParcela = parseFloat((venda.valor_final / totalParcelasEsperado).toFixed(2));
-
-        for (const parcela of parcelasRestantes) {
-          parcela.valor = novoValorParcela;
           await this.parcelaRepository.save(parcela);
           totalParcelsUpdated++;
         }
 
-        console.log(`✅ Parcelas da venda ${venda.codigo} corrigidas para ${novoValorParcela.toFixed(2)}.`);
+        console.log(`✅ Parcelas da venda ${venda.codigo} atualizadas para ${novoValorParcela.toFixed(2)}.`);
       }
 
-      console.log(`🎉 Correção concluída. Parcelas removidas: ${totalParcelsDeleted}, Parcelas corrigidas: ${totalParcelsUpdated}.`);
-      return `Correção finalizada! Parcelas removidas: ${totalParcelsDeleted}, Parcelas corrigidas: ${totalParcelsUpdated}`;
+      console.log(`🎉 Atualização concluída. Total de parcelas modificadas: ${totalParcelsUpdated}.`);
+      return `Valores das parcelas foram atualizados. Total: ${totalParcelsUpdated}`;
     } catch (error) {
-      console.error('❌ Erro ao corrigir parcelas:', error);
-      return 'Erro ao corrigir parcelas.';
+      console.error('❌ Erro ao atualizar parcelas:', error);
+      return 'Erro ao atualizar valores das parcelas.';
     }
   }
 }
