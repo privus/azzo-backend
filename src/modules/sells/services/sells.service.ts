@@ -36,7 +36,6 @@ export class SellsService implements ISellsRepository {
   }
 
   async syncroSells(): Promise<string> {
-    this.updateAllParcelValues()
     const messages: string[] = [];
     const syncedSales: string[] = [];
     const updatedSales: string[] = [];
@@ -187,7 +186,8 @@ export class SellsService implements ISellsRepository {
           existingSell.itensVenda = itensVenda;
           existingSell.valor_pedido = Number(sell.amount);
           existingSell.valor_final = Number(sell.amount_final);
-          existingSell.desconto = sell.discount_total | 0;
+          existingSell.desconto = sell.discount_total || 0;
+          
         }
 
         // Atualizar itens de venda, parcelas, e outras associações, se necessário
@@ -462,53 +462,6 @@ export class SellsService implements ISellsRepository {
     await this.vendaRepository.remove(venda);
 
     return `Venda com ID ${code} e suas parcelas foram excluídas com sucesso.`;
-  }
-
-
-  async updateAllParcelValues(): Promise<string> {
-    try {
-      console.log('🔄 Iniciando atualização dos valores das parcelas...');
-
-      // Busca todas as vendas com suas parcelas de crédito associadas
-      const vendas = await this.vendaRepository.find({
-        relations: ['parcela_credito'],
-      });
-
-      if (!vendas.length) {
-        console.log('⚠️ Nenhuma venda encontrada.');
-        return 'Nenhuma venda encontrada.';
-      }
-
-      let totalParcelsUpdated = 0;
-
-      for (const venda of vendas) {
-        if (!venda.parcela_credito || venda.parcela_credito.length === 0) {
-          console.log(`⚠️ Venda ${venda.codigo} não possui parcelas.`);
-          continue;
-        }
-
-        const totalParcelas = venda.numero_parcelas;
-        if (totalParcelas === 0) continue;
-
-        // Calcula novo valor de parcela
-        const novoValorParcela = venda.valor_final / totalParcelas;
-
-        for (const parcela of venda.parcela_credito) {
-          parcela.valor = parseFloat(novoValorParcela.toFixed(2)); // Ajusta valor com duas casas decimais
-
-          await this.parcelaRepository.save(parcela);
-          totalParcelsUpdated++;
-        }
-
-        console.log(`✅ Parcelas da venda ${venda.codigo} atualizadas para ${novoValorParcela.toFixed(2)}.`);
-      }
-
-      console.log(`🎉 Atualização concluída. Total de parcelas modificadas: ${totalParcelsUpdated}.`);
-      return `Valores das parcelas foram atualizados. Total: ${totalParcelsUpdated}`;
-    } catch (error) {
-      console.error('❌ Erro ao atualizar parcelas:', error);
-      return 'Erro ao atualizar valores das parcelas.';
-    }
   }
 }
 
