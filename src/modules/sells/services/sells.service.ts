@@ -162,13 +162,13 @@ export class SellsService implements ISellsRepository {
     let itensVenda = [];
 
     if (existingSell) {
-      // Verifique se há alterações no registro (com base na lógica de atualização)
-      const updatedDate = new Date(sell.updated_at); // Use o campo correto de atualização
-      if (updatedDate > existingSell.data_criacao) {
+
+      if (new Date(sell.updated_at) > existingSell.data_criacao) {
         // Compare com o campo de última atualização no banco
         console.log(`Atualizando venda existente => ${sell.code}`);
         existingSell.status_venda = status_venda;
         existingSell.observacao = sell.obs;
+        existingSell.vendedor = await this.sellersSevice.findBy({ codigo: Number(sell.seller_code) });
         if (sell.amount_final != existingSell.valor_final) {
           const productCodes = sell.products.map((item) => item.code);
           const produtosEncontrados = await this.produtoRepository.find({
@@ -187,7 +187,6 @@ export class SellsService implements ISellsRepository {
           existingSell.valor_pedido = Number(sell.amount);
           existingSell.valor_final = Number(sell.amount_final);
           existingSell.desconto = sell.discount_total || 0;
-          
         }
 
         // Atualizar itens de venda, parcelas, e outras associações, se necessário
