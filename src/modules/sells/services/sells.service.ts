@@ -159,16 +159,17 @@ export class SellsService implements ISellsRepository {
       where: { status_venda_id: sell.status.id },
     });
 
+    const status_pagamento = await this.statusPagamentoRepository.findOne({
+      where: { status_pagamento_id: 1 },
+    });
+
     let itensVenda = [];
 
-    if (existingSell) {
+    if (existingSell && new Date(sell.updated_at) > existingSell.data_criacao) {
 
-      if (new Date(sell.updated_at) > existingSell.data_criacao) {
-        // Compare com o campo de última atualização no banco
         console.log(`Atualizando venda existente => ${sell.code}`);
         existingSell.status_venda = status_venda;
         existingSell.observacao = sell.obs;
-        existingSell.vendedor = await this.sellersSevice.findBy({ codigo: Number(sell.seller_code) });
         if (sell.amount_final != existingSell.valor_final) {
           const productCodes = sell.products.map((item) => item.code);
           const produtosEncontrados = await this.produtoRepository.find({
@@ -186,17 +187,49 @@ export class SellsService implements ISellsRepository {
           existingSell.itensVenda = itensVenda;
           existingSell.valor_pedido = Number(sell.amount);
           existingSell.valor_final = Number(sell.amount_final);
-          existingSell.desconto = sell.discount_total || 0;
-        }
+          existingSell.desconto = sell.discount_total || 0
 
-        // Atualizar itens de venda, parcelas, e outras associações, se necessário
-        await this.vendaRepository.save(existingSell);
+          const paymentTerms = sell.payment_term_text ? sell.payment_term_text.match(/\d+/g) : null;
+          const paymentDays = paymentTerms ? paymentTerms.map(Number) : []; // Converte para números
+          // Garantir que o número de dias de prazo seja igual ao número de parcelas (installment_qty)
+          const numberOfInstallments = sell.installment_qty;
+          const validPaymentDays = paymentDays.slice(0, numberOfInstallments); // Usa apenas os primeiros `installment_qty` dias
+      
+          // Calcular as datas de vencimento com base nos dias de prazo
+          const baseDate = new Date(sell.order_date);
+          const datasVencimentoArray = validPaymentDays.map((days) => {
+            const data = new Date(baseDate);
+            data.setDate(data.getDate() + days + 1); // Adiciona um dia extra
+            return data.toISOString().split('T')[0]; // Formato "YYYY-MM-DD"
+          });
+          
+         
+          // Agora é um array de strings, não um array de arrays
+          const datas_vencimento = datasVencimentoArray;
+      
+          // Criar as parcelas de crédito
+          const parcela_credito = validPaymentDays.map((days, index) => {
+            const data = new Date(baseDate);
+            data.setDate(data.getDate() + days + 1); // Adiciona um dia extra
+            return this.parcelaRepository.create({
+                numero: index + 1,
+                valor: Number(sell.installment_value),
+                data_criacao: sell.order_date,
+                data_vencimento: data,
+                status_pagamento,
+            });
+          });
+          
+          existingSell.datas_vencimento = datas_vencimento;
+          existingSell.parcela_credito = parcela_credito;
+
+          await this.vendaRepository.save(existingSell);
         
-        return `Venda ${sell.code} Atualizada`;
-      } else {
+          return `Venda ${sell.code} Atualizada`;
+        } else {
         console.log(`Venda já existente e atualizada => ${sell.code}`);
-      }
-      return;
+        }
+        return;
     }
 
     // Se a venda não existir, crie-a
@@ -205,9 +238,6 @@ export class SellsService implements ISellsRepository {
     // Busque e associe os dados necessários
     const cliente = await this.clienteService.findCustomerByCode(sell.store ? Number(sell.store.erp_id) : 0);
     const vendedor = await this.sellersSevice.findBy({ codigo: Number(sell.seller_code) });
-    const status_pagamento = await this.statusPagamentoRepository.findOne({
-      where: { status_pagamento_id: 1 },
-    });
 
     const regiao = await this.regiaoService.getRegionByCode(sell.region);
 
