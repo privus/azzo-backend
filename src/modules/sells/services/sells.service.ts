@@ -165,71 +165,72 @@ export class SellsService implements ISellsRepository {
 
     let itensVenda = [];
 
-    if (existingSell && new Date(sell.updated_at) > existingSell.data_criacao) {
-
-        console.log(`Atualizando venda existente => ${sell.code}`);
-        existingSell.status_venda = status_venda;
-        existingSell.observacao = sell.obs;
-        if (sell.amount_final != existingSell.valor_final) {
-          const productCodes = sell.products.map((item) => item.code);
-          const produtosEncontrados = await this.produtoRepository.find({
-            where: { codigo: In(productCodes) },
-          });
-          itensVenda = sell.products.map((item) => {
-            const produtoEncontrado = produtosEncontrados.find((p) => p.codigo === item.code);
-            return {
-              quantidade: Number(item.quantity),
-              valor_unitario: Number(item.unit_price),
-              valor_total: Number(item.total_price),
-              produto: produtoEncontrado,
-            };
-          });
-          existingSell.itensVenda = itensVenda;
-          existingSell.valor_pedido = Number(sell.amount);
-          existingSell.valor_final = Number(sell.amount_final);
-          existingSell.desconto = sell.discount_total || 0
-
-          const paymentTerms = sell.payment_term_text ? sell.payment_term_text.match(/\d+/g) : null;
-          const paymentDays = paymentTerms ? paymentTerms.map(Number) : []; // Converte para números
-          // Garantir que o número de dias de prazo seja igual ao número de parcelas (installment_qty)
-          const numberOfInstallments = sell.installment_qty;
-          const validPaymentDays = paymentDays.slice(0, numberOfInstallments); // Usa apenas os primeiros `installment_qty` dias
-      
-          // Calcular as datas de vencimento com base nos dias de prazo
-          const baseDate = new Date(sell.order_date);
-          const datasVencimentoArray = validPaymentDays.map((days) => {
-            const data = new Date(baseDate);
-            data.setDate(data.getDate() + days + 1); // Adiciona um dia extra
-            return data.toISOString().split('T')[0]; // Formato "YYYY-MM-DD"
-          });
-          
-         
-          // Agora é um array de strings, não um array de arrays
-          const datas_vencimento = datasVencimentoArray;
-      
-          // Criar as parcelas de crédito
-          const parcela_credito = validPaymentDays.map((days, index) => {
-            const data = new Date(baseDate);
-            data.setDate(data.getDate() + days + 1); // Adiciona um dia extra
-            return this.parcelaRepository.create({
-                numero: index + 1,
-                valor: Number(sell.installment_value),
-                data_criacao: sell.order_date,
-                data_vencimento: data,
-                status_pagamento,
+    if(existingSell) {    
+      existingSell.status_venda = status_venda;
+      existingSell.observacao = sell.obs;
+      if (new Date(sell.updated_at) > existingSell.data_criacao) {
+          console.log(`Atualizando venda existente => ${sell.code}`);
+          if (sell.amount_final != existingSell.valor_final) {
+            const productCodes = sell.products.map((item) => item.code);
+            const produtosEncontrados = await this.produtoRepository.find({
+              where: { codigo: In(productCodes) },
             });
-          });
-          
-          existingSell.datas_vencimento = datas_vencimento;
-          existingSell.parcela_credito = parcela_credito;
+            itensVenda = sell.products.map((item) => {
+              const produtoEncontrado = produtosEncontrados.find((p) => p.codigo === item.code);
+              return {
+                quantidade: Number(item.quantity),
+                valor_unitario: Number(item.unit_price),
+                valor_total: Number(item.total_price),
+                produto: produtoEncontrado,
+              };
+            });
+            existingSell.itensVenda = itensVenda;
+            existingSell.valor_pedido = Number(sell.amount);
+            existingSell.valor_final = Number(sell.amount_final);
+            existingSell.desconto = sell.discount_total || 0
 
-          await this.vendaRepository.save(existingSell);
+            const paymentTerms = sell.payment_term_text ? sell.payment_term_text.match(/\d+/g) : null;
+            const paymentDays = paymentTerms ? paymentTerms.map(Number) : []; // Converte para números
+            // Garantir que o número de dias de prazo seja igual ao número de parcelas (installment_qty)
+            const numberOfInstallments = sell.installment_qty;
+            const validPaymentDays = paymentDays.slice(0, numberOfInstallments); // Usa apenas os primeiros `installment_qty` dias
         
-          return `Venda ${sell.code} Atualizada`;
-        } else {
-        console.log(`Venda já existente e atualizada => ${sell.code}`);
-        }
-        return;
+            // Calcular as datas de vencimento com base nos dias de prazo
+            const baseDate = new Date(sell.order_date);
+            const datasVencimentoArray = validPaymentDays.map((days) => {
+              const data = new Date(baseDate);
+              data.setDate(data.getDate() + days + 1); // Adiciona um dia extra
+              return data.toISOString().split('T')[0]; // Formato "YYYY-MM-DD"
+            });
+            
+          
+            // Agora é um array de strings, não um array de arrays
+            const datas_vencimento = datasVencimentoArray;
+        
+            // Criar as parcelas de crédito
+            const parcela_credito = validPaymentDays.map((days, index) => {
+              const data = new Date(baseDate);
+              data.setDate(data.getDate() + days + 1); // Adiciona um dia extra
+              return this.parcelaRepository.create({
+                  numero: index + 1,
+                  valor: Number(sell.installment_value),
+                  data_criacao: sell.order_date,
+                  data_vencimento: data,
+                  status_pagamento,
+              });
+            });
+            
+            existingSell.datas_vencimento = datas_vencimento;
+            existingSell.parcela_credito = parcela_credito;
+
+            await this.vendaRepository.save(existingSell);
+          
+            return `Venda ${sell.code} Atualizada`;
+          } else {
+          console.log(`Venda já existente e atualizada => ${sell.code}`);
+          }
+          return;
+      }
     }
 
     // Se a venda não existir, crie-a
@@ -407,7 +408,7 @@ export class SellsService implements ISellsRepository {
             throw new BadRequestException({ message: `🚨 Cliente não encontrado para o pedido ${id}.` });
         }
 
-        const itensComErro = order.itensVenda.filter(item => !item.produto.tiny_mg && !item.produto.tiny_sp);
+        const itensComErro = order.itensVenda.filter(item => !item.produto.tiny_mg || !item.produto.tiny_sp);
 
         if (itensComErro.length > 0) {
             let errorMessage = "Os seguintes produtos não possuem ID:\n\n";

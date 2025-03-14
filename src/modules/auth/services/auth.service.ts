@@ -34,14 +34,20 @@ export class AuthService implements IAuthRepository {
       cargo: user.cargo,
     };
 
-    const secret = this.configService.get<string>('JWT_SECRET');
-    if (!secret) {
-      throw new Error('JWT_SECRET não foi definido nas variáveis de ambiente!');
-    }
-    
-    const expiresIn = this.configService.get<string>('JWT_EXPIRES_IN') || '5h';
+    // Certifique-se de que o `JWT_SECRET` está carregado corretamente do ambiente
+    const secret = process.env.JWT_SECRET as string;
 
-    const accessToken = jwt.sign(payload, secret as jwt.Secret, { expiresIn });
+    if (!secret) {
+      throw new Error('JWT_SECRET não está definido nas variáveis de ambiente');
+    }
+
+    // Converta `expiresIn` para um valor válido (string ou número)
+    const expiresIn: string | number = process.env.JWT_EXPIRATION || '1h';
+
+
+    const accessToken = jwt.sign(payload, secret, { 
+      expiresIn: '1h' 
+    });
 
     return { accessToken };
   }

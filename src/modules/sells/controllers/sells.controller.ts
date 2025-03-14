@@ -58,7 +58,7 @@ export class SellsController {
     @Body('responsible') responsible: string,
     @Res() res: Response
   ) {
-      const html = await this.labelService.generateLabelHtml(id, totalVolumes, responsible);
+      const html = await this.labelService.generateLabel(id, totalVolumes, responsible);
 
       res.setHeader('Content-Type', 'text/html');
       return res.send(html);
