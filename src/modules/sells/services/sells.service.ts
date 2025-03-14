@@ -408,7 +408,7 @@ export class SellsService implements ISellsRepository {
             throw new BadRequestException({ message: `🚨 Cliente não encontrado para o pedido ${id}.` });
         }
 
-        const itensComErro = order.itensVenda.filter(item => !item.produto.tiny_mg || !item.produto.tiny_sp);
+        const itensComErro = order.itensVenda.filter(item => !item.produto.tiny_mg && !item.produto.tiny_sp);
 
         if (itensComErro.length > 0) {
             let errorMessage = "Os seguintes produtos não possuem ID:\n\n";
