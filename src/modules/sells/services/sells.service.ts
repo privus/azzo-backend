@@ -175,6 +175,7 @@ export class SellsService implements ISellsRepository {
       if (new Date(sell.updated_at) > existingSell.data_criacao) {
           console.log(`Atualizando venda existente => ${sell.code}`);
           existingSell.data_atualizacao = new Date(sell.updated_at);
+          existingSell.data_criacao = new Date(sell.order_date);
           if (sell.amount_final != existingSell.valor_final) {
             const productCodes = sell.products.map((item) => item.code);
             const produtosEncontrados = await this.produtoRepository.find({
