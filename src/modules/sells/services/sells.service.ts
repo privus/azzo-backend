@@ -168,7 +168,7 @@ export class SellsService implements ISellsRepository {
     let itensVenda = [];
     
     if(existingSell) {    
-      existingSell.status_venda.status_venda_id = sell.status.id;
+      existingSell.status_venda = status_venda;
       existingSell.observacao = sell.obs;
       cliente.ultima_compra = new Date(sell.order_date);
       await this.clienteService.saveCustomer(cliente);
