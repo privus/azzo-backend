@@ -32,6 +32,8 @@ export class CustomersService implements ICustomersRepository{
   async syncroCustomers(): Promise<void> {
     let page = 1;
 
+    await this.updateCnpjNumbers();
+
     while (true) {
       try {
         // Construct the request URL
@@ -278,4 +280,27 @@ export class CustomersService implements ICustomersRepository{
           throw error;
       }
   }
+
+  async updateCnpjNumbers(): Promise<void> {
+    console.log("🔄 Starting CNPJ update...");
+  
+    // Fetch all customers
+    const customers = await this.clienteRepository.find({
+      where: { tipo_doc: 'cnpj' }
+    });
+  
+    let updatedCount = 0;
+  
+    for (const customer of customers) {
+      if (customer.numero_doc.length === 13) {
+        customer.numero_doc = '0' + customer.numero_doc; // Prepend 0
+        await this.clienteRepository.save(customer);
+        console.log(`✅ Updated CNPJ for customer: ${customer.nome} (${customer.numero_doc})`);
+        updatedCount++;
+      }
+    }
+  
+    console.log(`🎉 Update complete! ${updatedCount} customers updated.`);
+  }
+  
 }
