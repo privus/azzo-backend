@@ -170,12 +170,9 @@ export class SellsService implements ISellsRepository {
     if(existingSell) {    
       existingSell.status_venda = status_venda;
       existingSell.observacao = sell.obs;
-      cliente.ultima_compra = new Date(sell.order_date);
-      await this.clienteService.saveCustomer(cliente);
-      if (new Date(sell.updated_at) > existingSell.data_criacao) {
+      if (new Date(sell.updated_at) > existingSell.data_atualizacao) {
           console.log(`Atualizando venda existente => ${sell.code}`);
           existingSell.data_atualizacao = new Date(sell.updated_at);
-          existingSell.data_criacao = new Date(sell.order_date);
           if (sell.amount_final != existingSell.valor_final) {
             const productCodes = sell.products.map((item) => item.code);
             const produtosEncontrados = await this.produtoRepository.find({
@@ -449,7 +446,7 @@ export class SellsService implements ISellsRepository {
         const body: OrderTinyDto = {
             idContato: idContato,
             numeroOrdemCompra: `${order.codigo}_sell`,
-            data: order.data_criacao?.toISOString()?.split('T')[0] || new Date().toISOString().split('T')[0],
+            data: (order.data_criacao ? new Date(order.data_criacao).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
             meioPagamento: 2,
             parcelas: order.datas_vencimento.map((dataVencimento, index) => ({
                 dias: Math.floor(

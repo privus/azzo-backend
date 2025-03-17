@@ -286,17 +286,55 @@ export class CustomersService implements ICustomersRepository{
     return
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_9PM)
-  async updateTags(): Promise<void> {
-    const clientes = await this.clienteRepository.find();
-    for (const cliente of clientes) {
-      const ultima_compra = cliente.ultima_compra;
-      const hoje = new Date();
-      const diferencaEmDias = Math.floor((hoje.getTime() - ultima_compra.getTime()) / (1000 * 60 * 60 * 24));
-      if (diferencaEmDias > 60) {
-        cliente.status_cliente = await this.statusClienteRepository.findOne({ where: { status_cliente_id: 1 } });
-        await this.clienteRepository.save(cliente);
-      }
-    }
-  }
+  // @Cron(CronExpression.EVERY_DAY_AT_9PM)
+  // async updateTags(): Promise<void> {
+  //   const clientes = await this.clienteRepository.find();
+  //   const hoje = new Date();
+  
+  //   // Preload status IDs to avoid multiple DB queries
+  //   const status60 = await this.statusClienteRepository.findOne({ where: { status_cliente_id: 104 } });
+  //   const status90 = await this.statusClienteRepository.findOne({ where: { status_cliente_id: 102 } });
+  //   const status180 = await this.statusClienteRepository.findOne({ where: { status_cliente_id: 103 } });
+  //   const statusAtivo = await this.statusClienteRepository.findOne({ where: { status_cliente_id: 101 } });
+  
+  //   for (const cliente of clientes) {
+  //     // Use ultima_compra if available, otherwise use data_criacao
+  //     let dataRef = cliente.ultima_compra || cliente.data_criacao;
+  //     const isUsingDataCriacao = !cliente.ultima_compra; // Flag to check if we are using data_criacao
+  
+  //     if (!dataRef) {
+  //       console.warn(`⚠️ Cliente ${cliente.codigo} não tem data_criacao nem ultima_compra`);
+  //       continue; // Skip clients without a date
+  //     }
+  
+  //     // Convert to Date if it's not already
+  //     dataRef = new Date(dataRef);
+  //     if (isNaN(dataRef.getTime())) {
+  //       console.error(`❌ Cliente ${cliente.codigo} tem data inválida: ${cliente.ultima_compra || cliente.data_criacao}`);
+  //       continue;
+  //     }
+  
+  //     const diferencaEmDias = Math.floor((hoje.getTime() - dataRef.getTime()) / (1000 * 60 * 60 * 24));
+  
+  //     // If using data_criacao and diferencaEmDias < 60, do not change status
+  //     if (isUsingDataCriacao && diferencaEmDias < 60) {
+  //       console.log(`🔹 Cliente ${cliente.codigo} tem menos de 60 dias desde a criação. Mantendo status.`);
+  //       continue; // Skip updating the status
+  //     }
+  
+  //     if (diferencaEmDias > 180) {
+  //       cliente.status_cliente = status180;
+  //     } else if (diferencaEmDias > 90) {
+  //       cliente.status_cliente = status90;
+  //     } else if (diferencaEmDias > 60) {
+  //       cliente.status_cliente = status60;
+  //     } else {
+  //       cliente.status_cliente = statusAtivo;
+  //     }
+  
+  //     await this.clienteRepository.save(cliente);
+  //   }
+  
+  //   console.log("✅ Atualização de tags concluída.");
+  // } 
 }
