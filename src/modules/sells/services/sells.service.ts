@@ -155,6 +155,12 @@ export class SellsService implements ISellsRepository {
   private async processSell(sell: SellsApiResponse): Promise<string> {
     const existingSell = await this.vendaRepository.findOne({ where: { codigo: Number(sell.code) } });
     const cliente = await this.clienteService.findCustomerByCode(sell.store ? Number(sell.store.erp_id) : 0);
+
+    const status_venda = await this.statusVendaRepository.findOne({
+      where: { status_venda_id: sell.status.id },
+    });
+    console.log('status_venda ==================>', status_venda);
+
     const status_pagamento = await this.statusPagamentoRepository.findOne({
       where: { status_pagamento_id: 1 },
     });
@@ -237,9 +243,6 @@ export class SellsService implements ISellsRepository {
 
     // Busque e associe os dados necessários
     const vendedor = await this.sellersSevice.findBy({ codigo: Number(sell.seller_code) });
-    const status_venda = await this.statusVendaRepository.findOne({
-      where: { status_venda_id: sell.status.id },
-    });
 
     const regiao = await this.regiaoService.getRegionByCode(sell.region);
 
@@ -338,7 +341,6 @@ export class SellsService implements ISellsRepository {
     await this.clienteService.saveCustomer(cliente);
 
     await this.vendaRepository.save(novaVenda);
-    console.log('Venda sincronizada =>', novaVenda);
     return `Venda código ${sell.code} foi Recebida`;
   }
 
