@@ -9,8 +9,11 @@ export class Venda {
   @Column({ type: 'int', nullable: false, unique: true })
   codigo: number;
 
-  @Column({ type: 'timestamp', nullable: false })
+  @Column({ type: 'varchar', nullable: false })
   data_criacao: Date;
+
+  @Column({ type: 'varchar', nullable: true })
+  data_atualizacao: Date;
 
   @Column({ type: 'varchar', length: 480, nullable: true })
   observacao: string;
