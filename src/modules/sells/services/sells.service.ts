@@ -156,10 +156,6 @@ export class SellsService implements ISellsRepository {
     const existingSell = await this.vendaRepository.findOne({ where: { codigo: Number(sell.code) } });
     const cliente = await this.clienteService.findCustomerByCode(sell.store ? Number(sell.store.erp_id) : 0);
 
-    const status_venda = await this.statusVendaRepository.findOne({
-      where: { status_venda_id: sell.status.id },
-    });
-
     const status_pagamento = await this.statusPagamentoRepository.findOne({
       where: { status_pagamento_id: 1 },
     });
@@ -167,7 +163,7 @@ export class SellsService implements ISellsRepository {
     let itensVenda = [];
     
     if(existingSell) {    
-      existingSell.status_venda = status_venda;
+      existingSell.status_venda.status_venda_id = sell.status.id;
       existingSell.observacao = sell.obs;
       cliente.ultima_compra = new Date(sell.order_date);
       await this.clienteService.saveCustomer(cliente);
