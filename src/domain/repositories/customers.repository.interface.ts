@@ -7,5 +7,5 @@ export interface ICustomersRepository {
   findCustomersByStatus(id: number): Promise<StatusCliente[]>;
   syncroIdTiny(): Promise<void>;
   registerCustomerTiny(id: number): Promise<number>;
-  saveCustomer(customer: Cliente): Promise<Cliente>;
+  saveCustomer(customer: Cliente): Promise<void>;
 }

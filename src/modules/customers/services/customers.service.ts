@@ -281,8 +281,9 @@ export class CustomersService implements ICustomersRepository{
       }
   }
 
-  saveCustomer(customer: Cliente): Promise<Cliente> {
-    return this.clienteRepository.save(customer);
+  async saveCustomer(customer: Cliente): Promise<void> {
+    await this.clienteRepository.save(customer);
+    return
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_9PM)
