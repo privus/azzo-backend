@@ -6,6 +6,8 @@ import { Repository } from 'typeorm';
 import { CustomerAPIResponse, TinyCustomerDto, TinyCustomerResponse } from '../dto';
 import { Regiao, StatusCliente, Cidade, Cliente } from '../../../infrastructure/database/entities';
 import { ICustomersRepository } from '../../../domain/repositories';
+import { Cron, CronExpression } from '@nestjs/schedule';
+
 
 @Injectable()
 export class CustomersService implements ICustomersRepository{
@@ -31,8 +33,6 @@ export class CustomersService implements ICustomersRepository{
 
   async syncroCustomers(): Promise<void> {
     let page = 1;
-
-    await this.updateCnpjNumbers();
 
     while (true) {
       try {
@@ -281,24 +281,21 @@ export class CustomersService implements ICustomersRepository{
       }
   }
 
-  async updateCnpjNumbers(): Promise<void> {
-    console.log("🔄 Starting CNPJ update...");
-  
-    const customers = await this.clienteRepository.find({
-      where: { tipo_doc: 'cnpj' }
-    });
-  
-    let updatedCount = 0;
-  
-    for (const customer of customers) {
-      if (customer.numero_doc.length === 13) {
-        customer.numero_doc = '0' + customer.numero_doc; // Prepend 0
-        await this.clienteRepository.save(customer);
-        console.log(`✅ Updated CNPJ for customer: ${customer.nome} (${customer.numero_doc})`);
-        updatedCount++;
+  saveCustomer(customer: Cliente): Promise<Cliente> {
+    return this.clienteRepository.save(customer);
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_9PM)
+  async updateTags(): Promise<void> {
+    const clientes = await this.clienteRepository.find();
+    for (const cliente of clientes) {
+      const ultima_compra = cliente.ultima_compra;
+      const hoje = new Date();
+      const diferencaEmDias = Math.floor((hoje.getTime() - ultima_compra.getTime()) / (1000 * 60 * 60 * 24));
+      if (diferencaEmDias > 60) {
+        cliente.status_cliente = await this.statusClienteRepository.findOne({ where: { status_cliente_id: 1 } });
+        await this.clienteRepository.save(cliente);
       }
     }
-    console.log(`🎉 Update complete! ${updatedCount} customers updated.`);
   }
-  
 }

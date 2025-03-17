@@ -64,7 +64,7 @@ export class LabelService {
         {
           columns: [
             // 📌 Imagem à esquerda
-            { image: logoBase64, width: 60, margin: [0, -10, 0, 10] },
+            { image: logoBase64, width: 60, margin: [0, -10, 0, 5] },
 
             // 📌 Telefone à direita
             {
@@ -84,11 +84,15 @@ export class LabelService {
         { text: `Endereço: ${endereco} ${complemento}`, fontSize: 5, alignment: 'left', margin: [0, 2, 0, 2]},
         { text: `Bairro: ${order.cliente.bairro}`, fontSize: 5, alignment: 'left', margin: [0, 2, 0, 2]},
         { text: `${cidade}`, fontSize: 5, alignment: 'left', margin: [0, 2, 0, 2] },
+        {
+          columns: [
+            // 📌 Imagem à esquerda
+            { text: `Responsável: ${responsible}`, fontSize: 5, margin: [0, 0, 0, 0], alignment: 'left', bold: true },
 
-        { text: `Responsável: ${responsible}`, fontSize: 5, margin: [0, 2, 0, 2], alignment: 'left', bold: true },
-
-        // Volume
-        { text: `Volume: ${volume} / ${totalVolumes}`, fontSize: 5, bold: true, margin: [0, 0, 0, 0], alignment: 'right' },
+            // 📌 Telefone à direita
+            { text: `Volume: ${volume} / ${totalVolumes}`, fontSize: 5, bold: true, margin: [0, 0, 0, 0], alignment: 'right' },
+          ],
+        },
       ],
       margin: [5, 5, 5, 5],
     };

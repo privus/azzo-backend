@@ -57,6 +57,9 @@ export class Cliente {
   @Column({ type: 'varchar', length: 90 })
   data_criacao: Date;
 
+  @Column({ type: 'varchar', length: 90, nullable: true })
+  ultima_compra: Date;
+
   @Column({ type: 'varchar', length: 90 })
   data_atualizacao: Date;
 

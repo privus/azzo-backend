@@ -154,6 +154,7 @@ export class SellsService implements ISellsRepository {
 
   private async processSell(sell: SellsApiResponse): Promise<string> {
     const existingSell = await this.vendaRepository.findOne({ where: { codigo: Number(sell.code) } });
+    const cliente = await this.clienteService.findCustomerByCode(sell.store ? Number(sell.store.erp_id) : 0);
 
     const status_venda = await this.statusVendaRepository.findOne({
       where: { status_venda_id: sell.status.id },
@@ -164,10 +165,12 @@ export class SellsService implements ISellsRepository {
     });
 
     let itensVenda = [];
-
+    
     if(existingSell) {    
       existingSell.status_venda = status_venda;
       existingSell.observacao = sell.obs;
+      cliente.ultima_compra = new Date(sell.order_date);
+      await this.clienteService.saveCustomer(cliente);
       if (new Date(sell.updated_at) > existingSell.data_criacao) {
           console.log(`Atualizando venda existente => ${sell.code}`);
           if (sell.amount_final != existingSell.valor_final) {
@@ -229,15 +232,15 @@ export class SellsService implements ISellsRepository {
           } else {
           console.log(`Venda já existente e atualizada => ${sell.code}`);
           }
-          return;
+          return `Venda ${sell.code} Atualizada`;
       }
+      return `Venda ${sell.code} Atualizada`;
     }
 
     // Se a venda não existir, crie-a
     console.log('Criando nova venda =>', sell.code);
 
     // Busque e associe os dados necessários
-    const cliente = await this.clienteService.findCustomerByCode(sell.store ? Number(sell.store.erp_id) : 0);
     const vendedor = await this.sellersSevice.findBy({ codigo: Number(sell.seller_code) });
 
     const regiao = await this.regiaoService.getRegionByCode(sell.region);
@@ -333,6 +336,8 @@ export class SellsService implements ISellsRepository {
       status_pagamento,
       tipo_pedido,
     });
+    cliente.ultima_compra = new Date(sell.order_date);
+    await this.clienteService.saveCustomer(cliente);
 
     await this.vendaRepository.save(novaVenda);
     console.log('Venda sincronizada =>', novaVenda);

@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, UseFilters } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { TinyTokens } from '../../../infrastructure/database/entities';
