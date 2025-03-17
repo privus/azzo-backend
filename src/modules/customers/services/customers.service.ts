@@ -284,7 +284,6 @@ export class CustomersService implements ICustomersRepository{
   async updateCnpjNumbers(): Promise<void> {
     console.log("🔄 Starting CNPJ update...");
   
-    // Fetch all customers
     const customers = await this.clienteRepository.find({
       where: { tipo_doc: 'cnpj' }
     });
@@ -299,7 +298,6 @@ export class CustomersService implements ICustomersRepository{
         updatedCount++;
       }
     }
-  
     console.log(`🎉 Update complete! ${updatedCount} customers updated.`);
   }
   
