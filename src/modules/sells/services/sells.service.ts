@@ -357,7 +357,6 @@ export class SellsService implements ISellsRepository {
     return this.vendaRepository.findOne({
       where: { venda_id: id },
       relations: [
-        'cliente',
         'vendedor',
         'itensVenda.produto',
         'status_pagamento',
@@ -365,6 +364,7 @@ export class SellsService implements ISellsRepository {
         'parcela_credito',
         'parcela_credito.status_pagamento',
         'tipo_pedido',
+        'cliente.cidade.estado',
       ],
     });
   }

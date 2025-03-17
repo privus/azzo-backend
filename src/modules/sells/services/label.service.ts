@@ -1,41 +1,44 @@
-import { Injectable } from '@nestjs/common';
-import { SellsService } from './sells.service';
+import { Inject, Injectable } from '@nestjs/common';
+import { ISellsRepository } from '../../../domain/repositories';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as PdfPrinter from 'pdfmake';
 
 @Injectable()
 export class LabelService {
-  constructor(private readonly sellsService: SellsService) {}
+  constructor( @Inject('ISellsRepository') private readonly sellsSevice: ISellsRepository,) {}
 
   async generateLabel(orderId: number, totalVolumes: number, responsible: string): Promise<Buffer> {
-    const order = await this.sellsService.getSellById(orderId);
-
+    const order = await this.sellsSevice.getSellById(orderId);
     if (!order) {
       throw new Error(`Pedido ID ${orderId} não encontrado.`);
     }
 
-    // Caminho do logo (converta para PNG ou JPG se necessário)
+    // Caminho do logo
     const logoPath = path.resolve('src/utils/azzo.png');
     const logoBase64 = await this.getBase64Image(logoPath);
 
-    // Criar PDF com as etiquetas
-    const pdfBuffer = await this.createPdf(order, totalVolumes, responsible, logoBase64);
-    return pdfBuffer;
+    // Criar PDF
+    return await this.createPdf(order, totalVolumes, responsible, logoBase64);
   }
 
   private async createPdf(order: any, totalVolumes: number, responsible: string, logoBase64: string): Promise<Buffer> {
+    // Definição da fonte Helvetica corretamente
     const fonts = {
-      Roboto: {
-        normal: 'node_modules/pdfmake/fonts/Roboto-Regular.ttf',
-        bold: 'node_modules/pdfmake/fonts/Roboto-Bold.ttf',
+      Helvetica: {
+        normal: 'Helvetica',
+        bold: 'Helvetica-Bold',
       },
     };
 
     const printer = new PdfPrinter(fonts);
     const docDefinition = {
-      pageSize: { width: 100, height: 150 }, // 10cm x 15cm
+      pageSize: { width: 150, height: 100 }, // 📌 Corrigido para Paisagem (15cm x 10cm)
+      pageOrientation: 'landscape', // ✅ Garante que fique na posição horizontal
       pageMargins: [10, 10, 10, 10],
+      defaultStyle: {
+        font: 'Helvetica', // Usa a fonte Helvetica corretamente definida
+      },
       content: [],
     };
 
@@ -50,17 +53,44 @@ export class LabelService {
   }
 
   private createLabel(order: any, volume: number, totalVolumes: number, responsible: string, logoBase64: string) {
+    const endereco = order.cliente.endereco + ' Nº ' + (order.cliente.num_endereco ?? '');
+    const complemento = order.cliente.complemento ? order.cliente.complemento : '';
+    const estado = order.cliente.cidade ? order.cliente.cidade.estado.sigla : '';
+    const cidade = order.cliente.cidade_string + ' - ' + estado + ' - ' + order.cliente.cep;
+    const telefoneFixo = '(35) 99877 - 0626';
+
     return {
       stack: [
-        { image: logoBase64, width: 80, alignment: 'center' },
-        { text: `Pedido: #${order.codigo}`, fontSize: 12, bold: true, margin: [0, 10, 0, 5] },
-        { text: `Cliente: ${order.cliente?.nome_empresa ?? 'Não informado'}`, fontSize: 10, margin: [0, 2, 0, 2] },
-        { text: `Endereço: ${order.cliente?.endereco ?? 'Endereço não informado'}`, fontSize: 9 },
-        { text: `${order.cliente?.cidade?.nome ?? ''} - ${order.cliente?.estado?.sigla ?? ''} - ${order.cliente?.cep ?? ''}`, fontSize: 9 },
-        { text: `Telefone: ${order.cliente?.telefone_comercial ?? 'Não informado'}`, fontSize: 9, margin: [0, 2, 0, 2] },
-        { text: `Responsável: ${responsible}`, fontSize: 9, margin: [0, 2, 0, 2] },
-        { text: `Volume: ${volume} / ${totalVolumes}`, fontSize: 12, bold: true, margin: [0, 10, 0, 0], alignment: 'center' },
+        {
+          columns: [
+            // 📌 Imagem à esquerda
+            { image: logoBase64, width: 60, margin: [0, -10, 0, 10] },
+
+            // 📌 Telefone à direita
+            {
+              text: telefoneFixo,
+              fontSize: 4,
+              bold: true,
+              alignment: 'right',
+              margin: [0, -5, 0, 0],
+            },
+          ],
+        },
+        // Pedido e Cliente
+        { text: `Pedido: ${order.codigo}`, fontSize: 5, bold: true, alignment: 'left' },
+        { text: `Cliente: ${order.cliente.nome_empresa}`, fontSize: 5, alignment: 'left', margin: [0, 2, 0, 2] },
+
+        // Endereço
+        { text: `Endereço: ${endereco} ${complemento}`, fontSize: 5, alignment: 'left', margin: [0, 2, 0, 2]},
+        { text: `Bairro: ${order.cliente.bairro}`, fontSize: 5, alignment: 'left', margin: [0, 2, 0, 2]},
+        { text: `${cidade}`, fontSize: 5, alignment: 'left', margin: [0, 2, 0, 2] },
+
+        { text: `Responsável: ${responsible}`, fontSize: 5, margin: [0, 2, 0, 2], alignment: 'left', bold: true },
+
+        // Volume
+        { text: `Volume: ${volume} / ${totalVolumes}`, fontSize: 5, bold: true, margin: [0, 0, 0, 0], alignment: 'right' },
       ],
+      margin: [5, 5, 5, 5],
     };
   }
 
