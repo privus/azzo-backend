@@ -16,10 +16,11 @@ export class CreditsService implements ICreditsRepository {
 
   async getAllCredits(): Promise<ParcelaCredito[]> {
     const credits = await this.parcelaRepository.find({
-      relations: ['status_pagamento', 'venda', 'venda.cliente', 'categoria'],
+      relations: ['status_pagamento', 'venda.cliente', 'categoria'],
     });
     const now = new Date();
     const statusAtraso = await this.statusRepository.findOne({ where: { status_pagamento_id: 3 } }); // "Em Atraso"
+    const statusPendente = await this.statusRepository.findOne({ where: { status_pagamento_id: 1 } }); // "Pendente"
 
     for (const credit of credits) {
       const dataVencimentoAjustada = new Date(credit.data_vencimento);
@@ -28,16 +29,15 @@ export class CreditsService implements ICreditsRepository {
       const vencida = dataVencimentoAjustada < now && !credit.data_pagamento;
       const isPendente = credit.status_pagamento.status_pagamento_id === 1; // Pendente
 
-      if (vencida && isPendente && statusAtraso) {
+      if (vencida && isPendente) {
         console.log(`Atualizando parcela ${credit.parcela_id} para status 'Em Atraso'.`);
         credit.status_pagamento = statusAtraso; // Atualiza a referência de status_pagamento
         await this.parcelaRepository.save(credit); // Salva a parcela com o novo status
 
         // Atualizar o status da venda associada
-        await this.updateVendaStatus(credit.venda.venda_id);
-      }
+      } 
+      await this.updateVendaStatus(credit.venda.venda_id);
     }
-
 
     return credits;
   }
@@ -101,13 +101,13 @@ export class CreditsService implements ICreditsRepository {
       (parcela) => parcela.status_pagamento.status_pagamento_id === 2, // "Pago"
     );
 
-    const todasParcelasAtrasadas = venda.parcela_credito.every(
+    const parcelasAtrasadas = venda.parcela_credito.some(
       (parcela) => parcela.status_pagamento.status_pagamento_id === 3, // "Em Atraso"
     );
 
     if (todasParcelasPagas) {
       venda.status_pagamento = await this.statusRepository.findOne({ where: { status_pagamento_id: 2 } }); // "Pago"
-    } else if (todasParcelasAtrasadas) {
+    } else if (parcelasAtrasadas) {
       venda.status_pagamento = await this.statusRepository.findOne({ where: { status_pagamento_id: 3 } }); // "Em Atraso"
     } else {
       venda.status_pagamento = await this.statusRepository.findOne({ where: { status_pagamento_id: 1 } }); // "Pendente"
