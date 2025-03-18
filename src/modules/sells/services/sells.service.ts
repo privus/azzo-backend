@@ -170,6 +170,7 @@ export class SellsService implements ISellsRepository {
     if(existingSell) {    
       existingSell.status_venda = status_venda;
       existingSell.observacao = sell.obs;
+      
       if (new Date(sell.updated_at) > existingSell.data_atualizacao) {
           console.log(`Atualizando venda existente => ${sell.code}`);
           existingSell.data_atualizacao = new Date(sell.updated_at);
@@ -247,38 +248,37 @@ export class SellsService implements ISellsRepository {
 
     const regiao = await this.regiaoService.getRegionByCode(sell.region);
 
-    const paymentTerms = sell.payment_term_text ? sell.payment_term_text.match(/\d+/g) : null;
-    const paymentDays = paymentTerms ? paymentTerms.map(Number) : []; // Converte para números
-    // Garantir que o número de dias de prazo seja igual ao número de parcelas (installment_qty)
-    const numberOfInstallments = sell.installment_qty;
-    const validPaymentDays = paymentDays.slice(0, numberOfInstallments); // Usa apenas os primeiros `installment_qty` dias
+    let datas_vencimento = [];
+    let parcela_credito = [];
 
-    // Calcular as datas de vencimento com base nos dias de prazo
-    const baseDate = new Date(sell.order_date);
-    const datasVencimentoArray = validPaymentDays.map((days) => {
-      const data = new Date(baseDate);
-      data.setDate(data.getDate() + days + 1); // Adiciona um dia extra
-      return data.toISOString().split('T')[0]; // Formato "YYYY-MM-DD"
-    });
-    
-   
-    // Agora é um array de strings, não um array de arrays
-    const datas_vencimento = datasVencimentoArray;
+    if (sell.status.id !== 11468) {
+      const paymentTerms = sell.payment_term_text ? sell.payment_term_text.match(/\d+/g) : null;
+      const paymentDays = paymentTerms ? paymentTerms.map(Number) : [];
+      const numberOfInstallments = sell.installment_qty;
+      const validPaymentDays = paymentDays.slice(0, numberOfInstallments);
 
-    // Criar as parcelas de crédito
-    const parcela_credito = validPaymentDays.map((days, index) => {
-      const data = new Date(baseDate);
-      data.setDate(data.getDate() + days + 1); // Adiciona um dia extra
-      return this.parcelaRepository.create({
-          numero: index + 1,
-          valor: Number(sell.installment_value),
-          data_criacao: sell.order_date,
-          data_vencimento: data,
-          status_pagamento,
+      // Calcular as datas de vencimento com base nos dias de prazo
+      const baseDate = new Date(sell.order_date);
+      datas_vencimento = validPaymentDays.map((days) => {
+          const data = new Date(baseDate);
+          data.setDate(data.getDate() + days + 1);
+          return data.toISOString().split('T')[0];
       });
-    });   
-  
 
+      // Criar as parcelas de crédito
+      parcela_credito = validPaymentDays.map((days, index) => {
+          const data = new Date(baseDate);
+          data.setDate(data.getDate() + days + 1);
+            return this.parcelaRepository.create({
+                numero: index + 1,
+                valor: Number(sell.installment_value),
+                data_criacao: sell.order_date,
+                data_vencimento: data,
+                status_pagamento,
+          });
+      });
+    }
+  
     if (sell.products && sell.products.length > 0) {
       const productCodes = sell.products.map((item) => item.code);
       const produtosEncontrados = await this.produtoRepository.find({
@@ -295,6 +295,7 @@ export class SellsService implements ISellsRepository {
         };
       });
     }
+
 
     const tipo_pedido = await this.tipoPedidoRepository.findOne({ where: { tipo_pedido_id: sell.order_type_id } });
 
@@ -338,8 +339,10 @@ export class SellsService implements ISellsRepository {
       status_pagamento,
       tipo_pedido,
     });
-    cliente.ultima_compra = new Date(sell.order_date);
-    await this.clienteService.saveCustomer(cliente);
+    if (sell.status.id !== 11468) {
+      cliente.ultima_compra = new Date(sell.order_date);
+      await this.clienteService.saveCustomer(cliente);
+    }
 
     await this.vendaRepository.save(novaVenda);
     return `Venda código ${sell.code} foi Recebida`;

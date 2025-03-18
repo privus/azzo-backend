@@ -80,9 +80,6 @@ export class CreditsService implements ICreditsRepository {
         console.log(`Atualizando parcela ${credit.parcela_id} para status 'Em Atraso'.`);
         credit.status_pagamento = statusAtraso; // Atualiza a referência de status_pagamento
         await this.parcelaRepository.save(credit); // Salva a parcela com o novo status
-
-        // Atualizar o status da venda associada
-        await this.updateVendaStatus(credit.venda.venda_id);
       }
     }
 
@@ -118,7 +115,9 @@ export class CreditsService implements ICreditsRepository {
   }
 
   async updateInstalmentStatus(UpdateInstalmentDto: UpdateInstalmentDto): Promise<string> {
-    const { parcela_id, status_pagamento_id, data_pagamento, valor_total, atualizado_por, data_vencimento } = UpdateInstalmentDto;
+    const { parcela_id, status_pagamento_id, data_pagamento, valor_total, atualizado_por, data_vencimento, venda_id } = UpdateInstalmentDto;
+    
+    await this.updateVendaStatus(venda_id);
 
     const dataPagamentoConvertida = data_pagamento ? new Date(`${data_pagamento}T00:00:00Z`) : null;
     const hoje = new Date();

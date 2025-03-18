@@ -9,6 +9,14 @@ export class UpdateInstalmentDto {
   parcela_id: number;
 
   /**
+   * ID da venda.
+   * Exemplo: 123
+   */
+  @IsOptional()
+  @IsNumber({}, { message: 'O ID da venda deve ser um número.' })
+  venda_id: number;
+
+  /**
    * ID do status pagamento.
    * Exemplo: 1
    */
