@@ -317,6 +317,11 @@ export class SellsService implements ISellsRepository {
       var formattedPaymentTermText = ''; // Retorna string vazia se for nulo ou indefinido
     }
 
+    if (sell.status.id !== 11468) {
+      cliente.ultima_compra = new Date(sell.order_date);
+      await this.clienteService.saveCustomer(cliente);
+    }
+
     const novaVenda = this.vendaRepository.create({
       codigo: Number(sell.code),
       observacao: sell.obs,
@@ -339,10 +344,6 @@ export class SellsService implements ISellsRepository {
       status_pagamento,
       tipo_pedido,
     });
-    if (sell.status.id !== 11468) {
-      cliente.ultima_compra = new Date(sell.order_date);
-      await this.clienteService.saveCustomer(cliente);
-    }
 
     await this.vendaRepository.save(novaVenda);
     return `Venda código ${sell.code} foi Recebida`;
