@@ -192,6 +192,7 @@ export class SellsService implements ISellsRepository {
             existingSell.valor_pedido = Number(sell.amount);
             existingSell.valor_final = Number(sell.amount_final);
             existingSell.desconto = sell.discount_total || 0
+            existingSell.valor_parcela = Number(sell.installment_value)
 
             const paymentTerms = sell.payment_term_text ? sell.payment_term_text.match(/\d+/g) : null;
             const paymentDays = paymentTerms ? paymentTerms.map(Number) : []; // Converte para números
@@ -503,5 +504,6 @@ export class SellsService implements ISellsRepository {
 
     return `Venda com ID ${code} e suas parcelas foram excluídas com sucesso.`;
   }
+  
 }
 

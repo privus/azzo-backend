@@ -7,7 +7,7 @@ import { CustomerAPIResponse, TinyCustomerDto, TinyCustomerResponse } from '../d
 import { Regiao, StatusCliente, Cidade, Cliente } from '../../../infrastructure/database/entities';
 import { ICustomersRepository } from '../../../domain/repositories';
 import { Cron, CronExpression } from '@nestjs/schedule';
-
+import * as fs from 'fs';
 
 @Injectable()
 export class CustomersService implements ICustomersRepository{
@@ -66,7 +66,7 @@ export class CustomersService implements ICustomersRepository{
         throw error;
       }
     }
-
+    this.lastPurchase();
     console.log('Customer synchronization completed!');
   }
 
@@ -286,55 +286,91 @@ export class CustomersService implements ICustomersRepository{
     return
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_9PM)
+  @Cron(CronExpression.EVERY_MINUTE)
   async updateTags(): Promise<void> {
     const clientes = await this.clienteRepository.find();
     const hoje = new Date();
-  
+
     // Preload status IDs to avoid multiple DB queries
     const status60 = await this.statusClienteRepository.findOne({ where: { status_cliente_id: 104 } });
     const status90 = await this.statusClienteRepository.findOne({ where: { status_cliente_id: 102 } });
     const status180 = await this.statusClienteRepository.findOne({ where: { status_cliente_id: 103 } });
     const statusAtivo = await this.statusClienteRepository.findOne({ where: { status_cliente_id: 101 } });
-  
+
     for (const cliente of clientes) {
-      // Use ultima_compra if available, otherwise use data_criacao
-      let dataRef = cliente.ultima_compra || cliente.data_criacao;
-      const isUsingDataCriacao = !cliente.ultima_compra; // Flag to check if we are using data_criacao
+        // Usa ultima_compra se existir, senão usa data_criacao
+        let dataRef = cliente.ultima_compra || cliente.data_criacao;
+        const isUsingDataCriacao = !cliente.ultima_compra; // Flag para indicar se está usando data_criacao
+
+        if (!dataRef) {
+            console.warn(`⚠️ Cliente ${cliente.codigo} não tem data_criacao nem ultima_compra`);
+            continue; // Ignorar clientes sem data
+        }
+
+        // Converter para Date, garantindo que horas sejam zeradas (YYYY-MM-DD apenas)
+        const dataRefDate = new Date(dataRef);
+        dataRefDate.setHours(0, 0, 0, 0); // Ignora horas
+
+        const hojeSemHora = new Date();
+        hojeSemHora.setHours(0, 0, 0, 0); // Ignora horas
+
+        // Calcular a diferença em dias
+        const diferencaEmDias = Math.floor((hojeSemHora.getTime() - dataRefDate.getTime()) / (1000 * 60 * 60 * 24));
+
+        // Se estiver usando data_criacao e a diferença for menor que 60 dias, não alterar status
+        if (isUsingDataCriacao && diferencaEmDias < 60) {
+            console.log(`🔹 Cliente ${cliente.codigo} tem menos de 60 dias desde a criação. Mantendo status.`);
+            continue; // Pula a atualização do status
+        }
+
+        // Atualizar status conforme a diferença em dias
+        if (diferencaEmDias > 180) {
+            cliente.status_cliente = status180;
+        } else if (diferencaEmDias > 90) {
+            cliente.status_cliente = status90;
+        } else if (diferencaEmDias > 60) {
+            cliente.status_cliente = status60;
+        } else {
+            cliente.status_cliente = statusAtivo;
+        }
+
+        await this.clienteRepository.save(cliente);
+        console.log(`✅ Cliente ${cliente.codigo} atualizado para status ${cliente.status_cliente.status_cliente_id}`);
+    }
+
+    console.log("✅ Atualização de tags concluída.");
+  }
+
+  async lastPurchase(): Promise<void> {
+    const jsonFilePath = 'src/utils/datas-ultima-compra.json';
   
-      if (!dataRef) {
-        console.warn(`⚠️ Cliente ${cliente.codigo} não tem data_criacao nem ultima_compra`);
-        continue; // Skip clients without a date
-      }
+    if (!fs.existsSync(jsonFilePath)) {
+      console.error(`Erro: Arquivo '${jsonFilePath}' não encontrado.`);
+      return;
+    }
   
-      // Convert to Date if it's not already
-      dataRef = new Date(dataRef);
-      if (isNaN(dataRef.getTime())) {
-        console.error(`❌ Cliente ${cliente.codigo} tem data inválida: ${cliente.ultima_compra || cliente.data_criacao}`);
+    const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
+    const datasUltimaCompra = JSON.parse(jsonData);
+  
+    for (const item of datasUltimaCompra) {
+      const cliente = await this.findCustomerByCode(item.codigo);
+  
+      if (!cliente) {
+        console.warn(`Cliente com código ${item.codigo} não encontrado.`);
         continue;
       }
   
-      const diferencaEmDias = Math.floor((hoje.getTime() - dataRef.getTime()) / (1000 * 60 * 60 * 24));
+      const dataJson = new Date(item.ultima_compra);
+      const dataBanco = cliente.ultima_compra ? new Date(cliente.ultima_compra) : null;
   
-      // If using data_criacao and diferencaEmDias < 60, do not change status
-      if (isUsingDataCriacao && diferencaEmDias < 60) {
-        console.log(`🔹 Cliente ${cliente.codigo} tem menos de 60 dias desde a criação. Mantendo status.`);
-        continue; // Skip updating the status
-      }
-  
-      if (diferencaEmDias > 180) {
-        cliente.status_cliente = status180;
-      } else if (diferencaEmDias > 90) {
-        cliente.status_cliente = status90;
-      } else if (diferencaEmDias > 60) {
-        cliente.status_cliente = status60;
+      // Se não houver data no banco ou a nova data for mais recente, atualiza
+      if (!dataBanco || dataJson > dataBanco) {
+        cliente.ultima_compra = item.ultima_compra;
+        await this.saveCustomer(cliente);
+        console.log(`Cliente ${item.codigo} atualizado para ${item.ultima_compra}`);
       } else {
-        cliente.status_cliente = statusAtivo;
+        console.log(`Cliente ${item.codigo} já tem uma data mais recente no banco (${cliente.ultima_compra}). Nenhuma atualização necessária.`);
       }
-  
-      await this.clienteRepository.save(cliente);
     }
-  
-    console.log("✅ Atualização de tags concluída.");
-  } 
+  }
 }
