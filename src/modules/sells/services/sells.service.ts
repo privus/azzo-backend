@@ -171,10 +171,8 @@ export class SellsService implements ISellsRepository {
       existingSell.status_venda = status_venda;
       existingSell.observacao = sell.obs;
       cliente.valor_ultima_compra = Number(sell.amount_final);
+      existingSell.data_atualizacao = new Date(sell.updated_at);
       
-      if (new Date(sell.updated_at) > existingSell.data_criacao) {
-          console.log(`Atualizando venda existente => ${sell.code}`);
-          existingSell.data_atualizacao = new Date(sell.updated_at);
           if (sell.amount_final != existingSell.valor_final) {
             const productCodes = sell.products.map((item) => item.code);
             const produtosEncontrados = await this.produtoRepository.find({
@@ -235,9 +233,7 @@ export class SellsService implements ISellsRepository {
           } else {
           console.log(`Venda já existente e atualizada => ${sell.code}`);
           }
-          await this.vendaRepository.save(existingSell);
-          return `Venda ${sell.code} Atualizada`;
-      }
+          
       await this.vendaRepository.save(existingSell);
       await this.clienteService.saveCustomer(cliente);
       return `Venda ${sell.code} Atualizada`;
