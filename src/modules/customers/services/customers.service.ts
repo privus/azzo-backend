@@ -286,7 +286,7 @@ export class CustomersService implements ICustomersRepository{
     return
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_9PM)
+  @Cron(CronExpression.EVERY_MINUTE)
   async updateTags(): Promise<void> {
     const clientes = await this.clienteRepository.find();
     const hoje = new Date();
@@ -297,45 +297,58 @@ export class CustomersService implements ICustomersRepository{
     const status180 = await this.statusClienteRepository.findOne({ where: { status_cliente_id: 103 } });
     const statusAtivo = await this.statusClienteRepository.findOne({ where: { status_cliente_id: 101 } });
 
+    if (!status60 || !status90 || !status180 || !statusAtivo) {
+        console.error("❌ ERRO: Um ou mais status de cliente não foram encontrados no banco.");
+        return;
+    }
+
     for (const cliente of clientes) {
-        // Usa ultima_compra se existir, senão usa data_criacao
         let dataRef = cliente.ultima_compra || cliente.data_criacao;
-        const isUsingDataCriacao = !cliente.ultima_compra; // Flag para indicar se está usando data_criacao
+        const isUsingDataCriacao = !cliente.ultima_compra;
 
         if (!dataRef) {
             console.warn(`⚠️ Cliente ${cliente.codigo} não tem data_criacao nem ultima_compra`);
-            continue; // Ignorar clientes sem data
+            continue;
         }
 
-        // Converter para Date, garantindo que horas sejam zeradas (YYYY-MM-DD apenas)
+        // Converter para Date e remover a parte de horas
         const dataRefDate = new Date(dataRef);
-        dataRefDate.setHours(0, 0, 0, 0); // Ignora horas
-
+        dataRefDate.setHours(0, 0, 0, 0);
         const hojeSemHora = new Date();
-        hojeSemHora.setHours(0, 0, 0, 0); // Ignora horas
+        hojeSemHora.setHours(0, 0, 0, 0);
 
         // Calcular a diferença em dias
         const diferencaEmDias = Math.floor((hojeSemHora.getTime() - dataRefDate.getTime()) / (1000 * 60 * 60 * 24));
 
-        // Se estiver usando data_criacao e a diferença for menor que 60 dias, não alterar status
+        // Se estiver usando data_criacao e tiver menos de 60 dias, ignora
         if (isUsingDataCriacao && diferencaEmDias < 60) {
             console.log(`🔹 Cliente ${cliente.codigo} tem menos de 60 dias desde a criação. Mantendo status.`);
-            continue; // Pula a atualização do status
+            continue;
         }
 
-        // Atualizar status conforme a diferença em dias
+        // Definir novo status
+        let novoStatus = statusAtivo;
+        let proxStatusDias = null; // Inicialmente definido como null
+
         if (diferencaEmDias > 180) {
-            cliente.status_cliente = status180;
+            novoStatus = status180;
+            proxStatusDias = null; // Último status, não há próxima mudança
         } else if (diferencaEmDias > 90) {
-            cliente.status_cliente = status90;
+            novoStatus = status90;
+            proxStatusDias = 180 - diferencaEmDias; // Quantos dias faltam para o status 103
         } else if (diferencaEmDias > 60) {
-            cliente.status_cliente = status60;
+            novoStatus = status60;
+            proxStatusDias = 90 - diferencaEmDias; // Quantos dias faltam para o status 102
         } else {
-            cliente.status_cliente = statusAtivo;
+            novoStatus = statusAtivo;
+            proxStatusDias = 60 - diferencaEmDias; // Quantos dias faltam para o status 104
         }
 
+        // Atualiza status e prox_status do cliente
+        cliente.status_cliente = novoStatus;
+        cliente.prox_status = proxStatusDias;
         await this.clienteRepository.save(cliente);
-        console.log(`✅ Cliente ${cliente.codigo} atualizado para status ${cliente.status_cliente.status_cliente_id}`);
+        console.log(`✅ Cliente ${cliente.codigo} atualizado para status ${cliente.status_cliente.status_cliente_id}, próxima mudança em ${proxStatusDias} dias`);
     }
 
     console.log("✅ Atualização de tags concluída.");
@@ -343,34 +356,36 @@ export class CustomersService implements ICustomersRepository{
 
   async lastPurchase(): Promise<void> {
     const jsonFilePath = 'src/utils/datas-ultima-compra.json';
-  
+
     if (!fs.existsSync(jsonFilePath)) {
-      console.error(`Erro: Arquivo '${jsonFilePath}' não encontrado.`);
-      return;
+        console.error(`Erro: Arquivo '${jsonFilePath}' não encontrado.`);
+        return;
     }
-  
+
     const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
     const datasUltimaCompra = JSON.parse(jsonData);
-  
+
     for (const item of datasUltimaCompra) {
-      const cliente = await this.findCustomerByCode(item.codigo);
-  
-      if (!cliente) {
-        console.warn(`Cliente com código ${item.codigo} não encontrado.`);
-        continue;
-      }
-  
-      const dataJson = new Date(item.ultima_compra);
-      const dataBanco = cliente.ultima_compra ? new Date(cliente.ultima_compra) : null;
-  
-      // Se não houver data no banco ou a nova data for mais recente, atualiza
-      if (!dataBanco || dataJson > dataBanco) {
-        cliente.ultima_compra = item.ultima_compra;
-        await this.saveCustomer(cliente);
-        console.log(`Cliente ${item.codigo} atualizado para ${item.ultima_compra}`);
-      } else {
-        console.log(`Cliente ${item.codigo} já tem uma data mais recente no banco (${cliente.ultima_compra}). Nenhuma atualização necessária.`);
-      }
+        const cliente = await this.findCustomerByCode(item.id_cliente);
+
+        if (!cliente) {
+            console.warn(`Cliente com código ${item.id_cliente} não encontrado.`);
+            continue;
+        }
+
+        const dataJson = new Date(item.data_pedido);
+        const dataBanco = cliente.ultima_compra ? new Date(cliente.ultima_compra) : null;
+
+        // Se não houver data no banco ou a nova data for mais recente, atualiza
+        if (!dataBanco || dataJson > dataBanco) {
+            cliente.ultima_compra = item.data_pedido;
+            cliente.valor_ultima_compra = item.total_pedido; // Atualiza o valor da última compra
+            await this.saveCustomer(cliente);
+            console.log(`✅ Cliente ${item.id_cliente} atualizado para última compra: ${item.data_pedido}, valor: ${item.total_pedido}`);
+        } else {
+            console.log(`🔹 Cliente ${item.id_cliente} já tem uma data mais recente no banco (${cliente.ultima_compra}). Nenhuma atualização necessária.`);
+        }
     }
   }
+
 }

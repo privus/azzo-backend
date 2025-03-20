@@ -54,7 +54,8 @@ export class Debito {
   @OneToMany(() => ParcelaDebito, (parcela) => parcela.debito, { cascade: true, onDelete: 'CASCADE' })
   parcela_debito: ParcelaDebito[];
 
-  @ManyToOne(() => CategoriaDebito, (categoria) => categoria.debitos)
+  @ManyToOne(() => CategoriaDebito)
+  @JoinColumn({ name: 'categoria_id' })
   categoria: CategoriaDebito;
 
   @ManyToOne(() => StatusPagamento)

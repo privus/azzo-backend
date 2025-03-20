@@ -15,6 +15,9 @@ export class Cliente {
   @Column({ type: 'int', nullable: true })
   segmento_id: number;
 
+  @Column({ type: 'int', nullable: true })
+  prox_status: number;
+
   @Column({ type: 'varchar', length: 240 })
   nome: string;
 
@@ -59,6 +62,9 @@ export class Cliente {
 
   @Column({ type: 'varchar', length: 90, nullable: true })
   ultima_compra: Date;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  valor_ultima_compra: number;
 
   @Column({ type: 'varchar', length: 90 })
   data_atualizacao: Date;

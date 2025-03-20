@@ -170,8 +170,9 @@ export class SellsService implements ISellsRepository {
     if(existingSell) {    
       existingSell.status_venda = status_venda;
       existingSell.observacao = sell.obs;
+      cliente.valor_ultima_compra = Number(sell.amount_final);
       
-      if (new Date(sell.updated_at) > existingSell.data_atualizacao) {
+      if (new Date(sell.updated_at) > existingSell.data_criacao) {
           console.log(`Atualizando venda existente => ${sell.code}`);
           existingSell.data_atualizacao = new Date(sell.updated_at);
           if (sell.amount_final != existingSell.valor_final) {
@@ -238,6 +239,7 @@ export class SellsService implements ISellsRepository {
           return `Venda ${sell.code} Atualizada`;
       }
       await this.vendaRepository.save(existingSell);
+      await this.clienteService.saveCustomer(cliente);
       return `Venda ${sell.code} Atualizada`;
     }
 
@@ -320,6 +322,7 @@ export class SellsService implements ISellsRepository {
 
     if (sell.status.id !== 11468) {
       cliente.ultima_compra = new Date(sell.order_date);
+      cliente.valor_ultima_compra = Number(sell.amount_final);
       await this.clienteService.saveCustomer(cliente);
     }
 
