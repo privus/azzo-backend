@@ -171,7 +171,7 @@ export class SellsService implements ISellsRepository {
       existingSell.status_venda = status_venda;
       existingSell.observacao = sell.obs;
       
-          if (sell.amount_final != existingSell.valor_final) {
+          if (sell.amount_final != existingSell.valor_final || sell.installment_qty != existingSell.numero_parcelas) {
             const productCodes = sell.products.map((item) => item.code);
             const produtosEncontrados = await this.produtoRepository.find({
               where: { codigo: In(productCodes) },
