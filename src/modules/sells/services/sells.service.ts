@@ -170,8 +170,6 @@ export class SellsService implements ISellsRepository {
     if(existingSell) {    
       existingSell.status_venda = status_venda;
       existingSell.observacao = sell.obs;
-      cliente.valor_ultima_compra = Number(sell.amount_final);
-      existingSell.data_atualizacao = new Date(sell.updated_at);
       
           if (sell.amount_final != existingSell.valor_final) {
             const productCodes = sell.products.map((item) => item.code);
@@ -192,6 +190,7 @@ export class SellsService implements ISellsRepository {
             existingSell.valor_final = Number(sell.amount_final);
             existingSell.desconto = sell.discount_total || 0
             existingSell.valor_parcela = Number(sell.installment_value)
+            cliente.valor_ultima_compra = Number(sell.amount_final);
 
             const paymentTerms = sell.payment_term_text ? sell.payment_term_text.match(/\d+/g) : null;
             const paymentDays = paymentTerms ? paymentTerms.map(Number) : []; // Converte para números
@@ -228,6 +227,7 @@ export class SellsService implements ISellsRepository {
             existingSell.parcela_credito = parcela_credito;
 
             await this.vendaRepository.save(existingSell);
+            await this.clienteService.saveCustomer(cliente);
           
             return `Venda ${sell.code} Atualizada`;
           } else {
