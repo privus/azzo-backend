@@ -66,7 +66,6 @@ export class CustomersService implements ICustomersRepository{
         throw error;
       }
     }
-    this.lastPurchase();
     console.log('Customer synchronization completed!');
   }
 
