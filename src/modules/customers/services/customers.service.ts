@@ -67,6 +67,7 @@ export class CustomersService implements ICustomersRepository{
       }
     }
     console.log('Customer synchronization completed!');
+    await this.addZeroCpf();
   }
 
   private async processarCliente(client: CustomerAPIResponse) {
@@ -385,6 +386,23 @@ export class CustomersService implements ICustomersRepository{
             console.log(`🔹 Cliente ${item.id_cliente} já tem uma data mais recente no banco (${cliente.ultima_compra}). Nenhuma atualização necessária.`);
         }
     }
+  }
+
+  async addZeroCpf(): Promise<void> {
+    const clientes = await this.clienteRepository.find();
+  
+    for (const cliente of clientes) {
+      if (
+        cliente.tipo_doc === 'cpf' && cliente.numero_doc.length < 11
+      ) {
+        const cpfOriginal = cliente.numero_doc;
+        cliente.numero_doc = cliente.numero_doc.padStart(11, '0');
+        await this.saveCustomer(cliente);
+        console.log(`✅ CPF ajustado: ${cpfOriginal} → ${cliente.numero_doc}`);
+      }
+    }
+  
+    console.log('🎯 Ajuste de CPFs concluído.');
   }
 
 }
