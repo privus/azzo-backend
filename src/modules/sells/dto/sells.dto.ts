@@ -41,3 +41,8 @@ export interface SellsApiResponse {
   order_type_id: number;
   updated_at: string;
 }
+
+export interface DailyRakingSellsResponse {
+  today: { id: number; nome: string; total: number }[];
+  yesterday: { id: number; nome: string; total: number }[];
+}

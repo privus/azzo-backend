@@ -1,10 +1,11 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, MoreThanOrEqual, Repository } from 'typeorm';
+import { Between, In, MoreThanOrEqual, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido } from '../../../infrastructure/database/entities';
-import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto } from '../dto';
+import { DailyRakingSellsResponse, OrderTinyDto, SellsApiResponse, UpdateSellStatusDto } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository } from '../../../domain/repositories';
+import { log } from 'console';
 
 @Injectable()
 export class SellsService implements ISellsRepository {
@@ -363,6 +364,34 @@ export class SellsService implements ISellsRepository {
     });
   }
 
+  async sellsBetweenDates(fromDate: string, toDate?: string): Promise<Venda[]> {
+    const start = new Date(fromDate);
+    start.setHours(0, 0, 0, 0);
+  
+    let end: Date;
+    if (toDate) {
+      end = new Date(toDate);
+      end.setHours(23, 59, 59, 999);
+    } else {
+      end = new Date(fromDate);
+      end.setHours(23, 59, 59, 999);
+    }
+  
+    return this.vendaRepository.find({
+      where: {
+        data_criacao: Between(start, end)
+      },
+      relations: [
+        'cliente.cidade.estado',
+        'vendedor',
+        'status_pagamento',
+        'status_venda',
+        'itensVenda.produto',
+        'tipo_pedido'
+      ],
+    });
+  }  
+
   async getSellById(id: number): Promise<Venda> {
     return this.vendaRepository.findOne({
       where: { venda_id: id },
@@ -371,7 +400,6 @@ export class SellsService implements ISellsRepository {
         'itensVenda.produto',
         'status_pagamento',
         'status_venda',
-        'parcela_credito',
         'parcela_credito.status_pagamento',
         'tipo_pedido',
         'cliente.cidade.estado',
@@ -504,5 +532,52 @@ export class SellsService implements ISellsRepository {
     return `Venda com ID ${code} e suas parcelas foram excluídas com sucesso.`;
   }
   
+  async getDailyRakingSells(): Promise<DailyRakingSellsResponse> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+  
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 3);
+  
+    const todaySales = await this.sellsBetweenDates(today.toISOString());
+    const yesterdaySales = await this.sellsBetweenDates(yesterday.toISOString());
+  
+    const buildRanking = (sells: Venda[], date: Date) => {
+      const rankingMap: Record<number, {
+        nome: string;
+        total: number;
+        numero_vendas: number;
+        codigos_vendas: number[]; // numeric codes
+      }> = {};
+  
+      for (const sell of sells) {
+        if (!sell.vendedor || sell.tipo_pedido.tipo_pedido_id !== 10438) continue;
+  
+        const id = sell.vendedor.vendedor_id;
+        if (!rankingMap[id]) {
+          rankingMap[id] = {
+            nome: sell.vendedor.nome,
+            total: 0,
+            numero_vendas: 0,
+            codigos_vendas: []
+          };
+        }
+  
+        rankingMap[id].total += Number(sell.valor_final);
+        rankingMap[id].numero_vendas += 1;
+        rankingMap[id].codigos_vendas.push(Number(sell.codigo));
+      }
+  
+      const ranking = Object.entries(rankingMap)
+        .map(([id, data]) => ({ id: Number(id), ...data }))
+        .sort((a, b) => b.total - a.total);  
+      return ranking;
+    };
+  
+    return {
+      today: buildRanking(todaySales, today),
+      yesterday: buildRanking(yesterdaySales, yesterday),
+    };
+  }  
 }
 

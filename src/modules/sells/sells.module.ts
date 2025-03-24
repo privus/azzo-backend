@@ -21,7 +21,6 @@ import { SellersModule } from '../sellers/sellers.module';
 import { RegionsModule } from '../regions/regions.module';
 import { TinyAuthService } from './services/tiny-auth.service';
 import { TinyTokenService } from './services/tiny-token.service';
-import { ScheduleModule } from '@nestjs/schedule';
 import { LabelService } from './services/label.service';
 
 @Module({

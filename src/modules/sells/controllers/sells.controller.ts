@@ -16,11 +16,23 @@ export class SellsController {
     return this.sellsService.sellsByDate(fromDate);
   }
 
+  @ApiOperation({ summary: 'Vendas entre datas' })
+  @Get('between')
+  async sellsBetweenDates(@Query('fromDate') fromDate: string, @Query('toDate') toDate?: string) {
+    return this.sellsService.sellsBetweenDates(fromDate, toDate);
+  }
+
   @ApiOperation({ summary: 'Atualizar status de uma venda' })
   @Patch('status')
   async updateSellStatus(@Body() updateStatusDto: UpdateSellStatusDto) {
     const resultMessage = await this.sellsService.updateSellStatus(updateStatusDto);
     return { message: resultMessage };
+  }
+
+  @ApiOperation({ summary: 'Obter ranking de vendas do dia' })
+  @Get('ranking')
+  async getDailyRakingSells() {
+    return this.sellsService.getDailyRakingSells();
   }
 
   @ApiOperation({ summary: 'Exportar pedido para o Tiny'})
@@ -36,6 +48,7 @@ export class SellsController {
     const resultMessage = await this.sellsService.syncroSells();
     return { message: resultMessage };
   }
+
 
   @ApiOperation({ summary: 'Excluir venda e suas parcelas' })
   @Delete(':id')
