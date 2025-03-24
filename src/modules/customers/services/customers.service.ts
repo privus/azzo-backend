@@ -67,7 +67,6 @@ export class CustomersService implements ICustomersRepository{
       }
     }
     console.log('Customer synchronization completed!');
-    await this.addZeroCpf();
   }
 
   private async processarCliente(client: CustomerAPIResponse) {

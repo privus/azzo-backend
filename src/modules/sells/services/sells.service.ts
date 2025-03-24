@@ -95,6 +95,15 @@ export class SellsService implements ISellsRepository {
             messages.push(`Código das vendas atualizadas: ${updatedSales.join(', ')}.`);
         }
 
+        // 🔥 Adicione isso aqui
+        const allVendaCodigos = (await this.vendaRepository.find({ select: ['codigo'] })).map(v => v.codigo);
+        const codigosRecebidos = [...syncedSales, ...updatedSales].map(Number);
+        const vendasNaoRetornadas = allVendaCodigos.filter(codigo => !codigosRecebidos.includes(codigo));
+
+        if (vendasNaoRetornadas.length > 0) {
+          messages.push(`⚠️ Vendas no banco que não estão na API: ${vendasNaoRetornadas.join(', ')}.`);
+        }
+
         console.log(messages.join(' | '));
         return messages.join(' | '); // Return consolidated message
     } catch (error) {
@@ -537,7 +546,12 @@ export class SellsService implements ISellsRepository {
     today.setHours(0, 0, 0, 0);
   
     const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 3);
+    yesterday.setDate(today.getDate() - 1);
+  
+    // Se ontem for domingo (getDay() === 0), volta para sexta (ontem - 2)
+    if (yesterday.getDay() === 0) {
+      yesterday.setDate(yesterday.getDate() - 2);
+    }
   
     const todaySales = await this.sellsBetweenDates(today.toISOString());
     const yesterdaySales = await this.sellsBetweenDates(yesterday.toISOString());
@@ -547,16 +561,19 @@ export class SellsService implements ISellsRepository {
         nome: string;
         total: number;
         numero_vendas: number;
-        codigos_vendas: number[]; // numeric codes
+        codigos_vendas: number[];
       }> = {};
   
       for (const sell of sells) {
-        if (!sell.vendedor || sell.tipo_pedido.tipo_pedido_id !== 10438) continue;
+        const { vendedor, tipo_pedido } = sell;
+        const isValidSeller = vendedor && vendedor.vendedor_id !== 12 && vendedor.vendedor_id !== 13;
+        const isValidOrderType = tipo_pedido.tipo_pedido_id === 10438;
+        if (!isValidSeller || !isValidOrderType) continue;
   
-        const id = sell.vendedor.vendedor_id;
+        const id = vendedor.vendedor_id;
         if (!rankingMap[id]) {
           rankingMap[id] = {
-            nome: sell.vendedor.nome,
+            nome: vendedor.nome,
             total: 0,
             numero_vendas: 0,
             codigos_vendas: []
@@ -568,16 +585,16 @@ export class SellsService implements ISellsRepository {
         rankingMap[id].codigos_vendas.push(Number(sell.codigo));
       }
   
-      const ranking = Object.entries(rankingMap)
+      return Object.entries(rankingMap)
         .map(([id, data]) => ({ id: Number(id), ...data }))
-        .sort((a, b) => b.total - a.total);  
-      return ranking;
+        .sort((a, b) => b.total - a.total);
     };
   
     return {
       today: buildRanking(todaySales, today),
       yesterday: buildRanking(yesterdaySales, yesterday),
     };
-  }  
+  }
+  
 }
 
