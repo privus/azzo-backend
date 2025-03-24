@@ -95,15 +95,6 @@ export class SellsService implements ISellsRepository {
             messages.push(`Código das vendas atualizadas: ${updatedSales.join(', ')}.`);
         }
 
-        // 🔥 Adicione isso aqui
-        const allVendaCodigos = (await this.vendaRepository.find({ select: ['codigo'] })).map(v => v.codigo);
-        const codigosRecebidos = [...syncedSales, ...updatedSales].map(Number);
-        const vendasNaoRetornadas = allVendaCodigos.filter(codigo => !codigosRecebidos.includes(codigo));
-
-        if (vendasNaoRetornadas.length > 0) {
-          messages.push(`⚠️ Vendas no banco que não estão na API: ${vendasNaoRetornadas.join(', ')}.`);
-        }
-
         console.log(messages.join(' | '));
         return messages.join(' | '); // Return consolidated message
     } catch (error) {
