@@ -285,7 +285,7 @@ export class CustomersService implements ICustomersRepository{
     return
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_1PM)
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async updateTags(): Promise<void> {
     const clientes = await this.clienteRepository.find();
     const hoje = new Date();

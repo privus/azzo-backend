@@ -23,7 +23,7 @@ export class CreditsService implements ICreditsRepository {
     return credits;
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  @Cron(CronExpression.EVERY_DAY_AT_1AM)
   async updateCreditsStatus(): Promise<void> {
     const credits = await this.parcelaRepository.find({
       relations: ['status_pagamento', 'venda.cliente', 'categoria'],

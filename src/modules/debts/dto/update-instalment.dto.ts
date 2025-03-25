@@ -37,4 +37,20 @@ export class UpdateInstalmentDto {
    */
   @IsString({ message: 'O usuário que atualizou a parcela deve ser uma string.' })
   atualizado_por: string;
+
+  /**
+   * Data de vencimento.
+   * Exemplo: 2021-09-01
+   */
+  @IsOptional()
+  @IsString({ message: 'A data de vencimento deve ser uma data válida.' })
+  data_vencimento: string;
+
+  /**
+   * Valor da parcela.
+   * Exemplo: 100.00
+   */
+  @IsOptional()
+  @IsNumber({}, { message: 'O valor da parcela deve ser um número.' })
+  valor_total: number;
 }

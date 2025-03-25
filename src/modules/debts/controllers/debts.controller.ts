@@ -54,11 +54,10 @@ export class DebtsController {
     return this.debtsService.createDebt(debtDto);
   }
 
-  @ApiOperation({ summary: 'Atualizar status de uma venda' })
+  @ApiOperation({ summary: 'Atualizar status de um débito' })
   @Patch('status')
-  async updateSellStatus(@Body() updateStatusDto: UpdateDebtStatusDto) {
-    const resultMessage = await this.debtsService.updateSellStatus(updateStatusDto);
+  async updateDebtStatus(@Body() updateStatusDto: UpdateDebtStatusDto) {
+    const resultMessage = await this.debtsService.updateDebtStatus(updateStatusDto);
     return { message: resultMessage };
   }
-
 }

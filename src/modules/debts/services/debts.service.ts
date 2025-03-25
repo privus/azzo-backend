@@ -47,7 +47,7 @@ export class DebtsService {
       data_pagamento: debtDto.data_pagamento ? new Date(debtDto.data_pagamento) : null,
       numero_parcelas: debtDto.numero_parcelas,
       juros: debtDto.juros || 0,
-      valor_parcela: Number(debtDto.valor_total / debtDto.numero_parcelas),
+      valor_parcela: debtDto.valor_total / debtDto.numero_parcelas,
       status_pagamento: debtDto.data_pagamento && debtDto.numero_parcelas <= 1 ? statusPagamentoPago : statusPagamentoPendente,
       departamento,
       categoria,
@@ -175,14 +175,7 @@ export class DebtsService {
   }
 
   async updateInstalmentStatus(UpdateInstalmentDto: UpdateInstalmentDto): Promise<string> {
-    const { parcela_id, status_pagamento_id, data_pagamento, juros, atualizado_por } = UpdateInstalmentDto;
-
-    
-    const dataPagamentoConvertida = data_pagamento ? new Date(`${data_pagamento}T00:00:00Z`) : null;
-    const hoje = new Date();
-    if (dataPagamentoConvertida > hoje) {
-      throw new Error('A data de pagamento não pode ser no futuro.');
-    }
+    const { parcela_id, status_pagamento_id, data_pagamento, valor_total, atualizado_por, data_vencimento } = UpdateInstalmentDto;
 
     // Buscar a parcela
     const parcela = await this.parcelaRepository.findOne({
@@ -205,27 +198,46 @@ export class DebtsService {
 
     // Assegurar que valores numéricos não sejam null/undefined
     const parcelaValor = parcela.valor ?? 0;
-    const jurosDecimal = juros ?? 0;
 
+    let juros = 0;
     // Atualizar a parcela
-    parcela.valor = parcelaValor + jurosDecimal;
-    parcela.data_pagamento = dataPagamentoConvertida;
     parcela.status_pagamento = novoStatus;
-    parcela.juros = jurosDecimal;
     parcela.atualizado_por = atualizado_por;
-
+    if (valor_total) {
+        juros = +((valor_total - parcelaValor).toFixed(2));
+        parcela.valor = valor_total;
+    }
+    if (data_pagamento) {
+        parcela.data_pagamento = new Date(data_pagamento);
+    }
+    if (juros) {
+        parcela.juros = juros;
+    }
+    if (data_vencimento) {
+        const novaData = new Date(data_vencimento);
+        novaData.setDate(novaData.getDate() + 1);
+        parcela.data_vencimento = novaData;
+    }
     // Atualizar o valor total da venda, se existir
-    if (parcela.debito) {
-      parcela.debito.valor_total = (parcela.debito.valor_parcela ?? 0) + jurosDecimal;
-      await this.debtRepository.save(parcela.debito);
+    if (parcela.debito && valor_total) {
+        const debito = await this.debtRepository.findOne({
+            where: { debito_id: parcela.debito.debito_id },
+      });
+      const debitoValorAtual = +(debito.valor_total ?? 0);
+      const debitoJurosAtual = +(debito.juros ?? 0);
+  
+      debito.valor_total = +(debitoValorAtual + juros).toFixed(2);
+      debito.juros = +(debitoJurosAtual + juros).toFixed(2);
+  
+      await this.debtRepository.save(debito);      
     }
 
     await this.parcelaRepository.save(parcela);
 
-    return `Status da parcela ${parcela_id} atualizado para ${novoStatus.nome}. Juros adicionados: ${jurosDecimal}.`;
+    return `Status da parcela ${parcela_id} atualizado para ${novoStatus.nome}. Juros adicionados: R$${juros}.`;
   }
 
-  async updateSellStatus(updateStatus: UpdateDebtStatusDto): Promise<string> {
+  async updateDebtStatus(updateStatus: UpdateDebtStatusDto): Promise<string> {
     const { debito_id, status_pagamento_id } = updateStatus;
 
     const debt = await this.debtRepository.findOne({
