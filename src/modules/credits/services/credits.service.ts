@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { CategoriaCredito, ParcelaCredito, StatusPagamento, Venda } from '../../../infrastructure/database/entities';
 import { ICreditsRepository } from '../../../domain/repositories';
 import { UpdateInstalmentDto } from '../dto';
 import { CreditDto } from '../dto/credit.dto';
+import { Cron, CronExpression } from '@nestjs/schedule';
+
 @Injectable()
 export class CreditsService implements ICreditsRepository {
   constructor(
@@ -18,9 +20,16 @@ export class CreditsService implements ICreditsRepository {
     const credits = await this.parcelaRepository.find({
       relations: ['status_pagamento', 'venda.cliente', 'categoria'],
     });
+    return credits;
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async updateCreditsStatus(): Promise<void> {
+    const credits = await this.parcelaRepository.find({
+      relations: ['status_pagamento', 'venda.cliente', 'categoria'],
+    });
     const now = new Date();
     const statusAtraso = await this.statusRepository.findOne({ where: { status_pagamento_id: 3 } }); // "Em Atraso"
-    const statusPendente = await this.statusRepository.findOne({ where: { status_pagamento_id: 1 } }); // "Pendente"
 
     for (const credit of credits) {
       const dataVencimentoAjustada = new Date(credit.data_vencimento);
@@ -33,14 +42,11 @@ export class CreditsService implements ICreditsRepository {
         console.log(`Atualizando parcela ${credit.parcela_id} para status 'Em Atraso'.`);
         credit.status_pagamento = statusAtraso; // Atualiza a referência de status_pagamento
         await this.parcelaRepository.save(credit); // Salva a parcela com o novo status
-
-        // Atualizar o status da venda associada
       } 
       await this.updateVendaStatus(credit.venda.venda_id);
     }
-
-    return credits;
   }
+
 
   getCreditById(id: number): Promise<ParcelaCredito> {
     return this.parcelaRepository.findOne({

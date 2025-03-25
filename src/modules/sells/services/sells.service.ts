@@ -5,7 +5,6 @@ import { Between, In, MoreThanOrEqual, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido } from '../../../infrastructure/database/entities';
 import { DailyRakingSellsResponse, OrderTinyDto, SellsApiResponse, UpdateSellStatusDto } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository } from '../../../domain/repositories';
-import { log } from 'console';
 
 @Injectable()
 export class SellsService implements ISellsRepository {
@@ -43,7 +42,7 @@ export class SellsService implements ISellsRepository {
 
     try {
         const lastSync = await this.getLastSyncDate('sells');
-        const lastUpdate = await this.getLastUpdateDate('sells');
+        const lastUpdate = await this.getLastUpdateDate('sells-update');
 
         console.log('Última sincronização:', lastSync);
         console.log('Última atualização:', lastUpdate);
@@ -85,7 +84,7 @@ export class SellsService implements ISellsRepository {
         // Update sync timestamps
         const now = new Date();
         await this.updateLastSyncDate('sells', now);
-        await this.updateLastUpdateDate('sells', now);
+        await this.updateLastUpdateDate('sells-update', now);
 
         // Add summary messages
         if (syncedSales.length > 0) {
@@ -160,7 +159,6 @@ export class SellsService implements ISellsRepository {
     const status_venda = await this.statusVendaRepository.findOne({
       where: { status_venda_id: sell.status.id },
     });
-    console.log('status_venda ==================>', status_venda);
 
     const status_pagamento = await this.statusPagamentoRepository.findOne({
       where: { status_pagamento_id: 1 },
