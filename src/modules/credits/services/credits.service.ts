@@ -18,7 +18,7 @@ export class CreditsService implements ICreditsRepository {
 
   async getAllCredits(): Promise<ParcelaCredito[]> {
     const credits = await this.parcelaRepository.find({
-      relations: ['status_pagamento', 'venda.cliente', 'categoria'],
+      relations: ['status_pagamento', 'venda.cliente', 'categoria', 'venda.status_venda'],
     });
     return credits;
   }
