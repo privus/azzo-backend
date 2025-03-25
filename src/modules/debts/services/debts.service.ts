@@ -199,19 +199,16 @@ export class DebtsService {
     // Assegurar que valores numéricos não sejam null/undefined
     const parcelaValor = parcela.valor ?? 0;
 
-    let juros = 0;
+    let diferenca = 0;
     // Atualizar a parcela
     parcela.status_pagamento = novoStatus;
     parcela.atualizado_por = atualizado_por;
     if (valor_total) {
-        juros = +((valor_total - parcelaValor).toFixed(2));
         parcela.valor = valor_total;
+        diferenca = valor_total - parcelaValor;
     }
     if (data_pagamento) {
         parcela.data_pagamento = new Date(data_pagamento);
-    }
-    if (juros) {
-        parcela.juros = juros;
     }
     if (data_vencimento) {
         const novaData = new Date(data_vencimento);
@@ -224,17 +221,15 @@ export class DebtsService {
             where: { debito_id: parcela.debito.debito_id },
       });
       const debitoValorAtual = +(debito.valor_total ?? 0);
-      const debitoJurosAtual = +(debito.juros ?? 0);
   
-      debito.valor_total = +(debitoValorAtual + juros).toFixed(2);
-      debito.juros = +(debitoJurosAtual + juros).toFixed(2);
+      debito.valor_total = +(debitoValorAtual + diferenca).toFixed(2);
   
       await this.debtRepository.save(debito);      
     }
 
     await this.parcelaRepository.save(parcela);
 
-    return `Status da parcela ${parcela_id} atualizado para ${novoStatus.nome}. Juros adicionados: R$${juros}.`;
+    return `Status da parcela ${parcela_id} atualizado para ${novoStatus.nome}.`;
   }
 
   async updateDebtStatus(updateStatus: UpdateDebtStatusDto): Promise<string> {
