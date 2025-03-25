@@ -23,7 +23,7 @@ export class CreditsService implements ICreditsRepository {
     return credits;
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  @Cron(CronExpression.EVERY_MINUTE)
   async updateCreditsStatus(): Promise<void> {
     const credits = await this.parcelaRepository.find({
       relations: ['status_pagamento', 'venda.cliente', 'categoria'],
@@ -123,8 +123,6 @@ export class CreditsService implements ICreditsRepository {
   async updateInstalmentStatus(UpdateInstalmentDto: UpdateInstalmentDto): Promise<string> {
     const { parcela_id, status_pagamento_id, data_pagamento, valor_total, atualizado_por, data_vencimento, venda_id } = UpdateInstalmentDto;
     
-    await this.updateVendaStatus(venda_id);
-
     const dataPagamentoConvertida = data_pagamento ? new Date(`${data_pagamento}T00:00:00Z`) : null;
     const hoje = new Date();
 
@@ -177,6 +175,7 @@ export class CreditsService implements ICreditsRepository {
     }
 
     await this.parcelaRepository.save(parcela);
+    await this.updateVendaStatus(venda_id);
 
     return `Status da parcela ${parcela_id} atualizado para ${novoStatus.nome}.`;
 }
