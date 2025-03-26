@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan, MoreThanOrEqual, Between } from 'typeorm';
+import { Repository, LessThan, MoreThanOrEqual, Between, Raw } from 'typeorm';
 import { CategoriaDebito, Debito, Departamento, ParcelaDebito, StatusPagamento } from '../../../infrastructure/database/entities';
 import { DebtsDto } from '../dto/debts.dto';
 import { UpdateInstalmentDto } from '../dto/update-instalment.dto';
@@ -269,7 +269,7 @@ export class DebtsService {
     if (fromDate) {
       return this.debtRepository.find({
         where: {
-          data_criacao: MoreThanOrEqual(new Date(fromDate)),
+          data_competencia: MoreThanOrEqual(new Date(fromDate)),
         },
         relations: ['parcela_debito', 'status_pagamento', 'categoria', 'departamento', 'parcela_debito.status_pagamento'],
       });
@@ -280,24 +280,39 @@ export class DebtsService {
   }
 
   async getDebtsBetweenDates(fromDate: string, toDate?: string): Promise<Debito[]> {
-    const start = new Date(fromDate);
-    start.setHours(0, 0, 0, 0);
-
-    let end: Date;
     if (toDate) {
-      end = new Date(toDate);
+      const start = new Date(fromDate);
+      const end = new Date(toDate);
       end.setHours(23, 59, 59, 999);
+  
+      return this.debtRepository.find({
+        where: {
+          data_competencia: Between(start, end)
+        },
+        relations: [
+          'parcela_debito',
+          'status_pagamento',
+          'categoria',
+          'departamento',
+          'parcela_debito.status_pagamento'
+        ],
+      });
+  
     } else {
-      end = new Date(fromDate);
-      end.setHours(23, 59, 59, 999);
+      return this.debtRepository.find({
+        where: {
+          data_competencia: Raw((alias) => `DATE(${alias}) = :date`, { date: fromDate })
+        },
+        relations: [
+          'parcela_debito',
+          'status_pagamento',
+          'categoria',
+          'departamento',
+          'parcela_debito.status_pagamento'
+        ],
+      });
     }
-
-    return this.debtRepository.find({
-      where: {
-        data_criacao: Between(start, end)
-      },
-      relations: ['parcela_debito', 'status_pagamento', 'categoria', 'departamento', 'parcela_debito.status_pagamento'],
-    });
   }
+  
   
 }
