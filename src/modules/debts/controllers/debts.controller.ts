@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { DebtsService } from '../services/debts.service';
 import { DebtsDto } from '../dto/debts.dto';
@@ -12,8 +12,14 @@ export class DebtsController {
 
   @ApiOperation({ summary: 'Obter todos os débitos' })
   @Get()
-  async getAllDebts() {
-    return this.debtsService.getAllDebts();
+  async getAllDebts(@Query('fromDate') fromDate?: string) {
+    return this.debtsService.getDebtsByDate(fromDate);
+  }
+
+  @ApiOperation({ summary: 'Obter débitos entre datas' })
+  @Get('between')
+  async getDebtsBetweenDates(@Query('fromDate') fromDate: string, @Query('toDate') toDate?: string) {
+    return this.debtsService.getDebtsBetweenDates(fromDate, toDate);
   }
 
   @ApiOperation({ summary: 'Obter todos os departamentos' })

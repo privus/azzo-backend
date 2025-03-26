@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan } from 'typeorm';
+import { Repository, LessThan, MoreThanOrEqual, Between } from 'typeorm';
 import { CategoriaDebito, Debito, Departamento, ParcelaDebito, StatusPagamento } from '../../../infrastructure/database/entities';
 import { DebtsDto } from '../dto/debts.dto';
 import { UpdateInstalmentDto } from '../dto/update-instalment.dto';
 import { UpdateDebtStatusDto } from '../dto';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class DebtsService {
@@ -96,7 +97,7 @@ export class DebtsService {
     return dates;
   }
 
-
+  @Cron(CronExpression.EVERY_DAY_AT_2AM)
   async updateOverdueParcels(): Promise<void> {
     const today = new Date();
     today.setDate(today.getDate() - 1); // Permite que a parcela só fique em atraso no dia seguinte ao vencimento
@@ -152,11 +153,6 @@ export class DebtsService {
         // **Atualiza o status da despesa no banco**
         await this.debtRepository.update(debitoId, { status_pagamento: novoStatus });
     }
-  }
-
-  async getAllDebts(): Promise<Debito[]> {
-    this.updateOverdueParcels();
-    return this.debtRepository.find({ relations: ['parcela_debito', 'status_pagamento', 'categoria', 'departamento', 'parcela_debito.status_pagamento'] });
   }
 
   getAllDepartments(): Promise<Departamento[]> {
@@ -268,4 +264,40 @@ export class DebtsService {
 
     return `Debito com ID ${code} e suas parcelas foram excluídas com sucesso.`;
   }
+
+  async getDebtsByDate(fromDate?: string): Promise<Debito[]> {
+    if (fromDate) {
+      return this.debtRepository.find({
+        where: {
+          data_criacao: MoreThanOrEqual(new Date(fromDate)),
+        },
+        relations: ['parcela_debito', 'status_pagamento', 'categoria', 'departamento', 'parcela_debito.status_pagamento'],
+      });
+    }
+    return this.debtRepository.find({
+      relations: ['parcela_debito', 'status_pagamento', 'categoria', 'departamento', 'parcela_debito.status_pagamento'],
+    });
+  }
+
+  async getDebtsBetweenDates(fromDate: string, toDate?: string): Promise<Debito[]> {
+    const start = new Date(fromDate);
+    start.setHours(0, 0, 0, 0);
+
+    let end: Date;
+    if (toDate) {
+      end = new Date(toDate);
+      end.setHours(23, 59, 59, 999);
+    } else {
+      end = new Date(fromDate);
+      end.setHours(23, 59, 59, 999);
+    }
+
+    return this.debtRepository.find({
+      where: {
+        data_criacao: Between(start, end)
+      },
+      relations: ['parcela_debito', 'status_pagamento', 'categoria', 'departamento', 'parcela_debito.status_pagamento'],
+    });
+  }
+  
 }

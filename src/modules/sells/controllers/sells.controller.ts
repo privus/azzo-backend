@@ -10,7 +10,7 @@ import { LabelService } from '../services/label.service';
 export class SellsController {
   constructor(private readonly sellsService: SellsService, private readonly labelService: LabelService) {}
 
-  @ApiOperation({ summary: 'Sincronizar vendas por data' })
+  @ApiOperation({ summary: 'Vendas por data' })
   @Get()
   async sellsByDate(@Query('fromDate') fromDate?: string) {
     return this.sellsService.sellsByDate(fromDate);
