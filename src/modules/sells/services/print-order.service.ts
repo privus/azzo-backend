@@ -101,7 +101,7 @@ export class PrintOrderService {
       { text: 'Código / EAN', style: 'tableHeader' },
       { text: 'Produto', style: 'tableHeader' },
       { text: 'Qtd.', style: 'tableHeader', alignment: 'center' },
-      { text: 'V. Uni', style: 'tableHeader', alignment: 'right' },
+      { text: 'V. Uni ', style: 'tableHeader', alignment: 'right' },
       { text: 'Total', style: 'tableHeader', alignment: 'right' },
     ];
 
@@ -120,13 +120,13 @@ export class PrintOrderService {
         {
           stack: [
             { text: produto?.codigo ?? '-', fontSize: 9 },
-            { text: produto?.ean ?? '-', fontSize: 8, color: '#666' },
+            { text: produto?.ean ?? '-', fontSize: 8.5, color: '#666' },
           ],
         },
-        produto?.nome ?? '-',
-        { text: item.quantidade?.toString() ?? '0', alignment: 'center' },
-        { text: `R$ ${Number(item.valor_unitario).toFixed(2)}`, alignment: 'right' },
-        { text: `R$ ${Number(item.valor_total).toFixed(2)}`, alignment: 'right' },
+        { text: produto?.nome ?? '-', fontSize: 9 }, // Aumentando a fonte do nome do produto
+        { text: item.quantidade?.toString() ?? '0', alignment: 'center', fontSize: 9 },
+        { text: `R$ ${Number(item.valor_unitario).toFixed(2)}`, alignment: 'right', fontSize: 9 },
+        { text: `R$ ${Number(item.valor_total).toFixed(2)}`, alignment: 'right', fontSize: 9 },
       ];
 
       if (isCaixa) {
