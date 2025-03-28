@@ -123,10 +123,10 @@ export class PrintOrderService {
             { text: produto?.ean ?? '-', fontSize: 8.5, color: '#666' },
           ],
         },
-        { text: produto?.nome ?? '-', fontSize: 9 }, // Aumentando a fonte do nome do produto
-        { text: item.quantidade?.toString() ?? '0', alignment: 'center', fontSize: 9 },
-        { text: `R$ ${Number(item.valor_unitario).toFixed(2)}`, alignment: 'right', fontSize: 9 },
-        { text: `R$ ${Number(item.valor_total).toFixed(2)}`, alignment: 'right', fontSize: 9 },
+        { text: produto?.nome ?? '-', fontSize: 10 }, // Aumentando a fonte do nome do produto
+        { text: item.quantidade?.toString() ?? '0', alignment: 'center', fontSize: 10 },
+        { text: `R$ ${Number(item.valor_unitario).toFixed(2)}`, alignment: 'right', fontSize: 10 },
+        { text: `R$ ${Number(item.valor_total).toFixed(2)}`, alignment: 'right', fontSize: 10 },
       ];
 
       if (isCaixa) {
