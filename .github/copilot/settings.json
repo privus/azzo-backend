@@ -1,0 +1,13 @@
+{
+  "editor.inlineSuggest.enabled": true,
+  "editor.suggestSelection": "first",
+  "editor.acceptSuggestionOnEnter": "on",
+  "editor.snippetSuggestions": "top",
+  "editor.parameterHints.enabled": true,
+  "editor.hover.enabled": true,
+  "editor.quickSuggestions": {
+    "other": true,
+    "comments": true,
+    "strings": true
+  }
+} 

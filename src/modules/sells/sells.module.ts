@@ -22,6 +22,7 @@ import { RegionsModule } from '../regions/regions.module';
 import { TinyAuthService } from './services/tiny-auth.service';
 import { TinyTokenService } from './services/tiny-token.service';
 import { LabelService } from './services/label.service';
+import { PrintOrderService } from './services/print-order.service';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { LabelService } from './services/label.service';
   controllers: [SellsController, TinyAuthController],
   providers: [
     LabelService,
+    PrintOrderService,
     SellsService,
     TinyAuthService,
     TinyTokenService,
@@ -54,6 +56,7 @@ import { LabelService } from './services/label.service';
   ],
   exports: [
     LabelService,
+    PrintOrderService,
     SellsService,
     TinyAuthService,
     TinyTokenService,

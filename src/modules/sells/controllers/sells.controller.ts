@@ -4,11 +4,16 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SellsService } from '../services/sells.service';
 import { UpdateSellStatusDto } from '../dto';
 import { LabelService } from '../services/label.service';
+import { PrintOrderService } from '../services/print-order.service';
 
 @ApiTags('sells')
 @Controller('sells')
 export class SellsController {
-  constructor(private readonly sellsService: SellsService, private readonly labelService: LabelService) {}
+  constructor(
+    private readonly sellsService: SellsService, 
+    private readonly labelService: LabelService, 
+    private readonly printOrderService: PrintOrderService
+  ) {}
 
   @ApiOperation({ summary: 'Vendas por data' })
   @Get()
@@ -76,4 +81,17 @@ export class SellsController {
       res.setHeader('Content-Type', 'text/html');
       return res.send(html);
   }
+
+  @Post(':id/print')
+  async printOrder(
+    @Param('id') id: number,
+    @Body('responsible') responsible: string,
+    @Res() res: Response,
+  ) {
+    const { fileName, pdfBuffer } = await this.printOrderService.printOrder(id, responsible);
+  
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename=' + fileName); // 👈 inline, não attachment
+    return res.send(pdfBuffer);
+  }   
 }
