@@ -119,14 +119,14 @@ export class PrintOrderService {
       const row = [
         {
           stack: [
-            { text: produto?.codigo ?? '-', fontSize: 9 },
-            { text: produto?.ean ?? '-', fontSize: 8.5, color: '#666' },
+            { text: produto?.codigo ?? '-', fontSize: 10 },
+            { text: produto?.ean ?? '-', fontSize: 9, color: '#666' },
           ],
         },
         { text: produto?.nome ?? '-', fontSize: 10 }, // Aumentando a fonte do nome do produto
-        { text: item.quantidade?.toString() ?? '0', alignment: 'center', fontSize: 9 },
-        { text: `${Number(item.valor_unitario).toFixed(2)}`, alignment: 'right', fontSize: 9 },
-        { text: `${Number(item.valor_total).toFixed(2)}`, alignment: 'right', fontSize: 9 },
+        { text: item.quantidade?.toString() ?? '0', alignment: 'center', fontSize: 10 },
+        { text: `${Number(item.valor_unitario).toFixed(2)}`, alignment: 'right', fontSize: 10 },
+        { text: `${Number(item.valor_total).toFixed(2)}`, alignment: 'right', fontSize: 10 },
       ];
 
       if (isCaixa) {
@@ -178,24 +178,24 @@ export class PrintOrderService {
           width: '50%',
           stack: [
             { text: 'Cliente', bold: true, fontSize: 10, margin: [0, 0, 0, 2] },
-            { text: order.cliente?.nome_empresa, fontSize: 9.5 },
-            { text: `${doc}`, fontSize: 9.5 },
-            { text: `${order.cliente?.endereco ?? '-'} Nº ${order.cliente?.num_endereco ?? ''}`, fontSize: 9.5 },
-            { text: order.cliente?.complemento ? `Complemento: ${order.cliente?.complemento}` : '', fontSize: 9.5 },
-            { text: `Bairro: ${order.cliente?.bairro ?? '-'}`, fontSize: 9.5 },
-            { text: `Cidade: ${order.cliente?.cidade_string ?? '-'} - ${order.cliente?.cidade?.estado?.sigla ?? ''}`, fontSize: 9.5 },
-            { text: `CEP: ${order.cliente?.cep ?? '-'}`, fontSize: 9.5 },
+            { text: order.cliente?.nome_empresa, fontSize: 10 },
+            { text: `${doc}`, fontSize: 10 },
+            { text: `${order.cliente?.endereco ?? '-'} Nº ${order.cliente?.num_endereco ?? ''}`, fontSize: 10 },
+            { text: order.cliente?.complemento ? `Complemento: ${order.cliente?.complemento}` : '', fontSize: 10 },
+            { text: `Bairro: ${order.cliente?.bairro ?? '-'}`, fontSize: 10 },
+            { text: `Cidade: ${order.cliente?.cidade_string ?? '-'} - ${order.cliente?.cidade?.estado?.sigla ?? ''}`, fontSize: 10 },
+            { text: `CEP: ${order.cliente?.cep ?? '-'}`, fontSize: 10 },
           ],
         },
         {
           width: '50%',
           stack: [
             { text: 'Pedido', bold: true, fontSize: 10, margin: [0, 0, 0, 2] },
-            { text: `Código: #${order.codigo}`, fontSize: 9.5 },
-            { text: `Data: ${new Date(order.data_criacao).toLocaleDateString('pt-BR')}`, fontSize: 9 },
-            { text: `Vendedor: ${order.vendedor?.nome ?? '-'}`, fontSize: 9.5 },
-            { text: `Responsável: ${responsible}`, fontSize: 9.5 },
-            { text: `Pagamento: ${forma_pagamento}`, fontSize: 9.5 },
+            { text: `Código: #${order.codigo}`, fontSize: 10 },
+            { text: `Data: ${new Date(order.data_criacao).toLocaleDateString('pt-BR')}`, fontSize: 10 },
+            { text: `Vendedor: ${order.vendedor?.nome ?? '-'}`, fontSize: 10 },
+            { text: `Responsável: ${responsible}`, fontSize: 10 },
+            { text: `Pagamento: ${forma_pagamento}`, fontSize: 10 },
           ],
           alignment: 'right',
         },
