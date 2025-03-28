@@ -156,7 +156,6 @@ export class PrintOrderService {
       margin: [0, 10, 0, 0],
     };
   }
-  
   private generatePdfBuffer(printer: any, docDefinition: any): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       const pdfDoc = printer.createPdfKitDocument(docDefinition);

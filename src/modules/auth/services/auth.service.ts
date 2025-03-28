@@ -32,6 +32,7 @@ export class AuthService implements IAuthRepository {
       userId: user.usuario_id,
       email: user.email,
       cargo: user.cargo,
+      nome: user.nome,
     };
 
     // Certifique-se de que o `JWT_SECRET` está carregado corretamente do ambiente
