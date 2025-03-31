@@ -348,15 +348,15 @@ export class SellsService implements ISellsRepository {
 
   async sellsBetweenDates(fromDate: string, toDate?: string): Promise<Venda[]> {
     const start = new Date(fromDate);
-    start.setHours(0, 0, 0, 0);
+    start.setHours(21, 0, 0, 0);
   
     let end: Date;
     if (toDate) {
       end = new Date(toDate);
-      end.setHours(23, 59, 59, 999);
+      end.setHours(20, 59, 59, 999);
     } else {
       end = new Date(fromDate);
-      end.setHours(23, 59, 59, 999);
+      end.setHours(44, 59, 59, 999);
     }
   
     return this.vendaRepository.find({
