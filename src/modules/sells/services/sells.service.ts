@@ -358,6 +358,7 @@ export class SellsService implements ISellsRepository {
       end = new Date(fromDate);
       end.setHours(44, 59, 59, 999);
     }
+    console.log('Start END ===============>', start, end);
   
     return this.vendaRepository.find({
       where: {
