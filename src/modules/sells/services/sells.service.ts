@@ -297,23 +297,7 @@ export class SellsService implements ISellsRepository {
 
     const tipo_pedido = await this.tipoPedidoRepository.findOne({ where: { tipo_pedido_id: sell.order_type_id } });
 
-    // Verifica se payment_term_text não é nulo ou indefinido
-    if (sell.payment_term_text) {
-      // Split the string into two parts: before and after "dias"
-      const paymentParts = sell.payment_term_text.split(/(dias)/);
-      const firstPart = paymentParts[0]; // Contains numbers before "dias"
-      const secondPart = paymentParts.slice(1).join(''); // Everything after "dias"
 
-      // Process only the first part (increment numbers and replace '/' with ', ')
-      const updatedFirstPart = firstPart
-          .replace(/\d+/g, (match) => (Number(match) + 1).toString())
-          .replace(/\//g, ', ');
-
-      // Reconstruct the full string
-      var formattedPaymentTermText = updatedFirstPart + secondPart;
-    } else {
-      var formattedPaymentTermText = ''; // Retorna string vazia se for nulo ou indefinido
-    }
 
     if (sell.status.id !== 11468) {
       cliente.ultima_compra = new Date(sell.order_date);
@@ -327,7 +311,7 @@ export class SellsService implements ISellsRepository {
       numero_parcelas: sell.installment_qty,
       valor_parcela: Number(sell.installment_value),
       metodo_pagamento: sell.payment_method_text || '',  // Corrigido para evitar valor NULL
-      forma_pagamento: formattedPaymentTermText,
+      forma_pagamento: sell.payment_term_text || '',  // Corrigido para evitar valor NULL
       data_criacao: sell.order_date,
       valor_pedido: Number(sell.amount),
       valor_final: Number(sell.amount_final),
@@ -583,7 +567,5 @@ export class SellsService implements ISellsRepository {
       today: buildRanking(todaySales, today),
       yesterday: buildRanking(yesterdaySales, yesterday),
     };
-  }
-  
+  }  
 }
-
