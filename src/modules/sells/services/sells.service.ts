@@ -52,7 +52,7 @@ export class SellsService implements ISellsRepository {
         if (lastSync) params.push(`after_created=${this.formatDateWithTime(lastSync)}`);
         if (lastUpdate) params.push(`after_updated=${this.formatDateWithTime(lastUpdate)}`);
 
-        let currentPage = 1;
+        let currentPage = 9;
         let lastPage = 1;
 
         do {
@@ -170,7 +170,7 @@ export class SellsService implements ISellsRepository {
       existingSell.status_venda = status_venda;
       existingSell.observacao = sell.obs;
       
-          if (sell.amount_final != existingSell.valor_final || sell.installment_qty != existingSell.numero_parcelas) {
+          if (sell.amount_final != existingSell.valor_final || sell.installment_qty != existingSell.numero_parcelas || sell.products.length != existingSell.itensVenda.length) {
             const productCodes = sell.products.map((item) => item.code);
             const produtosEncontrados = await this.produtoRepository.find({
               where: { codigo: In(productCodes) },
@@ -520,7 +520,9 @@ export class SellsService implements ISellsRepository {
     today.setHours(0, 0, 0, 0);
   
     const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 2);  
+    yesterday.setDate(today.getDate() - 2); 
+    console.log('Today =============>', today);
+    console.log('Yesterday =============>', yesterday);
   
     const todaySales = await this.sellsBetweenDates(today.toISOString());
     const yesterdaySales = await this.sellsBetweenDates(yesterday.toISOString());
