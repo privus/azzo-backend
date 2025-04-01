@@ -1,5 +1,5 @@
 import { TinyAuthService } from './../../sells/services/tiny-auth.service';
-import { Injectable } from '@nestjs/common';
+import { Body, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -402,6 +402,45 @@ export class CustomersService implements ICustomersRepository{
     }
   
     console.log('🎯 Ajuste de CPFs concluído.');
+  }
+
+  async putPaymentTerms() {
+    const clientes = await this.clienteRepository.find();
+
+    const prazos = "1,2,3,4,5,6,8,10,11,15,17,20,21,22";
+
+    // Função para dividir array em chunks de 50
+    const chunkArray = <T>(arr: T[], chunkSize: number): T[][] =>
+        Array.from({ length: Math.ceil(arr.length / chunkSize) }, (_, i) =>
+            arr.slice(i * chunkSize, i * chunkSize + chunkSize)
+        );
+
+    const clienteChunks = chunkArray(clientes, 20);
+
+    const apiUrl = `${this.apiUrlSellentt}mass_stores`;
+    console.log('Api URL=======================>', apiUrl);
+
+    for (let i = 0; i < clienteChunks.length; i++) {
+        const batch = clienteChunks[i].map(cliente => ({
+            code: cliente.codigo, // ajuste se for outro campo identificador
+            payment_term_list: prazos
+        }));
+        console.log('Batch ==========>', batch)
+
+        try {
+            const response = await this.httpService.axiosRef.put(apiUrl, batch, {
+                headers: {
+                    Authorization: `Bearer ${this.tokenSellentt}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            console.log(`✅ Batch ${i + 1} enviado com sucesso.`);
+        } catch (error) {
+            console.error(`❌ Erro ao enviar batch ${i + 1}:`, error.message);
+        }
+    }
+
+    console.log('🏁 Todos os batches foram processados com sucesso.');
   }
 
 }
