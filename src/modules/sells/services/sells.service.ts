@@ -520,12 +520,7 @@ export class SellsService implements ISellsRepository {
     today.setHours(0, 0, 0, 0);
   
     const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-  
-    // Se ontem for domingo (getDay() === 0), volta para sexta (ontem - 2)
-    if (yesterday.getDay() === 0) {
-      yesterday.setDate(yesterday.getDate() - 2);
-    }
+    yesterday.setDate(today.getDate() - 2);  
   
     const todaySales = await this.sellsBetweenDates(today.toISOString());
     const yesterdaySales = await this.sellsBetweenDates(yesterday.toISOString());
