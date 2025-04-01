@@ -52,7 +52,7 @@ export class SellsService implements ISellsRepository {
         if (lastSync) params.push(`after_created=${this.formatDateWithTime(lastSync)}`);
         if (lastUpdate) params.push(`after_updated=${this.formatDateWithTime(lastUpdate)}`);
 
-        let currentPage = 1;
+        let currentPage = 9;
         let lastPage = 1;
 
         do {
