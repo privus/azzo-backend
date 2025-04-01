@@ -524,8 +524,9 @@ export class SellsService implements ISellsRepository {
     console.log('Today =============>', today);
     console.log('Yesterday =============>', yesterday);
   
-    const todaySales = await this.sellsBetweenDates(today.toISOString());
+    const todaySales = await this.sellsByDate(today.toISOString());
     const yesterdaySales = await this.sellsBetweenDates(yesterday.toISOString());
+    console.log('Today Sales =============>', todaySales);
   
     const buildRanking = (sells: Venda[], date: Date) => {
       const rankingMap: Record<number, {
