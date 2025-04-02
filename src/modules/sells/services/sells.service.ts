@@ -52,7 +52,7 @@ export class SellsService implements ISellsRepository {
         if (lastSync) params.push(`after_created=${this.formatDateWithTime(lastSync)}`);
         if (lastUpdate) params.push(`after_updated=${this.formatDateWithTime(lastUpdate)}`);
 
-        let currentPage = 9;
+        let currentPage = 1;
         let lastPage = 1;
 
         do {
@@ -598,8 +598,7 @@ export class SellsService implements ISellsRepository {
         relatorio[vendedor][marca].valor += valor;
       }
     }
-  
-    // ✅ Arredonda para duas casas decimais
+
     for (const vendedor in relatorio) {
       for (const marca in relatorio[vendedor]) {
         relatorio[vendedor][marca].valor = Number(
