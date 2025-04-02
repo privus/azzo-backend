@@ -573,7 +573,7 @@ export class SellsService implements ISellsRepository {
       marcas: { [marca: string]: { quantidade: number; valor: number } };
     };
   }> {
-    const vendas = await this.sellsBetweenDates('2025-03-01', '2025-03-31');
+    const vendas = await this.sellsBetweenDates('2025-03-01', '2025-04-01');
   
     const relatorio: {
       [vendedor: string]: {
