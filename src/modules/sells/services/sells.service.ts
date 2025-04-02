@@ -580,13 +580,13 @@ export class SellsService implements ISellsRepository {
       if (venda.tipo_pedido?.tipo_pedido_id !== 10438) continue;
   
       const vendedor = venda.vendedor?.nome;
-  
+
       if (!relatorio[vendedor]) {
         relatorio[vendedor] = {};
       }
   
       for (const item of venda.itensVenda) {
-        const marca = item.produto?.fornecedor?.nome;
+        const marca = item.produto?.fornecedor?.nome
         const quantidade = Number(item.quantidade);
         const valor = Number(item.valor_total);
   
@@ -599,9 +599,17 @@ export class SellsService implements ISellsRepository {
       }
     }
   
+    // ✅ Arredonda para duas casas decimais
+    for (const vendedor in relatorio) {
+      for (const marca in relatorio[vendedor]) {
+        relatorio[vendedor][marca].valor = Number(
+          relatorio[vendedor][marca].valor.toFixed(2)
+        );
+      }
+    }
+  
     console.dir(relatorio, { depth: null });
     return relatorio;
   }
-  
   
 }
