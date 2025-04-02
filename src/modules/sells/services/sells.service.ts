@@ -294,10 +294,7 @@ export class SellsService implements ISellsRepository {
       });
     }
 
-
     const tipo_pedido = await this.tipoPedidoRepository.findOne({ where: { tipo_pedido_id: sell.order_type_id } });
-
-
 
     if (sell.status.id !== 11468) {
       cliente.ultima_compra = new Date(sell.order_date);
@@ -570,13 +567,16 @@ export class SellsService implements ISellsRepository {
     };
   }
   
-  async reportBrandSalesBySeller(): Promise<{ [vendedor: string]: { [marca: string]: number } }> {
+  async reportBrandSalesBySeller(): Promise<{
+    [vendedor: string]: { [marca: string]: { quantidade: number; valor: number } };
+  }> {
     const vendas = await this.sellsBetweenDates('2025-03-01', '2025-03-31');
   
-    const relatorio: { [vendedor: string]: { [marca: string]: number } } = {};
+    const relatorio: {
+      [vendedor: string]: { [marca: string]: { quantidade: number; valor: number } };
+    } = {};
   
     for (const venda of vendas) {
-      // ✅ Filtra apenas tipo_pedido_id === 10438
       if (venda.tipo_pedido?.tipo_pedido_id !== 10438) continue;
   
       const vendedor = venda.vendedor?.nome || 'Vendedor Desconhecido';
@@ -588,17 +588,20 @@ export class SellsService implements ISellsRepository {
       for (const item of venda.itensVenda) {
         const marca = item.produto?.fornecedor?.nome || 'Marca Desconhecida';
         const quantidade = Number(item.quantidade) || 0;
+        const valor = Number(item.valor_total) || 0;
   
-        if (relatorio[vendedor][marca]) {
-          relatorio[vendedor][marca] += quantidade;
-        } else {
-          relatorio[vendedor][marca] = quantidade;
+        if (!relatorio[vendedor][marca]) {
+          relatorio[vendedor][marca] = { quantidade: 0, valor: 0 };
         }
+  
+        relatorio[vendedor][marca].quantidade += quantidade;
+        relatorio[vendedor][marca].valor += valor;
       }
     }
   
-    console.log(relatorio);
+    console.dir(relatorio, { depth: null });
     return relatorio;
-  }  
+  }
+  
   
 }
