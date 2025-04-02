@@ -625,22 +625,33 @@ export class SellsService implements ISellsRepository {
 
   async reportPositivityByBrand(): Promise<{
     [vendedor: string]: {
-      [marca: string]: {
-        totalClientes: number;
-        clientesPositivados: number;
-        positivacao: number;
+      totalClientes: number;
+      clientesPositivados: number;
+      positivacaoGeral: string;
+      marcas: {
+        [marca: string]: {
+          clientesPositivados: number;
+          positivacaoMarca: string;
+          contribuicaoPercentual: string;
+        };
       };
     };
   }> {
     const regioes = await this.regiaoService.getAllRegions();
-  
     const vendas = await this.sellsBetweenDates('2025-03-01', '2025-04-01');
+  
     const relatorio: {
       [vendedor: string]: {
-        [marca: string]: {
-          totalClientes: number;
-          clientesPositivados: number;
-          positivacao: number;       };
+        totalClientes: number;
+        clientesPositivados: number;
+        positivacaoGeral: string;
+        marcas: {
+          [marca: string]: {
+            clientesPositivados: number;
+            positivacaoMarca: string;
+            contribuicaoPercentual: string;
+          };
+        };
       };
     } = {};
   
@@ -652,8 +663,6 @@ export class SellsService implements ISellsRepository {
       for (const vendedor of regiao.vendedores || []) {
         const vendedorNome = vendedor.nome;
         if (!vendedorNome) continue;
-  
-        relatorio[vendedorNome] = {};
   
         const marcasPorCliente = new Map<number, Set<string>>();
   
@@ -674,31 +683,56 @@ export class SellsService implements ISellsRepository {
           }
         }
   
+        const marcas: {
+          [marca: string]: {
+            clientesPositivados: number;
+            positivacaoMarca: string;
+            contribuicaoPercentual: string;
+          };
+        } = {};
+  
+        const clientesPositivadosSet = new Set<number>();
+  
         for (const cliente of clientesRegiao) {
           const clienteId = cliente.cliente_id;
-          const marcas = marcasPorCliente.get(clienteId) || new Set();
+          const marcasCliente = marcasPorCliente.get(clienteId);
+          if (!marcasCliente || marcasCliente.size === 0) continue;
   
-          for (const marca of marcas) {
-            if (!relatorio[vendedorNome][marca]) {
-              relatorio[vendedorNome][marca] = {
-                totalClientes,
+          clientesPositivadosSet.add(clienteId);
+  
+          for (const marca of marcasCliente) {
+            if (!marcas[marca]) {
+              marcas[marca] = {
                 clientesPositivados: 0,
-                positivacao: 0,
+                positivacaoMarca: '0%',
+                contribuicaoPercentual: '0%',
               };
             }
   
-            relatorio[vendedorNome][marca].clientesPositivados += 1;
+            marcas[marca].clientesPositivados += 1;
           }
         }
   
-        for (const marca in relatorio[vendedorNome]) {
-          const dados = relatorio[vendedorNome][marca];
-          dados.positivacao = Number(((dados.clientesPositivados / dados.totalClientes) * 100).toFixed(2));
+        const clientesPositivados = clientesPositivadosSet.size;
+        const positivacaoGeral = Number(((clientesPositivados / totalClientes) * 100).toFixed(2));
+  
+        for (const marca in marcas) {
+          const m = marcas[marca];
+          m.positivacaoMarca = `${((m.clientesPositivados / totalClientes) * 100).toFixed(2)}%`;
+          m.contribuicaoPercentual = `${((m.clientesPositivados / clientesPositivados) * 100).toFixed(2)}%`;
         }
+  
+        relatorio[vendedorNome] = {
+          totalClientes,
+          clientesPositivados,
+          positivacaoGeral: `${positivacaoGeral}%`,
+          marcas,
+        };
       }
     }
   
     console.dir(relatorio, { depth: null });
     return relatorio;
-  }  
+  }
+  
 }
