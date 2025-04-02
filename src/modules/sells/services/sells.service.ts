@@ -338,11 +338,11 @@ export class SellsService implements ISellsRepository {
         where: {
           data_criacao: MoreThanOrEqual(new Date(fromDate)),
         },
-        relations: ['cliente.cidade.estado', 'vendedor', 'status_pagamento', 'status_venda', 'itensVenda.produto', 'tipo_pedido'],
+        relations: ['cliente.cidade.estado', 'vendedor', 'status_pagamento', 'status_venda', 'itensVenda.produto', 'itensVenda.produto.fornecedor', 'tipo_pedido'],
       });
     }
     return this.vendaRepository.find({
-      relations: ['cliente.cidade.estado', 'vendedor', 'status_pagamento', 'status_venda', 'itensVenda.produto', 'tipo_pedido'],
+      relations: ['cliente.cidade.estado', 'vendedor', 'status_pagamento', 'status_venda', 'itensVenda.produto', 'itensVenda.produto.fornecedor', 'tipo_pedido'],
     });
   }
 
@@ -370,6 +370,8 @@ export class SellsService implements ISellsRepository {
         'status_pagamento',
         'status_venda',
         'itensVenda.produto',
+        'itensVenda.produto',
+        'itensVenda.produto.fornecedor', 
         'tipo_pedido'
       ],
     });
@@ -566,5 +568,37 @@ export class SellsService implements ISellsRepository {
       today: buildRanking(todaySales, today),
       yesterday: buildRanking(yesterdaySales, yesterday),
     };
+  }
+  
+  async reportBrandSalesBySeller(): Promise<{ [vendedor: string]: { [marca: string]: number } }> {
+    const vendas = await this.sellsBetweenDates('2025-03-01', '2025-03-31');
+  
+    const relatorio: { [vendedor: string]: { [marca: string]: number } } = {};
+  
+    for (const venda of vendas) {
+      // ✅ Filtra apenas tipo_pedido_id === 10438
+      if (venda.tipo_pedido?.tipo_pedido_id !== 10438) continue;
+  
+      const vendedor = venda.vendedor?.nome || 'Vendedor Desconhecido';
+  
+      if (!relatorio[vendedor]) {
+        relatorio[vendedor] = {};
+      }
+  
+      for (const item of venda.itensVenda) {
+        const marca = item.produto?.fornecedor?.nome || 'Marca Desconhecida';
+        const quantidade = Number(item.quantidade) || 0;
+  
+        if (relatorio[vendedor][marca]) {
+          relatorio[vendedor][marca] += quantidade;
+        } else {
+          relatorio[vendedor][marca] = quantidade;
+        }
+      }
+    }
+  
+    console.log(relatorio);
+    return relatorio;
   }  
+  
 }

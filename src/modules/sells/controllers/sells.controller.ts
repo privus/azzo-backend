@@ -40,6 +40,12 @@ export class SellsController {
     return this.sellsService.getDailyRakingSells();
   }
 
+  @ApiOperation({ summary: 'Quanto vendido por marca' })
+  @Get('brand')
+  async sellsByBrand() {
+    return this.sellsService.reportBrandSalesBySeller()
+  }
+
   @ApiOperation({ summary: 'Exportar pedido para o Tiny'})
   @Get('export/:id')
   async exportToTiny(@Param('id') id: number) {
