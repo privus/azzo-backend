@@ -579,16 +579,16 @@ export class SellsService implements ISellsRepository {
     for (const venda of vendas) {
       if (venda.tipo_pedido?.tipo_pedido_id !== 10438) continue;
   
-      const vendedor = venda.vendedor?.nome || 'Vendedor Desconhecido';
+      const vendedor = venda.vendedor?.nome;
   
       if (!relatorio[vendedor]) {
         relatorio[vendedor] = {};
       }
   
       for (const item of venda.itensVenda) {
-        const marca = item.produto?.fornecedor?.nome || 'Marca Desconhecida';
-        const quantidade = Number(item.quantidade) || 0;
-        const valor = Number(item.valor_total) || 0;
+        const marca = item.produto?.fornecedor?.nome;
+        const quantidade = Number(item.quantidade);
+        const valor = Number(item.valor_total);
   
         if (!relatorio[vendedor][marca]) {
           relatorio[vendedor][marca] = { quantidade: 0, valor: 0 };
