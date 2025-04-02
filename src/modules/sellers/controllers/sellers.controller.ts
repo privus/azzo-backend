@@ -13,11 +13,11 @@ export class SellersController {
     return this.sellersService.syncroSellers();
   }
 
-  //   @ApiOperation({ summary: 'Listar todos os vendedores' })
-  //   @Get()
-  //   async findAllSellers() {
-  //     return this.sellersService.findAllSellers();
-  //   }
+    @ApiOperation({ summary: 'Listar todos os vendedores' })
+    @Get()
+    async findAllSellers() {
+      return this.sellersService.findAllSellers();
+    }
 
   //   @ApiOperation({ summary: 'Buscar vendedor por Código' })
   //   @Get(':id')

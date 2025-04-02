@@ -1,5 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, JoinColumn, ManyToOne } from 'typeorm';
-import { Regiao } from '.';
+import { Entity, PrimaryGeneratedColumn, Column, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
+import { Regiao, Venda } from '.';
 
 @Entity('vendedor')
 export class Vendedor {
@@ -21,4 +21,7 @@ export class Vendedor {
   @ManyToOne(() => Regiao)
   @JoinColumn({ name: 'regiao_id' })
   regiao: Regiao;
+
+  @OneToMany(() => Venda, (venda) => venda.vendedor)
+  vendas: Venda[];
 }

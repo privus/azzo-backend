@@ -583,7 +583,7 @@ export class SellsService implements ISellsRepository {
     } = {};
   
     for (const venda of vendas) {
-      if (venda.tipo_pedido?.tipo_pedido_id !== 10438) continue;
+      if (venda.tipo_pedido.tipo_pedido_id !== 10438) continue;
   
       const vendedor = venda.vendedor?.nome || 'Vendedor Desconhecido';
   
@@ -597,9 +597,9 @@ export class SellsService implements ISellsRepository {
       relatorio[vendedor].totalPedidos += 1;
   
       for (const item of venda.itensVenda) {
-        const marca = item.produto?.fornecedor?.nome || 'Marca Desconhecida';
-        const quantidade = Number(item.quantidade) || 0;
-        const valor = Number(item.valor_total) || 0;
+        const marca = item.produto?.fornecedor?.nome;
+        const quantidade = Number(item.quantidade);
+        const valor = Number(item.valor_total);
   
         if (!relatorio[vendedor].marcas[marca]) {
           relatorio[vendedor].marcas[marca] = { quantidade: 0, valor: 0 };
@@ -622,5 +622,83 @@ export class SellsService implements ISellsRepository {
     console.dir(relatorio, { depth: null });
     return relatorio;
   }  
+
+  async reportPositivityByBrand(): Promise<{
+    [vendedor: string]: {
+      [marca: string]: {
+        totalClientes: number;
+        clientesPositivados: number;
+        positivacao: number;
+      };
+    };
+  }> {
+    const regioes = await this.regiaoService.getAllRegions();
   
+    const vendas = await this.sellsBetweenDates('2025-03-01', '2025-04-01');
+    const relatorio: {
+      [vendedor: string]: {
+        [marca: string]: {
+          totalClientes: number;
+          clientesPositivados: number;
+          positivacao: number;       };
+      };
+    } = {};
+  
+    for (const regiao of regioes) {
+      const clientesRegiao = regiao.clientes || [];
+      const totalClientes = clientesRegiao.length;
+      if (!totalClientes) continue;
+  
+      for (const vendedor of regiao.vendedores || []) {
+        const vendedorNome = vendedor.nome;
+        if (!vendedorNome) continue;
+  
+        relatorio[vendedorNome] = {};
+  
+        const marcasPorCliente = new Map<number, Set<string>>();
+  
+        for (const venda of vendas) {
+          if (venda.vendedor?.codigo !== vendedor.codigo) continue;
+  
+          const clienteId = venda.cliente?.cliente_id;
+          if (!clienteId) continue;
+  
+          for (const item of venda.itensVenda) {
+            const marca = item.produto?.fornecedor?.nome;
+            if (!marca) continue;
+  
+            if (!marcasPorCliente.has(clienteId)) {
+              marcasPorCliente.set(clienteId, new Set());
+            }
+            marcasPorCliente.get(clienteId)!.add(marca);
+          }
+        }
+  
+        for (const cliente of clientesRegiao) {
+          const clienteId = cliente.cliente_id;
+          const marcas = marcasPorCliente.get(clienteId) || new Set();
+  
+          for (const marca of marcas) {
+            if (!relatorio[vendedorNome][marca]) {
+              relatorio[vendedorNome][marca] = {
+                totalClientes,
+                clientesPositivados: 0,
+                positivacao: 0,
+              };
+            }
+  
+            relatorio[vendedorNome][marca].clientesPositivados += 1;
+          }
+        }
+  
+        for (const marca in relatorio[vendedorNome]) {
+          const dados = relatorio[vendedorNome][marca];
+          dados.positivacao = Number(((dados.clientesPositivados / dados.totalClientes) * 100).toFixed(2));
+        }
+      }
+    }
+  
+    console.dir(relatorio, { depth: null });
+    return relatorio;
+  }  
 }

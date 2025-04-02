@@ -46,6 +46,18 @@ export class SellsController {
     return this.sellsService.reportBrandSalesBySeller()
   }
 
+  @ApiOperation({ summary: 'Quanto vendido por marca' })
+  @Get('brandPositivity')
+  async sellsByBrandPositivity() {
+    return this.sellsService.reportPositivityByBrand()
+  }
+
+  // @ApiOperation({ summary: 'Vendas por data e vendedor' })
+  // @Get('seller/:id')
+  // async getSellsBySeller(@Param('id') id: number, @Query('fromDate') fromDate: string, @Query('toDate') toDate?: string) {
+  //   return this.sellsService.sellsBySeller(id, fromDate, toDate);
+  // }
+
   @ApiOperation({ summary: 'Exportar pedido para o Tiny'})
   @Get('export/:id')
   async exportToTiny(@Param('id') id: number) {
@@ -59,7 +71,6 @@ export class SellsController {
     const resultMessage = await this.sellsService.syncroSells();
     return { message: resultMessage };
   }
-
 
   @ApiOperation({ summary: 'Excluir venda e suas parcelas' })
   @Delete(':id')

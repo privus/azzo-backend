@@ -70,9 +70,7 @@ export class SellersService {
     }
   }
 
-  findBy(param: Partial<Vendedor>): Promise<Vendedor | null> {
-    return this.vendedorRepository.findOne({ where: param });
+  findAllSellers(): Promise<Vendedor[]> {
+    return this.vendedorRepository.find({ relations: ['regiao'] });
   }
-
-  
 }
