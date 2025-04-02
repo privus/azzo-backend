@@ -77,6 +77,13 @@ export class PrintOrderService {
           alignment: 'right',
           bold: true,
           margin: [0, 10, 0, 0],
+        },,
+        {
+          text: `Obs: ${order.observacao || '-'}`,
+          alignment: 'right',
+          bold: true,
+          margin: [0, 5, 0, 0],
+          fontSize: 8,
         },
   
         {
