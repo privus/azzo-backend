@@ -568,47 +568,59 @@ export class SellsService implements ISellsRepository {
   }
   
   async reportBrandSalesBySeller(): Promise<{
-    [vendedor: string]: { [marca: string]: { quantidade: number; valor: number } };
+    [vendedor: string]: {
+      totalPedidos: number;
+      marcas: { [marca: string]: { quantidade: number; valor: number } };
+    };
   }> {
     const vendas = await this.sellsBetweenDates('2025-03-01', '2025-03-31');
   
     const relatorio: {
-      [vendedor: string]: { [marca: string]: { quantidade: number; valor: number } };
+      [vendedor: string]: {
+        totalPedidos: number;
+        marcas: { [marca: string]: { quantidade: number; valor: number } };
+      };
     } = {};
   
     for (const venda of vendas) {
       if (venda.tipo_pedido?.tipo_pedido_id !== 10438) continue;
   
-      const vendedor = venda.vendedor?.nome;
-
+      const vendedor = venda.vendedor?.nome || 'Vendedor Desconhecido';
+  
       if (!relatorio[vendedor]) {
-        relatorio[vendedor] = {};
+        relatorio[vendedor] = {
+          totalPedidos: 0,
+          marcas: {},
+        };
       }
+  
+      relatorio[vendedor].totalPedidos += 1;
   
       for (const item of venda.itensVenda) {
-        const marca = item.produto?.fornecedor?.nome
-        const quantidade = Number(item.quantidade);
-        const valor = Number(item.valor_total);
+        const marca = item.produto?.fornecedor?.nome || 'Marca Desconhecida';
+        const quantidade = Number(item.quantidade) || 0;
+        const valor = Number(item.valor_total) || 0;
   
-        if (!relatorio[vendedor][marca]) {
-          relatorio[vendedor][marca] = { quantidade: 0, valor: 0 };
+        if (!relatorio[vendedor].marcas[marca]) {
+          relatorio[vendedor].marcas[marca] = { quantidade: 0, valor: 0 };
         }
   
-        relatorio[vendedor][marca].quantidade += quantidade;
-        relatorio[vendedor][marca].valor += valor;
+        relatorio[vendedor].marcas[marca].quantidade += quantidade;
+        relatorio[vendedor].marcas[marca].valor += valor;
       }
     }
-
+  
+    // Arredondar valores
     for (const vendedor in relatorio) {
-      for (const marca in relatorio[vendedor]) {
-        relatorio[vendedor][marca].valor = Number(
-          relatorio[vendedor][marca].valor.toFixed(2)
+      for (const marca in relatorio[vendedor].marcas) {
+        relatorio[vendedor].marcas[marca].valor = Number(
+          relatorio[vendedor].marcas[marca].valor.toFixed(2)
         );
       }
     }
   
     console.dir(relatorio, { depth: null });
     return relatorio;
-  }
+  }  
   
 }
