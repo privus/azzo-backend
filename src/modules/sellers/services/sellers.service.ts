@@ -74,8 +74,8 @@ export class SellersService {
     return this.vendedorRepository.find({ relations: ['regiao'] });
   }
 
-  findBy(code: number): Promise<Vendedor | null> {
-    return this.vendedorRepository.findOne({ where: { codigo: code },
+  findBy(codigo: number): Promise<Vendedor> {
+    return this.vendedorRepository.findOne({ where: { codigo },
       relations: ['regiao'],
     });
   }
