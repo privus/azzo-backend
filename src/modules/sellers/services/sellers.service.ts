@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, FindOptionsWhere } from 'typeorm';
 import { Vendedor, Regiao } from '../../../infrastructure/database/entities';
 import { SellerAPIResponse } from '../dto/sellers.dto';
 
@@ -72,5 +72,11 @@ export class SellersService {
 
   findAllSellers(): Promise<Vendedor[]> {
     return this.vendedorRepository.find({ relations: ['regiao'] });
+  }
+
+  findBy(code: number): Promise<Vendedor | null> {
+    return this.vendedorRepository.findOne({ where: { codigo: code },
+      relations: ['regiao'],
+    });
   }
 }
