@@ -587,7 +587,11 @@ export class SellsService implements ISellsRepository {
     for (const venda of vendas) {
       if (venda.tipo_pedido.tipo_pedido_id !== 10438) continue;
   
-      const vendedor = venda.vendedor?.nome || 'Vendedor Desconhecido';
+      const vendedorId = venda.vendedor?.vendedor_id;
+      if (vendedorId === 7 || vendedorId === 4) continue;
+      
+      const vendedor = venda.vendedor?.nome;
+      
   
       if (!relatorio[vendedor]) {
         relatorio[vendedor] = {
