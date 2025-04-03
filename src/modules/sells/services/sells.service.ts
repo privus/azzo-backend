@@ -570,6 +570,7 @@ export class SellsService implements ISellsRepository {
   async reportBrandSalesBySeller(): Promise<{
     [vendedor: string]: {
       totalPedidos: number;
+      totalFaturado: number;
       marcas: { [marca: string]: { quantidade: number; valor: number } };
     };
   }> {
@@ -578,6 +579,7 @@ export class SellsService implements ISellsRepository {
     const relatorio: {
       [vendedor: string]: {
         totalPedidos: number;
+        totalFaturado: number;
         marcas: { [marca: string]: { quantidade: number; valor: number } };
       };
     } = {};
@@ -590,11 +592,13 @@ export class SellsService implements ISellsRepository {
       if (!relatorio[vendedor]) {
         relatorio[vendedor] = {
           totalPedidos: 0,
+          totalFaturado: 0,
           marcas: {},
         };
       }
   
       relatorio[vendedor].totalPedidos += 1;
+      relatorio[vendedor].totalFaturado += Number(venda.valor_final) || 0;
   
       for (const item of venda.itensVenda) {
         const marca = item.produto?.fornecedor?.nome;
@@ -612,6 +616,8 @@ export class SellsService implements ISellsRepository {
   
     // Arredondar valores
     for (const vendedor in relatorio) {
+      relatorio[vendedor].totalFaturado = Number(relatorio[vendedor].totalFaturado.toFixed(2));
+  
       for (const marca in relatorio[vendedor].marcas) {
         relatorio[vendedor].marcas[marca].valor = Number(
           relatorio[vendedor].marcas[marca].valor.toFixed(2)
@@ -621,7 +627,8 @@ export class SellsService implements ISellsRepository {
   
     console.dir(relatorio, { depth: null });
     return relatorio;
-  }  
+  }
+  
 
   async reportPositivityByBrand(): Promise<{
     [vendedor: string]: {
