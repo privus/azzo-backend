@@ -43,6 +43,9 @@ export class Venda {
   flex_gerado: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  comisao: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   desconto: number;
 
   @Column({ type: 'tinyint', nullable: true })

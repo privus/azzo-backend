@@ -169,6 +169,7 @@ export class SellsService implements ISellsRepository {
     if(existingSell) {    
       existingSell.status_venda = status_venda;
       existingSell.observacao = sell.obs;
+      existingSell.comisao = Number(sell.commission) || 0;
       
           if (sell.amount_final != existingSell.valor_final || sell.installment_qty != existingSell.numero_parcelas) {
             const productCodes = sell.products.map((item) => item.code);
@@ -323,6 +324,7 @@ export class SellsService implements ISellsRepository {
       status_venda,
       status_pagamento,
       tipo_pedido,
+      comisao: Number(sell.commission) || 0,
     });
 
     await this.vendaRepository.save(novaVenda);
