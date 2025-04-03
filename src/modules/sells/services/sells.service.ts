@@ -3,7 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, MoreThanOrEqual, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido } from '../../../infrastructure/database/entities';
-import { DailyRakingSellsResponse, OrderTinyDto, SellsApiResponse, UpdateSellStatusDto } from '../dto';
+import { DailyRakingSellsResponse, OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository } from '../../../domain/repositories';
 
 @Injectable()
@@ -569,73 +569,60 @@ export class SellsService implements ISellsRepository {
     };
   }
   
-  async reportBrandSalesBySeller(): Promise<{
-    [vendedor: string]: {
-      totalPedidos: number;
-      totalFaturado: number;
-      marcas: { [marca: string]: { quantidade: number; valor: number } };
-    };
-  }> {
+  async reportBrandSalesBySeller(): Promise<BrandSales> {
     const vendas = await this.sellsBetweenDates('2025-03-01', '2025-04-01');
-  
-    const relatorio: {
-      [vendedor: string]: {
-        totalPedidos: number;
-        totalFaturado: number;
-        marcas: { [marca: string]: { quantidade: number; valor: number } };
-      };
-    } = {};
-  
+
+    const relatorio: BrandSales = {};
+
     for (const venda of vendas) {
       if (venda.tipo_pedido.tipo_pedido_id !== 10438) continue;
-  
-      const vendedorId = venda.vendedor?.vendedor_id;
-      if (vendedorId === 7 || vendedorId === 4) continue;
-      
-      const vendedor = venda.vendedor?.nome;
-      
-  
-      if (!relatorio[vendedor]) {
-        relatorio[vendedor] = {
+
+      const vendedorId = venda.vendedor.vendedor_id;
+      const venda_cod = venda.codigo
+      if (vendedorId === 7 || vendedorId === 4 || vendedorId === 12) continue;
+      if (venda_cod === 229 || venda_cod === 543) continue;
+      const vendedorNome = venda.vendedor?.nome || 'Desconhecido';
+
+      if (!relatorio[vendedorNome]) {
+        relatorio[vendedorNome] = {
           totalPedidos: 0,
           totalFaturado: 0,
           marcas: {},
         };
       }
-  
-      relatorio[vendedor].totalPedidos += 1;
-      relatorio[vendedor].totalFaturado += Number(venda.valor_final) || 0;
-  
+
+      relatorio[vendedorNome].totalPedidos += 1;
+      relatorio[vendedorNome].totalFaturado += Number(venda.valor_final) || 0;
+
       for (const item of venda.itensVenda) {
-        const marca = item.produto?.fornecedor?.nome;
+        const marca = item?.produto?.fornecedor?.nome || 'Desconhecida';
+
         const quantidade = Number(item.quantidade);
         const valor = Number(item.valor_total);
-  
-        if (!relatorio[vendedor].marcas[marca]) {
-          relatorio[vendedor].marcas[marca] = { quantidade: 0, valor: 0 };
+
+        if (!relatorio[vendedorNome].marcas[marca]) {
+          relatorio[vendedorNome].marcas[marca] = { quantidade: 0, valor: 0 };
         }
-  
-        relatorio[vendedor].marcas[marca].quantidade += quantidade;
-        relatorio[vendedor].marcas[marca].valor += valor;
+
+        relatorio[vendedorNome].marcas[marca].quantidade += quantidade;
+        relatorio[vendedorNome].marcas[marca].valor += valor;
       }
     }
-  
-    // Arredondar valores
+
     for (const vendedor in relatorio) {
       relatorio[vendedor].totalFaturado = Number(relatorio[vendedor].totalFaturado.toFixed(2));
-  
+
       for (const marca in relatorio[vendedor].marcas) {
         relatorio[vendedor].marcas[marca].valor = Number(
           relatorio[vendedor].marcas[marca].valor.toFixed(2)
         );
       }
     }
-  
+
     console.dir(relatorio, { depth: null });
     return relatorio;
   }
   
-
   async reportPositivityByBrand(): Promise<{
     [vendedor: string]: {
       totalClientes: number;
@@ -747,5 +734,47 @@ export class SellsService implements ISellsRepository {
     console.dir(relatorio, { depth: null });
     return relatorio;
   }
+
+  async commissionBySeller(): Promise<Commissions[]> {
+    const vendasMes = await this.sellsBetweenDates('2025-03-01', '2025-04-01');
+    const vendedorMap = new Map<number, Commissions>();
   
+    for (const venda of vendasMes) {
+      if (venda.tipo_pedido.tipo_pedido_id !== 10438) continue;
+  
+      const vendedorId = venda.vendedor.vendedor_id;
+      const venda_cod = venda.codigo
+      if (vendedorId === 7 || vendedorId === 4 || vendedorId === 12) continue;
+      if (venda_cod === 229 || venda_cod === 543) continue;
+
+  
+      const vendedorNome = venda.vendedor.nome;
+  
+      if (!vendedorMap.has(vendedorId)) {
+        vendedorMap.set(vendedorId, {
+          vendedor: vendedorNome,
+          faturado: 0,
+          pedidos: 0,
+          comissao: 0,
+          ticketMedio: 0,
+          comissaoMedia: 0,
+        });
+      }
+  
+      const vendedorData = vendedorMap.get(vendedorId)!;
+      vendedorData.faturado += Number(venda.valor_final);
+      vendedorData.pedidos += 1;
+      vendedorData.comissao += Number(venda.comisao);
+    }
+  
+    return Array.from(vendedorMap.values()).map(v => ({
+      ...v,
+      faturado: Number(v.faturado.toFixed(2)),
+      comissao: Number(v.comissao.toFixed(2)),
+      ticketMedio: Number((v.faturado / v.pedidos).toFixed(2)),
+      comissaoMedia: Number((v.comissao / v.pedidos).toFixed(2)),
+    }));
+  }
+  
+   
 }

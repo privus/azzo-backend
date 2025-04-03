@@ -52,11 +52,11 @@ export class SellsController {
     return this.sellsService.reportPositivityByBrand()
   }
 
-  // @ApiOperation({ summary: 'Vendas por data e vendedor' })
-  // @Get('seller/:id')
-  // async getSellsBySeller(@Param('id') id: number, @Query('fromDate') fromDate: string, @Query('toDate') toDate?: string) {
-  //   return this.sellsService.sellsBySeller(id, fromDate, toDate);
-  // }
+  @ApiOperation({ summary: 'Comissão por vendedor' })
+  @Get('commissions')
+  async getCommissions() {
+    return this.sellsService.commissionBySeller();
+  }
 
   @ApiOperation({ summary: 'Exportar pedido para o Tiny'})
   @Get('export/:id')
