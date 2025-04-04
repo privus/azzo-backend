@@ -10,6 +10,6 @@ import { HttpModule } from '@nestjs/axios';
   imports: [TypeOrmModule.forFeature([Vendedor, Regiao, Cidade]), HttpModule],
   controllers: [SellersController],
   providers: [SellersService, { provide: 'ISellersRepository', useClass: SellersService }],
-  exports: [SellersService, 'ISellersRepository'],
+  exports: [SellersService, 'ISellersRepository', TypeOrmModule],
 })
 export class SellersModule {}

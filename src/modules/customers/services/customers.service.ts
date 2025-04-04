@@ -1,11 +1,11 @@
 import { TinyAuthService } from './../../sells/services/tiny-auth.service';
-import { Body, Injectable } from '@nestjs/common';
+import { Body, Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CustomerAPIResponse, TinyCustomerDto, TinyCustomerResponse } from '../dto';
 import { Regiao, StatusCliente, Cidade, Cliente } from '../../../infrastructure/database/entities';
-import { ICustomersRepository } from '../../../domain/repositories';
+import { ICustomersRepository, ISellersRepository } from '../../../domain/repositories';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import * as fs from 'fs';
 
@@ -16,6 +16,8 @@ export class CustomersService implements ICustomersRepository{
   private readonly tokenSellentt: string;
   private readonly storeTag = 'stores';
   private readonly contactTag = 'contatos';
+  private readonly sellerTag = 'seller';
+
 
 
   constructor(
@@ -23,6 +25,7 @@ export class CustomersService implements ICustomersRepository{
     @InjectRepository(Cidade) private readonly cidadeRepository: Repository<Cidade>,
     @InjectRepository(Regiao) private readonly regiaoRepository: Repository<Regiao>,
     @InjectRepository(StatusCliente) private readonly statusClienteRepository: Repository<StatusCliente>,
+    @Inject('ISellersRepository') private readonly sellersSevice: ISellersRepository,
     private readonly tinyAuthService: TinyAuthService,  
     private readonly httpService: HttpService,
   ) {
@@ -443,4 +446,55 @@ export class CustomersService implements ICustomersRepository{
     console.log('🏁 Todos os batches foram processados com sucesso.');
   }
 
+  async syncroWallet(): Promise<void> {
+    const vendedoresIds = [1, 2, 3, 10]; // ✅ IDs reais dos vendedores
+    const baseUrl = this.apiUrlSellentt + this.sellerTag;
+  
+    for (const vendedorId of vendedoresIds) {
+      const url = `${baseUrl}/${vendedorId}/${this.storeTag}`;
+      console.log(`🔄 Buscando lojas para vendedor ${vendedorId}: ${url}`);
+  
+      try {
+        const response = await this.httpService.axiosRef.get<{ data: { code: number }[] }>(url, {
+          headers: { Authorization: `Bearer ${this.tokenSellentt}` },
+        });
+  
+        const lojas = response.data.data;
+  
+        if (!lojas || lojas.length === 0) {
+          console.warn(`⚠️ Nenhuma loja retornada para vendedor ${vendedorId}.`);
+          continue;
+        }
+  
+        console.log(`📦 ${lojas.length} lojas recebidas para vendedor ${vendedorId}.`);
+  
+        const vendedor = await this.sellersSevice.findBy(vendedorId); // ✅ buscar entidade completa
+  
+        if (!vendedor) {
+          console.warn(`❌ Vendedor ${vendedorId} não encontrado.`);
+          continue;
+        }
+  
+        for (const loja of lojas) {
+          const cliente = await this.clienteRepository.findOne({ where: { codigo: loja.code } });
+  
+          if (!cliente) {
+            console.warn(`❌ Cliente com código ${loja.code} não encontrado no banco.`);
+            continue;
+          }
+  
+          cliente.vendedor = vendedor; // ✅ associa objeto vendedor
+          await this.clienteRepository.save(cliente);
+          console.log(`✅ Cliente ${cliente.codigo} atualizado com carteira (vendedor) = ${vendedorId}`);
+        }
+  
+      } catch (error) {
+        console.error(`❌ Erro ao buscar lojas para vendedor ${vendedorId}:`, error.message);
+      }
+    }
+  
+    console.log('🏁 Sincronização de carteiras concluída com sucesso!');
+  }
+  
+  
 }

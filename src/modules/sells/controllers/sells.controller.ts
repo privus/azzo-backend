@@ -58,6 +58,12 @@ export class SellsController {
     return this.sellsService.commissionBySeller();
   }
 
+  @ApiOperation({ summary: 'Vendas Orfãs' })
+  @Get('orphans')
+  async getOrphans() {
+    return this.sellsService.findOrphanSellsFromSellentt();
+  }
+
   @ApiOperation({ summary: 'Exportar pedido para o Tiny'})
   @Get('export/:id')
   async exportToTiny(@Param('id') id: number) {

@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { CategoriaCliente, Cidade, Regiao, StatusCliente } from './';
+import { CategoriaCliente, Cidade, Regiao, StatusCliente, Vendedor } from './';
 
 @Entity('cliente')
 export class Cliente {
@@ -17,9 +17,6 @@ export class Cliente {
 
   @Column({ type: 'int', nullable: true })
   prox_status: number;
-
-  @Column({ type: 'int', nullable: true })
-  vendedor_id: number;
 
   @Column({ type: 'varchar', length: 240 })
   nome: string;
@@ -93,4 +90,8 @@ export class Cliente {
   @ManyToOne(() => StatusCliente)
   @JoinColumn({ name: 'status_cliente_id' })
   status_cliente: StatusCliente;
+
+  @ManyToOne(() => Vendedor)
+  @JoinColumn({ name: 'vendedor_id' })
+  vendedor: Vendedor;
 }

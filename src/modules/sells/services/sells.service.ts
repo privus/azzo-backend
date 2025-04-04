@@ -777,5 +777,49 @@ export class SellsService implements ISellsRepository {
     }));
   }
   
-   
+  async findOrphanSellsFromSellentt(): Promise<Venda[]> {
+    console.log('🔍 Buscando pedidos órfãos...');
+  
+    // 1. Busca todos os códigos de vendas no banco
+    const vendasDB = await this.vendaRepository.find();
+    const codigosDB = vendasDB.map(v => v.codigo);
+  
+    // 2. Busca todos os pedidos da API paginada
+    let currentPage = 1;
+    let lastPage = 1;
+    const codigosAPI = new Set<number>();
+  
+    try {
+      do {
+        const url = `${this.apiUrlSellentt}${this.apiTagSellentt}?page=${currentPage}`;
+        console.log(`📡 Lendo página ${currentPage} da API: ${url}`);
+  
+        const response = await this.httpService.axiosRef.get<{ data: SellsApiResponse[], meta: { last_page: number } }>(url, {
+          headers: { Authorization: `Bearer ${this.tokenSellentt}` },
+        });
+  
+        const vendasApi = response.data.data;
+        lastPage = response.data.meta.last_page;
+  
+        for (const venda of vendasApi) {
+          codigosAPI.add(Number(venda.code));
+        }
+  
+        currentPage++;
+      } while (currentPage <= lastPage);
+  
+      // 3. Descobre os códigos órfãos (existem no banco mas não na API)
+      const codigosOrfaos = codigosDB.filter(code => !codigosAPI.has(code));
+  
+      console.log(`🚨 Encontradas ${codigosOrfaos.length} vendas órfãs.`);
+  
+      // 4. Retorna as vendas órfãs
+      return this.vendaRepository.find({ where: { codigo: In(codigosOrfaos) } });
+  
+    } catch (error) {
+      console.error('❌ Erro ao buscar vendas da API:', error.message);
+      return [];
+    }
+  }
+  
 }
