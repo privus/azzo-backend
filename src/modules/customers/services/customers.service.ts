@@ -446,7 +446,6 @@ export class CustomersService implements ICustomersRepository{
     console.log('🏁 Todos os batches foram processados com sucesso.');
   }
 
-  @Cron(CronExpression.EVERY_5_MINUTES)
   async syncroWallet(): Promise<void> {
     const vendedoresIds = [1, 2, 3, 10]; // ✅ IDs reais dos vendedores
     const baseUrl = this.apiUrlSellentt + this.sellerTag;
