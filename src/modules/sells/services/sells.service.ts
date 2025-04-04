@@ -160,6 +160,8 @@ export class SellsService implements ISellsRepository {
       where: { status_venda_id: sell.status.id },
     });
 
+    const vendedor = await this.sellersSevice.findBy(Number(sell.seller_code));
+
     const status_pagamento = await this.statusPagamentoRepository.findOne({
       where: { status_pagamento_id: 1 },
     });
@@ -170,6 +172,7 @@ export class SellsService implements ISellsRepository {
       existingSell.status_venda = status_venda;
       existingSell.observacao = sell.obs;
       existingSell.comisao = Number(sell.commission) || 0;
+      existingSell.vendedor = vendedor;
       
           if (sell.amount_final != existingSell.valor_final || sell.installment_qty != existingSell.numero_parcelas) {
             const productCodes = sell.products.map((item) => item.code);
@@ -242,8 +245,6 @@ export class SellsService implements ISellsRepository {
     // Se a venda não existir, crie-a
     console.log('Criando nova venda =>', sell.code);
 
-    // Busque e associe os dados necessários
-    const vendedor = await this.sellersSevice.findBy({ codigo: Number(sell.seller_code) });
 
     const regiao = await this.regiaoService.getRegionByCode(sell.region);
 
