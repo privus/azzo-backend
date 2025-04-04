@@ -580,7 +580,6 @@ export class SellsService implements ISellsRepository {
 
       const vendedorId = venda.vendedor.vendedor_id;
       const venda_cod = venda.codigo
-      if (vendedorId === 7 || vendedorId === 4 || vendedorId === 12) continue;
       if (venda_cod === 229 || venda_cod === 543) continue;
       const vendedorNome = venda.vendedor?.nome || 'Desconhecido';
 
