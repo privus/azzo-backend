@@ -18,6 +18,9 @@ export class Cliente {
   @Column({ type: 'int', nullable: true })
   prox_status: number;
 
+  @Column({ type: 'int', nullable: true })
+  vendedor_id: number;
+
   @Column({ type: 'varchar', length: 240 })
   nome: string;
 
