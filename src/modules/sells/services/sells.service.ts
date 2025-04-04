@@ -776,48 +776,52 @@ export class SellsService implements ISellsRepository {
       comissaoMedia: Number((v.comissao / v.pedidos).toFixed(2)),
     }));
   }
-  
+
+
   async findOrphanSellsFromSellentt(): Promise<Venda[]> {
-    console.log('🔍 Buscando pedidos órfãos...');
-  
-    // 1. Busca todos os códigos de vendas no banco
+    console.log('🔍 Iniciando busca de vendas órfãs (DB ∉ API)...');
+
+    // 1. Coletar todos os códigos de vendas no banco
     const vendasDB = await this.vendaRepository.find();
     const codigosDB = vendasDB.map(v => v.codigo);
-  
-    // 2. Busca todos os pedidos da API paginada
+
+    // 2. Coletar todos os códigos de vendas da API
     let currentPage = 1;
     let lastPage = 1;
     const codigosAPI = new Set<number>();
-  
+
     try {
       do {
         const url = `${this.apiUrlSellentt}${this.apiTagSellentt}?page=${currentPage}`;
-        console.log(`📡 Lendo página ${currentPage} da API: ${url}`);
-  
+        console.log(`🔄 Lendo página ${currentPage}: ${url}`);
+
         const response = await this.httpService.axiosRef.get<{ data: SellsApiResponse[], meta: { last_page: number } }>(url, {
           headers: { Authorization: `Bearer ${this.tokenSellentt}` },
         });
-  
+
         const vendasApi = response.data.data;
         lastPage = response.data.meta.last_page;
-  
+
         for (const venda of vendasApi) {
           codigosAPI.add(Number(venda.code));
         }
-  
+
         currentPage++;
       } while (currentPage <= lastPage);
-  
-      // 3. Descobre os códigos órfãos (existem no banco mas não na API)
+
+      // 3. Diferença: códigos no banco que não estão na API
       const codigosOrfaos = codigosDB.filter(code => !codigosAPI.has(code));
-  
-      console.log(`🚨 Encontradas ${codigosOrfaos.length} vendas órfãs.`);
-  
-      // 4. Retorna as vendas órfãs
-      return this.vendaRepository.find({ where: { codigo: In(codigosOrfaos) } });
-  
+      console.log(`🚨 Encontradas ${codigosOrfaos.length} vendas órfãs no banco.`);
+
+      // 4. Buscar as vendas órfãs do banco
+      const vendasOrfas = await this.vendaRepository.find({
+        where: { codigo: In(codigosOrfaos) },
+        relations: ['cliente', 'vendedor', 'status_venda']
+      });
+
+      return vendasOrfas;
     } catch (error) {
-      console.error('❌ Erro ao buscar vendas da API:', error.message);
+      console.error('❌ Erro ao comparar com API Sellentt:', error.message);
       return [];
     }
   }
