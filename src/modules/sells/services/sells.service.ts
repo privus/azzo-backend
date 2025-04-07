@@ -522,23 +522,35 @@ export class SellsService implements ISellsRepository {
     today.setHours(0, 0, 0, 0);
   
     const yesterday = new Date(today);
+    let useFriday = false;
   
-    // Se ontem (today - 1) foi domingo, buscar dados de sexta-feira (today - 3)
+    // Se ontem (today - 1) foi domingo, buscar dados de sexta-feira (today - 4)
     const tempYesterday = new Date(today);
     tempYesterday.setDate(today.getDate() - 1);
     if (tempYesterday.getDay() === 0) {
       // Domingo
       yesterday.setDate(today.getDate() - 4); // sexta-feira
+      useFriday = true;
     } else {
       // Caso contrário, considera ontem normalmente
       yesterday.setDate(today.getDate() - 2);
     }
   
+    const endDate = new Date(yesterday);
+    if (useFriday) {
+      // Se é sexta, busca até sábado às 5h
+      endDate.setDate(today.getDate() - 2);         // 05:00:00
+    } else {
+      // Busca padrão até 23:59:59.999 do mesmo dia
+      endDate.setHours(23, 59, 59, 999);
+    }
+  
     console.log('Today =============>', today);
-    console.log('Effective Yesterday (or Friday if Sunday) =============>', yesterday);
+    console.log('Effective Yesterday =============>', yesterday);
+    console.log('End of Search Period =============>', endDate);
   
     const todaySales = await this.sellsByDate(today.toISOString());
-    const yesterdaySales = await this.sellsBetweenDates(yesterday.toISOString());
+    const yesterdaySales = await this.sellsBetweenDates(yesterday.toISOString(), endDate.toISOString());
   
     console.log('Today Sales =============>', todaySales);
   
@@ -581,7 +593,7 @@ export class SellsService implements ISellsRepository {
       yesterday: buildRanking(yesterdaySales, yesterday),
     };
   }
-  
+ 
   
   async reportBrandSalesBySeller(): Promise<BrandSales> {
     const vendas = await this.sellsBetweenDates('2025-03-01', '2025-04-01');
