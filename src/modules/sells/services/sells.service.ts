@@ -3,7 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, MoreThanOrEqual, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido } from '../../../infrastructure/database/entities';
-import { DailyRakingSellsResponse, OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions } from '../dto';
+import { DailyRakingSellsResponse, OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository } from '../../../domain/repositories';
 
 @Injectable()
@@ -172,7 +172,6 @@ export class SellsService implements ISellsRepository {
       existingSell.status_venda = status_venda;
       existingSell.observacao = sell.obs;
       existingSell.comisao = Number(sell.commission) || 0;
-      existingSell.vendedor = vendedor;
       
           if (sell.amount_final != existingSell.valor_final || sell.installment_qty != existingSell.numero_parcelas) {
             const productCodes = sell.products.map((item) => item.code);
@@ -517,7 +516,7 @@ export class SellsService implements ISellsRepository {
     return `Venda com ID ${code} e suas parcelas foram excluídas com sucesso.`;
   }
   
-  async getDailyRakingSells(): Promise<DailyRakingSellsResponse> {
+  async getDailyRakingSells(): Promise<RakingSellsResponse> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
   
@@ -532,17 +531,12 @@ export class SellsService implements ISellsRepository {
       yesterday.setDate(today.getDate() - 4); // sexta-feira
       useFriday = true;
     } else {
-      // Caso contrário, considera ontem normalmente
       yesterday.setDate(today.getDate() - 2);
     }
   
     const endDate = new Date(yesterday);
     if (useFriday) {
-      // Se é sexta, busca até sábado às 5h
-      endDate.setDate(today.getDate() - 2);         // 05:00:00
-    } else {
-      // Busca padrão até 23:59:59.999 do mesmo dia
-      endDate.setHours(23, 59, 59, 999);
+      endDate.setDate(today.getDate() - 2);
     }
   
     console.log('Today =============>', today);
@@ -597,16 +591,21 @@ export class SellsService implements ISellsRepository {
   
   async reportBrandSalesBySeller(): Promise<BrandSales> {
     const vendas = await this.sellsBetweenDates('2025-03-01', '2025-04-01');
-
+  
     const relatorio: BrandSales = {};
-
+  
+    // Inicializa o agrupamento total por empresa
+    relatorio["Azzo"] = {
+      totalPedidos: 0,
+      totalFaturado: 0,
+      marcas: {},
+    };
+  
     for (const venda of vendas) {
       if (venda.tipo_pedido.tipo_pedido_id !== 10438) continue;
-
-      const vendedorId = venda.vendedor.vendedor_id;
-      const venda_cod = venda.codigo
+  
       const vendedorNome = venda.vendedor?.nome || 'Desconhecido';
-
+  
       if (!relatorio[vendedorNome]) {
         relatorio[vendedorNome] = {
           totalPedidos: 0,
@@ -614,35 +613,46 @@ export class SellsService implements ISellsRepository {
           marcas: {},
         };
       }
-
+  
+      // Soma para o vendedor
       relatorio[vendedorNome].totalPedidos += 1;
       relatorio[vendedorNome].totalFaturado += Number(venda.valor_final) || 0;
-
+  
+      // Soma para a empresa "Azzo"
+      relatorio["Azzo"].totalPedidos += 1;
+      relatorio["Azzo"].totalFaturado += Number(venda.valor_final) || 0;
+  
       for (const item of venda.itensVenda) {
         const marca = item?.produto?.fornecedor?.nome || 'Desconhecida';
-
+  
         const quantidade = Number(item.quantidade);
         const valor = Number(item.valor_total);
-
+  
+        // Marca no vendedor
         if (!relatorio[vendedorNome].marcas[marca]) {
           relatorio[vendedorNome].marcas[marca] = { quantidade: 0, valor: 0 };
         }
-
         relatorio[vendedorNome].marcas[marca].quantidade += quantidade;
         relatorio[vendedorNome].marcas[marca].valor += valor;
+  
+        // Marca na empresa
+        if (!relatorio["Azzo"].marcas[marca]) {
+          relatorio["Azzo"].marcas[marca] = { quantidade: 0, valor: 0 };
+        }
+        relatorio["Azzo"].marcas[marca].quantidade += quantidade;
+        relatorio["Azzo"].marcas[marca].valor += valor;
       }
     }
-
-    for (const vendedor in relatorio) {
-      relatorio[vendedor].totalFaturado = Number(relatorio[vendedor].totalFaturado.toFixed(2));
-
-      for (const marca in relatorio[vendedor].marcas) {
-        relatorio[vendedor].marcas[marca].valor = Number(
-          relatorio[vendedor].marcas[marca].valor.toFixed(2)
-        );
+  
+    // Arredondamento final
+    for (const key in relatorio) {
+      relatorio[key].totalFaturado = Number(relatorio[key].totalFaturado.toFixed(2));
+  
+      for (const marca in relatorio[key].marcas) {
+        relatorio[key].marcas[marca].valor = Number(relatorio[key].marcas[marca].valor.toFixed(2));
       }
     }
-
+  
     console.dir(relatorio, { depth: null });
     return relatorio;
   }

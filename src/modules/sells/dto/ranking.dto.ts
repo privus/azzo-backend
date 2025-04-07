@@ -1,7 +1,11 @@
-export interface Ranking {
-    id: number;
+export interface RakingSellsResponse {
+    today: RankingItem[];
+    yesterday: RankingItem[];
+}
+
+export interface RankingItem {
     nome: string;
     total: number;
-    numeroVendas: number;
-    codigosVendas: number[]; 
+    numero_vendas: number;
+    codigos_vendas: number[];
 }

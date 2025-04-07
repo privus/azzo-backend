@@ -1,5 +1,5 @@
 import { Venda } from '../../infrastructure/database/entities';
-import { DailyRakingSellsResponse, UpdateSellStatusDto } from '../../modules/sells/dto';
+import { RakingSellsResponse, UpdateSellStatusDto } from '../../modules/sells/dto';
 
 export interface ISellsRepository {
   syncroSells(): Promise<string>;
@@ -8,5 +8,5 @@ export interface ISellsRepository {
   exportTiny(id: number): Promise<string>;
   updateSellStatus(UpdateSellStatusDto: UpdateSellStatusDto): Promise<string>;
   deleteSell(id: number): Promise<string>;
-  getDailyRakingSells(): Promise<DailyRakingSellsResponse>;
+  getDailyRakingSells(): Promise<RakingSellsResponse>;
 }
