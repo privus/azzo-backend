@@ -2,7 +2,7 @@ import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, MoreThanOrEqual, Repository } from 'typeorm';
-import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido } from '../../../infrastructure/database/entities';
+import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente } from '../../../infrastructure/database/entities';
 import { DailyRakingSellsResponse, OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository } from '../../../domain/repositories';
 
@@ -521,31 +521,12 @@ export class SellsService implements ISellsRepository {
     today.setHours(0, 0, 0, 0);
   
     const yesterday = new Date(today);
-    let useFriday = false;
-  
-    // Se ontem (today - 1) foi domingo, buscar dados de sexta-feira (today - 4)
-    const tempYesterday = new Date(today);
-    tempYesterday.setDate(today.getDate() - 1);
-    if (tempYesterday.getDay() === 0) {
-      // Domingo
-      yesterday.setDate(today.getDate() - 4); // sexta-feira
-      useFriday = true;
-    } else {
-      yesterday.setDate(today.getDate() - 2);
-    }
-  
-    const endDate = new Date(yesterday);
-    if (useFriday) {
-      endDate.setDate(today.getDate() - 2);
-    }
-  
+    yesterday.setDate(today.getDate() - 2); 
     console.log('Today =============>', today);
-    console.log('Effective Yesterday =============>', yesterday);
-    console.log('End of Search Period =============>', endDate);
+    console.log('Yesterday =============>', yesterday);
   
     const todaySales = await this.sellsByDate(today.toISOString());
-    const yesterdaySales = await this.sellsBetweenDates(yesterday.toISOString(), endDate.toISOString());
-  
+    const yesterdaySales = await this.sellsBetweenDates(yesterday.toISOString());
     console.log('Today Sales =============>', todaySales);
   
     const buildRanking = (sells: Venda[], date: Date) => {
@@ -586,8 +567,7 @@ export class SellsService implements ISellsRepository {
       today: buildRanking(todaySales, today),
       yesterday: buildRanking(yesterdaySales, yesterday),
     };
-  }
- 
+  } 
   
   async reportBrandSalesBySeller(): Promise<BrandSales> {
     const vendas = await this.sellsBetweenDates('2025-03-01', '2025-04-01');
@@ -661,113 +641,211 @@ export class SellsService implements ISellsRepository {
     [vendedor: string]: {
       totalClientes: number;
       clientesPositivados: number;
-      positivacaoGeral: string;
+      positivacaoGeral: number;
       marcas: {
         [marca: string]: {
           clientesPositivados: number;
-          positivacaoMarca: string;
-          contribuicaoPercentual: string;
+          positivacaoMarca: number;
+          contribuicaoPercentual: number;
         };
       };
     };
   }> {
-    const regioes = await this.regiaoService.getAllRegions();
     const vendas = await this.sellsBetweenDates('2025-03-01', '2025-04-01');
+    const clientes = await this.clienteService.findAllCustomers();
   
     const relatorio: {
       [vendedor: string]: {
         totalClientes: number;
         clientesPositivados: number;
-        positivacaoGeral: string;
+        positivacaoGeral: number;
         marcas: {
           [marca: string]: {
             clientesPositivados: number;
-            positivacaoMarca: string;
-            contribuicaoPercentual: string;
+            positivacaoMarca: number;
+            contribuicaoPercentual: number;
           };
         };
       };
     } = {};
+    const clientesPorVendedor = new Map<number, Cliente[]>();
+    for (const cliente of clientes) {
+      const vendedorId = cliente.vendedor?.vendedor_id;
+      if (vendedorId !== undefined) {
+        if (!clientesPorVendedor.has(vendedorId)) {
+          clientesPorVendedor.set(vendedorId, []);
+        }
+        clientesPorVendedor.get(vendedorId)!.push(cliente);
+      }
+    }
+    
+    
   
-    for (const regiao of regioes) {
-      const clientesRegiao = regiao.clientes || [];
-      const totalClientes = clientesRegiao.length;
-      if (!totalClientes) continue;
+    // ========= Por vendedor ==========
+    for (const [vendedorId, clientesVendedor] of clientesPorVendedor.entries()) {
+      const vendedorNome = clientesVendedor[0]?.vendedor?.nome;
+      if (!vendedorNome) continue;
   
-      for (const vendedor of regiao.vendedores || []) {
-        const vendedorNome = vendedor.nome;
-        if (!vendedorNome) continue;
+      const totalClientes = clientesVendedor.length;
+      const marcasPorCliente = new Map<number, Set<string>>();
   
-        const marcasPorCliente = new Map<number, Set<string>>();
+      for (const venda of vendas) {
+        const clienteId = venda.cliente?.cliente_id;
+        if (!clienteId) continue;
   
-        for (const venda of vendas) {
-          if (venda.vendedor?.codigo !== vendedor.codigo) continue;
+        const pertenceAoVendedor = clientesVendedor.some(c => c.cliente_id === clienteId);
+        if (!pertenceAoVendedor) continue;
   
-          const clienteId = venda.cliente?.cliente_id;
-          if (!clienteId) continue;
+        if (!marcasPorCliente.has(clienteId)) {
+          marcasPorCliente.set(clienteId, new Set());
+        }
   
-          for (const item of venda.itensVenda) {
-            const marca = item.produto?.fornecedor?.nome;
-            if (!marca) continue;
-  
-            if (!marcasPorCliente.has(clienteId)) {
-              marcasPorCliente.set(clienteId, new Set());
-            }
+        for (const item of venda.itensVenda) {
+          const marca = item.produto?.fornecedor?.nome;
+          if (marca) {
             marcasPorCliente.get(clienteId)!.add(marca);
           }
         }
+      }
   
-        const marcas: {
-          [marca: string]: {
-            clientesPositivados: number;
-            positivacaoMarca: string;
-            contribuicaoPercentual: string;
-          };
-        } = {};
+      const marcas: Record<string, any> = {};
+      const clientesPositivadosSet = new Set<number>();
   
-        const clientesPositivadosSet = new Set<number>();
+      for (const cliente of clientesVendedor) {
+        const clienteId = cliente.cliente_id;
+        const marcasCliente = marcasPorCliente.get(clienteId);
+        if (!marcasCliente || marcasCliente.size === 0) continue;
   
-        for (const cliente of clientesRegiao) {
-          const clienteId = cliente.cliente_id;
-          const marcasCliente = marcasPorCliente.get(clienteId);
-          if (!marcasCliente || marcasCliente.size === 0) continue;
+        clientesPositivadosSet.add(clienteId);
   
-          clientesPositivadosSet.add(clienteId);
-  
-          for (const marca of marcasCliente) {
-            if (!marcas[marca]) {
-              marcas[marca] = {
-                clientesPositivados: 0,
-                positivacaoMarca: '0%',
-                contribuicaoPercentual: '0%',
-              };
-            }
-  
-            marcas[marca].clientesPositivados += 1;
+        for (const marca of marcasCliente) {
+          if (!marcas[marca]) {
+            marcas[marca] = {
+              clientesPositivados: 0,
+              positivacaoMarca: 0,
+              contribuicaoPercentual: 0,
+            };
           }
+          marcas[marca].clientesPositivados += 1;
         }
+      }
   
-        const clientesPositivados = clientesPositivadosSet.size;
-        const positivacaoGeral = Number(((clientesPositivados / totalClientes) * 100).toFixed(2));
+      const clientesPositivados = clientesPositivadosSet.size;
+      const positivacaoGeral = Number(((clientesPositivados / totalClientes) * 100).toFixed(2));
   
-        for (const marca in marcas) {
-          const m = marcas[marca];
-          m.positivacaoMarca = `${((m.clientesPositivados / totalClientes) * 100).toFixed(2)}%`;
-          m.contribuicaoPercentual = `${((m.clientesPositivados / clientesPositivados) * 100).toFixed(2)}%`;
+      for (const marca in marcas) {
+        marcas[marca].positivacaoMarca = Number(((marcas[marca].clientesPositivados / totalClientes) * 100).toFixed(2));
+      }
+  
+      const soma = Object.values(marcas).reduce((acc, m) => acc + m.positivacaoMarca, 0);
+  
+      for (const marca in marcas) {
+        const m = marcas[marca];
+        m.contribuicaoPercentual = soma > 0 ? Number(((m.positivacaoMarca / soma) * 100).toFixed(2)) : 0;
+      }
+  
+      relatorio[vendedorNome] = {
+        totalClientes,
+        clientesPositivados,
+        positivacaoGeral,
+        marcas,
+      };
+    }
+  
+    // ========== Consolidação Azzo ============
+    const marcasPorClienteAzzo = new Map<number, Set<string>>();
+    const clientesPositivadosSetAzzo = new Set<number>();
+  
+    for (const venda of vendas) {
+      const clienteId = venda.cliente?.cliente_id;
+      if (!clienteId) continue;
+  
+      clientesPositivadosSetAzzo.add(clienteId);
+  
+      if (!marcasPorClienteAzzo.has(clienteId)) {
+        marcasPorClienteAzzo.set(clienteId, new Set());
+      }
+  
+      for (const item of venda.itensVenda) {
+        const marca = item.produto?.fornecedor?.nome;
+        if (marca) {
+          marcasPorClienteAzzo.get(clienteId)!.add(marca);
         }
-  
-        relatorio[vendedorNome] = {
-          totalClientes,
-          clientesPositivados,
-          positivacaoGeral: `${positivacaoGeral}%`,
-          marcas,
-        };
       }
     }
   
-    console.dir(relatorio, { depth: null });
+    const marcasAzzo: Record<string, any> = {};
+    for (const cliente of clientes) {
+      const clienteId = cliente.cliente_id;
+      const marcasCliente = marcasPorClienteAzzo.get(clienteId);
+      if (!marcasCliente || marcasCliente.size === 0) continue;
+  
+      for (const marca of marcasCliente) {
+        if (!marcasAzzo[marca]) {
+          marcasAzzo[marca] = {
+            clientesPositivados: 0,
+            positivacaoMarca: 0,
+            contribuicaoPercentual: 0,
+          };
+        }
+        marcasAzzo[marca].clientesPositivados += 1;
+      }
+    }
+  
+    const totalClientesAzzo = clientes.length;
+    const clientesPositivadosAzzo = clientesPositivadosSetAzzo.size;
+    const positivacaoGeralAzzo = Number(((clientesPositivadosAzzo / totalClientesAzzo) * 100).toFixed(2));
+  
+    for (const marca in marcasAzzo) {
+      marcasAzzo[marca].positivacaoMarca = Number(((marcasAzzo[marca].clientesPositivados / totalClientesAzzo) * 100).toFixed(2));
+    }
+  
+    const somaAzzo = Object.values(marcasAzzo).reduce((acc, m) => acc + m.positivacaoMarca, 0);
+  
+    for (const marca in marcasAzzo) {
+      const m = marcasAzzo[marca];
+      m.contribuicaoPercentual = somaAzzo > 0 ? Number(((m.positivacaoMarca / somaAzzo) * 100).toFixed(2)) : 0;
+    }
+  
+    relatorio['Azzo'] = {
+      totalClientes: totalClientesAzzo,
+      clientesPositivados: clientesPositivadosAzzo,
+      positivacaoGeral: positivacaoGeralAzzo,
+      marcas: marcasAzzo,
+    };
+  
     return relatorio;
   }
+  
+
+  async getPositivity(): Promise<{
+    totalClientes: number;
+    clientesPositivados: number;
+    positivacaoGeral: number;
+  }> {
+    const vendas = await this.sellsBetweenDates('2025-03-01', '2025-04-01');
+    const clientes = await this.clienteService.findAllCustomers();
+  
+    const totalClientes = clientes.length;
+  
+    // Clientes que fizeram pelo menos uma compra no período
+    const clientesPositivadosSet = new Set<number>();
+    for (const venda of vendas) {
+      const clienteId = venda.cliente?.cliente_id;
+      if (clienteId) {
+        clientesPositivadosSet.add(clienteId);
+      }
+    }
+  
+    const clientesPositivados = clientesPositivadosSet.size;
+    const positivacaoGeral = Number(((clientesPositivados / totalClientes) * 100).toFixed(2));
+  
+    return {
+      totalClientes,
+      clientesPositivados,
+      positivacaoGeral,
+    };
+  } 
 
   async commissionBySeller(): Promise<Commissions[]> {
     const vendasMes = await this.sellsBetweenDates('2025-03-01', '2025-04-01');

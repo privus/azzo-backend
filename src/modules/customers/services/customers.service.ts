@@ -96,12 +96,7 @@ export class CustomersService implements ICustomersRepository{
     });
 
     if (!regiao) {
-      regiao = this.regiaoRepository.create({
-          nome: 'Região Geral',
-          codigo: 9,
-          cidades: cidade ? [cidade] : [], // Add city if found
-      });
-      await this.regiaoRepository.save(regiao);
+      regiao = await this.regiaoRepository.findOne({where: { codigo: 9}});;
   }
 
     if (existingClient) {
@@ -152,7 +147,7 @@ export class CustomersService implements ICustomersRepository{
   }
 
   findAllCustomers(): Promise<Cliente[]> {
-    return this.clienteRepository.find({ relations: ['cidade.estado', 'regiao', 'status_cliente', 'regiao.vendedores'] });
+    return this.clienteRepository.find({ relations: ['cidade.estado', 'regiao', 'status_cliente', 'regiao.vendedores', 'vendedor'] });
   }
 
   findCustomerByCode(codigo: number): Promise<Cliente> {
@@ -447,7 +442,7 @@ export class CustomersService implements ICustomersRepository{
   }
 
   async syncroWallet(): Promise<void> {
-    const vendedoresIds = [1, 2, 3, 10]; // ✅ IDs reais dos vendedores
+    const vendedoresIds = [1, 2, 3, 4]; // ✅ IDs reais dos vendedores
     const baseUrl = this.apiUrlSellentt + this.sellerTag;
   
     for (const vendedorId of vendedoresIds) {
