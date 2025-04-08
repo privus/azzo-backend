@@ -3,7 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, MoreThanOrEqual, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente } from '../../../infrastructure/database/entities';
-import { DailyRakingSellsResponse, OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse } from '../dto';
+import { DailyRakingSellsResponse, OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository } from '../../../domain/repositories';
 
 @Injectable()
@@ -637,21 +637,18 @@ export class SellsService implements ISellsRepository {
     return relatorio;
   }
   
+  
   async reportPositivityByBrand(): Promise<{
     [vendedor: string]: {
       totalClientes: number;
       clientesPositivados: number;
       positivacaoGeral: number;
-      marcas: {
-        [marca: string]: {
-          clientesPositivados: number;
-          positivacaoMarca: number;
-          contribuicaoPercentual: number;
-        };
-      };
+      marcas: Record<string, BrandPositivity>;
     };
   }> {
-    const vendas = await this.sellsBetweenDates('2025-03-01', '2025-04-01');
+    const vendas = (await this.sellsBetweenDates('2025-03-01', '2025-04-01'))
+      .filter(v => v.tipo_pedido?.tipo_pedido_id === 10438);
+  
     const clientes = await this.clienteService.findAllCustomers();
   
     const relatorio: {
@@ -659,15 +656,11 @@ export class SellsService implements ISellsRepository {
         totalClientes: number;
         clientesPositivados: number;
         positivacaoGeral: number;
-        marcas: {
-          [marca: string]: {
-            clientesPositivados: number;
-            positivacaoMarca: number;
-            contribuicaoPercentual: number;
-          };
-        };
+        marcas: Record<string, BrandPositivity>;
       };
     } = {};
+  
+    // Agrupa clientes por vendedor (apenas os vinculados)
     const clientesPorVendedor = new Map<number, Cliente[]>();
     for (const cliente of clientes) {
       const vendedorId = cliente.vendedor?.vendedor_id;
@@ -678,10 +671,8 @@ export class SellsService implements ISellsRepository {
         clientesPorVendedor.get(vendedorId)!.push(cliente);
       }
     }
-    
-    
   
-    // ========= Por vendedor ==========
+    // ========== POSITIVAÇÃO POR VENDEDOR ==========
     for (const [vendedorId, clientesVendedor] of clientesPorVendedor.entries()) {
       const vendedorNome = clientesVendedor[0]?.vendedor?.nome;
       if (!vendedorNome) continue;
@@ -689,12 +680,16 @@ export class SellsService implements ISellsRepository {
       const totalClientes = clientesVendedor.length;
       const marcasPorCliente = new Map<number, Set<string>>();
   
+      // Mapeia vendas dos clientes do vendedor
       for (const venda of vendas) {
         const clienteId = venda.cliente?.cliente_id;
         if (!clienteId) continue;
   
-        const pertenceAoVendedor = clientesVendedor.some(c => c.cliente_id === clienteId);
+        const pertenceAoVendedor =
+        venda.vendedor?.vendedor_id === vendedorId &&
+        clientesVendedor.some(c => c.cliente_id === clienteId);
         if (!pertenceAoVendedor) continue;
+      
   
         if (!marcasPorCliente.has(clienteId)) {
           marcasPorCliente.set(clienteId, new Set());
@@ -708,7 +703,7 @@ export class SellsService implements ISellsRepository {
         }
       }
   
-      const marcas: Record<string, any> = {};
+      const marcas: Record<string, BrandPositivity> = {};
       const clientesPositivadosSet = new Set<number>();
   
       for (const cliente of clientesVendedor) {
@@ -752,7 +747,7 @@ export class SellsService implements ISellsRepository {
       };
     }
   
-    // ========== Consolidação Azzo ============
+    // ========== POSITIVAÇÃO GERAL (AZZO) ==========
     const marcasPorClienteAzzo = new Map<number, Set<string>>();
     const clientesPositivadosSetAzzo = new Set<number>();
   
@@ -774,7 +769,7 @@ export class SellsService implements ISellsRepository {
       }
     }
   
-    const marcasAzzo: Record<string, any> = {};
+    const marcasAzzo: Record<string, BrandPositivity> = {};
     for (const cliente of clientes) {
       const clienteId = cliente.cliente_id;
       const marcasCliente = marcasPorClienteAzzo.get(clienteId);
@@ -815,7 +810,7 @@ export class SellsService implements ISellsRepository {
     };
   
     return relatorio;
-  }
+  }   
   
 
   async getPositivity(): Promise<{
