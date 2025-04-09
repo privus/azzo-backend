@@ -603,7 +603,7 @@ export class SellsService implements ISellsRepository {
       relatorio["Azzo"].totalFaturado += Number(venda.valor_final) || 0;
   
       for (const item of venda.itensVenda) {
-        const marca = item?.produto?.fornecedor?.nome || 'Desconhecida';
+        const marca = item?.produto?.fornecedor?.nome || '__SEM_MARCA__';
   
         const quantidade = Number(item.quantidade);
         const valor = Number(item.valor_total);
@@ -622,6 +622,17 @@ export class SellsService implements ISellsRepository {
         relatorio["Azzo"].marcas[marca].quantidade += quantidade;
         relatorio["Azzo"].marcas[marca].valor += valor;
       }
+
+      const somaDasMarcas = Object.values(relatorio['Azzo'].marcas)
+        .reduce((acc, m) => acc + m.valor, 0);
+
+      const delta = relatorio['Azzo'].totalFaturado - Number(somaDasMarcas.toFixed(2));
+      console.log(`⚠️ Diferença detectada: ${delta.toFixed(2)} reais`);
+
+      if (delta > 0) {
+        console.warn('Provável origem: itens com marca "Desconhecida" ou dados incompletos.');
+      }
+
     }
   
     // Arredondamento final
@@ -632,8 +643,6 @@ export class SellsService implements ISellsRepository {
         relatorio[key].marcas[marca].valor = Number(relatorio[key].marcas[marca].valor.toFixed(2));
       }
     }
-  
-    console.dir(relatorio, { depth: null });
     return relatorio;
   }
   
@@ -811,7 +820,6 @@ export class SellsService implements ISellsRepository {
   
     return relatorio;
   }   
-  
 
   async getPositivity(): Promise<{
     totalClientes: number;
