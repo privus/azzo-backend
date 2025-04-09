@@ -585,21 +585,6 @@ export class SellsService implements ISellsRepository {
       if (venda.tipo_pedido.tipo_pedido_id !== 10438) continue;
   
       const vendedorNome = venda.vendedor?.nome || 'Desconhecido';
-
-        // INÍCIO rastreio valor_final vs soma dos itens
-      const somaItens = venda.itensVenda.reduce((acc, item) => acc + Number(item.valor_total || 0), 0);
-      const deltaVenda = Number(venda.valor_final) - somaItens;
-
-      if (Math.abs(deltaVenda) > 0.01) {
-        console.warn(`🚨 Venda #${venda.venda_id} tem diferença de R$ ${deltaVenda.toFixed(2)} entre valor_final e soma dos itens.`);
-        console.table(venda.itensVenda.map(i => ({
-          produto: i.produto?.nome,
-          marca: i.produto?.fornecedor?.nome || 'SEM MARCA',
-          valor_total: i.valor_total,
-          quantidade: i.quantidade,
-          unitario: i.valor_unitario,
-        })));
-      }
   
       if (!relatorio[vendedorNome]) {
         relatorio[vendedorNome] = {
@@ -618,7 +603,7 @@ export class SellsService implements ISellsRepository {
       relatorio["Azzo"].totalFaturado += Number(venda.valor_final) || 0;
   
       for (const item of venda.itensVenda) {
-        const marca = item?.produto?.fornecedor?.nome || '__SEM_MARCA__';
+        const marca = item?.produto?.fornecedor?.nome || 'Desconhecida';
   
         const quantidade = Number(item.quantidade);
         const valor = Number(item.valor_total);
@@ -637,17 +622,6 @@ export class SellsService implements ISellsRepository {
         relatorio["Azzo"].marcas[marca].quantidade += quantidade;
         relatorio["Azzo"].marcas[marca].valor += valor;
       }
-
-      const somaDasMarcas = Object.values(relatorio['Azzo'].marcas)
-        .reduce((acc, m) => acc + m.valor, 0);
-
-      const delta = relatorio['Azzo'].totalFaturado - Number(somaDasMarcas.toFixed(2));
-      console.log(`⚠️ Diferença detectada: ${delta.toFixed(2)} reais`);
-
-      if (delta > 0) {
-        console.warn('Provável origem: itens com marca "Desconhecida" ou dados incompletos.');
-      }
-
     }
   
     // Arredondamento final
@@ -658,6 +632,7 @@ export class SellsService implements ISellsRepository {
         relatorio[key].marcas[marca].valor = Number(relatorio[key].marcas[marca].valor.toFixed(2));
       }
     }
+  
     return relatorio;
   }
   
