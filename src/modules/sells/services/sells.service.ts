@@ -573,8 +573,8 @@ export class SellsService implements ISellsRepository {
     const vendas = await this.sellsBetweenDates('2025-03-01', '2025-04-01');
   
     const relatorio: BrandSales = {};
+    const itensComProblema: any[] = [];
   
-    // Inicializa o agrupamento total por empresa
     relatorio["Azzo"] = {
       totalPedidos: 0,
       totalFaturado: 0,
@@ -594,57 +594,66 @@ export class SellsService implements ISellsRepository {
         };
       }
   
-      // Soma para o vendedor
       relatorio[vendedorNome].totalPedidos += 1;
       relatorio[vendedorNome].totalFaturado += Number(venda.valor_final) || 0;
   
-      // Soma para a empresa "Azzo"
       relatorio["Azzo"].totalPedidos += 1;
       relatorio["Azzo"].totalFaturado += Number(venda.valor_final) || 0;
   
       for (const item of venda.itensVenda) {
-        const marca = item?.produto?.fornecedor?.nome || '__SEM_MARCA__';
+        const marca = item?.produto?.fornecedor?.nome;
   
         const quantidade = Number(item.quantidade);
         const valor = Number(item.valor_total);
   
-        // Marca no vendedor
+        // RASTREAMENTO de problema:
+        if (!marca || !item.produto || !item.produto.fornecedor) {
+          itensComProblema.push({
+            produto: item?.produto?.nome || 'Produto sem nome',
+            produto_id: item?.produto?.produto_id,
+            venda_id: venda.venda_id,
+            vendedor: vendedorNome,
+            valor_total: valor,
+            marca: marca || '__INDEFINIDA__',
+          });
+          continue; // pula se marca inválida
+        }
+  
         if (!relatorio[vendedorNome].marcas[marca]) {
           relatorio[vendedorNome].marcas[marca] = { quantidade: 0, valor: 0 };
         }
         relatorio[vendedorNome].marcas[marca].quantidade += quantidade;
         relatorio[vendedorNome].marcas[marca].valor += valor;
   
-        // Marca na empresa
         if (!relatorio["Azzo"].marcas[marca]) {
           relatorio["Azzo"].marcas[marca] = { quantidade: 0, valor: 0 };
         }
         relatorio["Azzo"].marcas[marca].quantidade += quantidade;
         relatorio["Azzo"].marcas[marca].valor += valor;
       }
-
-      const somaDasMarcas = Object.values(relatorio['Azzo'].marcas)
-        .reduce((acc, m) => acc + m.valor, 0);
-
-      const delta = relatorio['Azzo'].totalFaturado - Number(somaDasMarcas.toFixed(2));
-      console.log(`⚠️ Diferença detectada: ${delta.toFixed(2)} reais`);
-
-      if (delta > 0) {
-        console.warn('Provável origem: itens com marca "Desconhecida" ou dados incompletos.');
-      }
-
     }
   
-    // Arredondamento final
+    const somaDasMarcas = Object.values(relatorio['Azzo'].marcas)
+      .reduce((acc, m) => acc + m.valor, 0);
+  
+    const delta = relatorio['Azzo'].totalFaturado - Number(somaDasMarcas.toFixed(2));
+    console.log(`⚠️ Diferença detectada: ${delta.toFixed(2)} reais`);
+  
+    if (delta > 0 && itensComProblema.length > 0) {
+      console.warn(`⚠️ ${itensComProblema.length} item(ns) com marca indefinida ou incompleta:`);
+      console.table(itensComProblema);
+    }
+  
     for (const key in relatorio) {
       relatorio[key].totalFaturado = Number(relatorio[key].totalFaturado.toFixed(2));
-  
       for (const marca in relatorio[key].marcas) {
         relatorio[key].marcas[marca].valor = Number(relatorio[key].marcas[marca].valor.toFixed(2));
       }
     }
+  
     return relatorio;
   }
+  
   
   
   async reportPositivityByBrand(): Promise<{
