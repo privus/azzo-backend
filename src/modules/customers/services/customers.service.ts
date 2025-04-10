@@ -153,11 +153,11 @@ export class CustomersService implements ICustomersRepository{
   }
 
   findAllCustomers(): Promise<Cliente[]> {
-    return this.clienteRepository.find({ relations: ['cidade.estado', 'regiao', 'status_cliente', 'regiao.vendedores', 'vendedor', 'categoria'] });
+    return this.clienteRepository.find({ relations: ['cidade.estado', 'regiao', 'status_cliente', 'regiao.vendedores', 'vendedor', 'categoria_cliente'] });
   }
 
   findCustomerByCode(codigo: number): Promise<Cliente> {
-    return this.clienteRepository.findOne({ where: { codigo }, relations: ['cidade.estado', 'regiao', 'status_cliente', 'categoria'] });
+    return this.clienteRepository.findOne({ where: { codigo }, relations: ['cidade.estado', 'regiao', 'status_cliente', 'categoria_cliente'] });
   }
 
   findCustomersByStatus(id: number): Promise<StatusCliente[]> {
