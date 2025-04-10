@@ -81,7 +81,7 @@ export class Cliente {
 
   @ManyToOne(() => CategoriaCliente)
   @JoinColumn({ name: 'categoria_id' })
-  categoria: CategoriaCliente;
+  categoria_cliente: CategoriaCliente;
 
   @ManyToOne(() => Regiao)
   @JoinColumn({ name: 'regiao_id' })

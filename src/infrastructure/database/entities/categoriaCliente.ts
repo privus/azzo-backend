@@ -9,6 +9,6 @@ export class CategoriaCliente {
   @Column({ type: 'varchar', length: 45 })
   nome: string;
 
-  @OneToMany(() => Cliente, (cliente) => cliente.categoria)
+  @OneToMany(() => Cliente, (cliente) => cliente.categoria_cliente)
   clientes: Cliente[];
 }

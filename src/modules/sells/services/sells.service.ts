@@ -387,6 +387,7 @@ export class SellsService implements ISellsRepository {
         'parcela_credito.status_pagamento',
         'tipo_pedido',
         'cliente.cidade.estado',
+        'cliente.categoria_cliente',
       ],
     });
   }

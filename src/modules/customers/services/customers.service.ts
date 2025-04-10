@@ -79,24 +79,8 @@ export class CustomersService implements ICustomersRepository{
       where: { codigo: client.code },
     });
 
-    const segmento = await this.categoriaRepository.findOne({
-      where: { categoria_id: client.segment_id },
-    });
-  
-    if (!segmento) {
-      console.log(`Cliente com código ${client.code} não possui segmento.`);
-    }
-  
-    if (existingClient) {
-      console.log(`Customer with code ${client.code} already exists. Atualizando...`);
-      existingClient.categoria = segmento || null;
-      await this.saveCustomer(existingClient);
-      return;
-    }
-
     if (existingClient) {
       console.log(`Customer with code ${client.code} already exists. Skipping...`);
-      await this.saveCustomer(existingClient);
       return;
     }
 
@@ -133,6 +117,10 @@ export class CustomersService implements ICustomersRepository{
       where: { status_cliente_id: Number(client.tags) || null },
     });
 
+    const segmento = await this.categoriaRepository.findOne({
+      where: { categoria_id: client.segment_id },
+    });
+
     // Create the new customer
     const novoCliente = this.clienteRepository.create({
       nome: client.name,
@@ -157,7 +145,7 @@ export class CustomersService implements ICustomersRepository{
       data_atualizacao: new Date(client.updated_at),
       status_cliente: status || null,
       segmento_id: +client.segment_id,
-      categoria: segmento,
+      categoria_cliente: segmento,
     });
 
     await this.clienteRepository.save(novoCliente);
