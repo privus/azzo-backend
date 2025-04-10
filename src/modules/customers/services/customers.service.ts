@@ -82,9 +82,16 @@ export class CustomersService implements ICustomersRepository{
     const segmento = await this.categoriaRepository.findOne({
       where: { categoria_id: client.segment_id },
     });
-    
+  
     if (!segmento) {
       console.log(`Cliente com código ${client.code} não possui segmento.`);
+    }
+  
+    if (existingClient) {
+      console.log(`Customer with code ${client.code} already exists. Atualizando...`);
+      existingClient.categoria = segmento || null;
+      await this.saveCustomer(existingClient);
+      return;
     }
       
 
