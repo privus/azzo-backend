@@ -97,63 +97,79 @@ export class DebtsService {
     return dates;
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_2AM)
+  @Cron(CronExpression.EVERY_5_MINUTES)
   async updateOverdueParcels(): Promise<void> {
     const today = new Date();
-    today.setDate(today.getDate() - 1); // Permite que a parcela só fique em atraso no dia seguinte ao vencimento
-
-    // Buscar todas as parcelas vencidas e não pagas
-    const overdueParcels = await this.parcelaRepository.find({
-        where: {
-            data_vencimento: LessThan(today), // Só marca como "Atrasada" se a data for anterior a HOJE
-            data_pagamento: null,
-        },
-        relations: ['debito', 'status_pagamento'],
-    });
-
-    if (overdueParcels.length === 0) return;
+    today.setDate(today.getDate() - 1 ); //
 
     const statusEmAtraso = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 3 } });
     const statusPago = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 2 } });
     const statusPendente = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 1 } });
 
     if (!statusEmAtraso || !statusPago || !statusPendente) {
-        throw new Error('Erro ao buscar status de pagamento.');
+      throw new Error('Erro ao buscar status de pagamento.');
     }
+
+    // Atualiza parcelas vencidas
+    const overdueParcels = await this.parcelaRepository.find({
+      where: {
+        data_vencimento: LessThan(today),
+        data_pagamento: null,
+      },
+      relations: ['debito', 'status_pagamento'],
+    });
 
     const updatedDebts = new Set<number>();
-
     for (const parcela of overdueParcels) {
-        if (!parcela.data_pagamento) {
-            parcela.status_pagamento = statusEmAtraso;
-            updatedDebts.add(parcela.debito.debito_id);
-        }
+      parcela.status_pagamento = statusEmAtraso;
+      updatedDebts.add(parcela.debito.debito_id);
+    }
+    if (overdueParcels.length > 0) {
+      await this.parcelaRepository.save(overdueParcels);
     }
 
-    await this.parcelaRepository.save(overdueParcels);
+    // Busca todos débitos que possuem parcelas e atualiza se necessário
+    const allParcels = await this.parcelaRepository.find({
+      relations: ['debito', 'status_pagamento'],
+    });
 
-    for (const debitoId of updatedDebts) {
-        const parcelasDebito = await this.parcelaRepository.find({
-            where: { debito: { debito_id: debitoId } },
-            relations: ['status_pagamento'],
-        });
+    const parcelsByDebt = new Map<number, typeof allParcels>();
 
-        // **Verifica se todas as parcelas foram pagas**
-        const todasPagas = parcelasDebito.every(parcela => parcela.status_pagamento?.status_pagamento_id === 2);
-        const temAtraso = parcelasDebito.some(parcela => parcela.status_pagamento?.status_pagamento_id === 3);
+    for (const parcela of allParcels) {
+      const debitoId = parcela.debito.debito_id;
+      if (!parcelsByDebt.has(debitoId)) {
+        parcelsByDebt.set(debitoId, []);
+      }
+      parcelsByDebt.get(debitoId)!.push(parcela);
+    }
 
-        let novoStatus = statusPendente; // Status padrão "Pendente"
+    for (const [debitoId, parcelas] of parcelsByDebt.entries()) {
+      const todasPagas = parcelas.every(p => p.status_pagamento?.status_pagamento_id === 2);
+      const temAtraso = parcelas.some(p => p.status_pagamento?.status_pagamento_id === 3);
 
-        if (todasPagas) {
-            novoStatus = statusPago;
-        } else if (temAtraso) {
-            novoStatus = statusEmAtraso;
-        }
+      let novoStatus = statusPendente;
+      let data_pagamento = null;
 
-        // **Atualiza o status da despesa no banco**
-        await this.debtRepository.update(debitoId, { status_pagamento: novoStatus });
+      if (todasPagas) {
+        novoStatus = statusPago;
+        const ultima = parcelas
+          .filter(p => p.data_pagamento)
+          .map(p => new Date(p.data_pagamento))
+          .sort((a, b) => b.getTime() - a.getTime())[0];
+
+        data_pagamento = ultima;
+        data_pagamento.setDate(data_pagamento.getDate() + 1); // Adiciona um dia
+      } else if (temAtraso) {
+        novoStatus = statusEmAtraso;
+      }
+
+      await this.debtRepository.update(debitoId, {
+        status_pagamento: novoStatus,
+        data_pagamento,
+      });
     }
   }
+
 
   getAllDepartments(): Promise<Departamento[]> {
     return this.departamentoRepository.find();
