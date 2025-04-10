@@ -159,14 +159,12 @@ export class DebtsService {
 
         data_pagamento = ultima;
         data_pagamento.setDate(data_pagamento.getDate() + 1); // Adiciona um dia
+        await this.debtRepository.update(debitoId, { data_pagamento });
       } else if (temAtraso) {
         novoStatus = statusEmAtraso;
       }
 
-      await this.debtRepository.update(debitoId, {
-        status_pagamento: novoStatus,
-        data_pagamento,
-      });
+      await this.debtRepository.update(debitoId, {status_pagamento: novoStatus });
     }
   }
 
