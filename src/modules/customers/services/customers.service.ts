@@ -93,9 +93,6 @@ export class CustomersService implements ICustomersRepository{
       await this.saveCustomer(existingClient);
       return;
     }
-      
-
-    existingClient.categoria = segmento || null;
 
     if (existingClient) {
       console.log(`Customer with code ${client.code} already exists. Skipping...`);
