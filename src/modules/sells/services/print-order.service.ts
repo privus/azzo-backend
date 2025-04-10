@@ -184,7 +184,7 @@ export class PrintOrderService {
         {
           width: '50%',
           stack: [
-            { text: `Cliente - ${order.cliente.categoria.nome}`, bold: true, fontSize: 10, margin: [0, 0, 0, 2] },
+            { text: `Cliente - ${order.cliente.categoria_cliente.nome}`, bold: true, fontSize: 10, margin: [0, 0, 0, 2] },
             { text: order.cliente?.nome_empresa, fontSize: 10 },
             { text: `${doc}`, fontSize: 10 },
             { text: `${order.cliente?.endereco ?? '-'} Nº ${order.cliente?.num_endereco ?? ''}`, fontSize: 10 },
