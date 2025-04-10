@@ -178,6 +178,7 @@ export class PrintOrderService {
   private createHeader(order: any, logoBase64: string, responsible: string) {
     const length = order.forma_pagamento
     const forma_pagamento = order.forma_pagamento.slice(0, length.length - 24 )
+    const volume = order.volume ? order.volume : 'Não informado'
     const doc = order.cliente.tipo_doc === 'cnpj' ? `CNPJ: ${order.cliente.numero_doc}` : `CPF: ${order.cliente.numero_doc}`
     return {
       columns: [
@@ -204,7 +205,7 @@ export class PrintOrderService {
             { text: `Vendedor: ${order.vendedor?.nome ?? '-'}`, fontSize: 10 },
             { text: `Responsável: ${responsible}`, fontSize: 10 },
             { text: `Pagamento: ${forma_pagamento}`, fontSize: 10 },
-            { text: `Volumes: ${order.volume}`, fontSize: 10 },
+            { text: `Volumes: ${volume}`, fontSize: 10 },
           ],
           alignment: 'right',
         },
