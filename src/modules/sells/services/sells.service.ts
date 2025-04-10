@@ -631,8 +631,12 @@ export class SellsService implements ISellsRepository {
   
     const clientes = await this.clienteService.findAllCustomers();
   
+    const allSellers = (await this.sellersSevice.findAllSellers())
+      .filter(v => v.ativo);
+  
     const relatorio: ReportBrandPositivity = {};
   
+    // Cria mapa de clientes por vendedor_id
     const clientesPorVendedor = new Map<number, Cliente[]>();
     for (const cliente of clientes) {
       const vendedorId = cliente.vendedor?.vendedor_id;
@@ -644,21 +648,26 @@ export class SellsService implements ISellsRepository {
       }
     }
   
-    // ========== POSITIVAÇÃO POR VENDEDOR ==========
-    for (const [vendedorId, clientesVendedor] of clientesPorVendedor.entries()) {
-      const vendedorNome = clientesVendedor[0]?.vendedor?.nome;
-      if (!vendedorNome) continue;
+    // ========== RELATÓRIO POR VENDEDOR ==========
+    for (const vendedor of allSellers) {
+      const vendedorId = vendedor.vendedor_id;
+      const vendedorNome = vendedor.nome;
   
-      const totalClientes = clientesVendedor.length;
-      const marcasPorCliente = new Map<number, Set<string>>();
+      const carteira = clientesPorVendedor.get(vendedorId) ?? clientes;
 
+      const usandoCarteiraCompleta = !clientesPorVendedor.has(vendedorId);
+
+      const totalClientes = usandoCarteiraCompleta ? 1 : carteira.length;
+  
+      const marcasPorCliente = new Map<number, Set<string>>();
+  
       for (const venda of vendas) {
         const clienteId = venda.cliente?.cliente_id;
         if (!clienteId) continue;
   
         const pertenceAoVendedor = venda.vendedor?.vendedor_id === vendedorId &&
-        clientesVendedor.some(c => c.cliente_id === clienteId);
-        if (!pertenceAoVendedor) continue;      
+          carteira.some(c => c.cliente_id === clienteId);
+        if (!pertenceAoVendedor) continue;
   
         if (!marcasPorCliente.has(clienteId)) {
           marcasPorCliente.set(clienteId, new Set());
@@ -675,7 +684,7 @@ export class SellsService implements ISellsRepository {
       const marcas: Record<string, BrandPositivity> = {};
       const clientesPositivadosSet = new Set<number>();
   
-      for (const cliente of clientesVendedor) {
+      for (const cliente of carteira) {
         const clienteId = cliente.cliente_id;
         const marcasCliente = marcasPorCliente.get(clienteId);
         if (!marcasCliente || marcasCliente.size === 0) continue;
@@ -708,15 +717,17 @@ export class SellsService implements ISellsRepository {
         m.contribuicaoPercentual = soma > 0 ? Number(((m.positivacaoMarca / soma) * 100).toFixed(2)) : 0;
       }
   
-      relatorio[vendedorNome] = {
-        totalClientes,
-        clientesPositivados,
-        positivacaoGeral,
-        marcas,
-      };
+      if (clientesPositivados > 0 && totalClientes > 0) {
+        relatorio[vendedorNome] = {
+          totalClientes,
+          clientesPositivados,
+          positivacaoGeral,
+          marcas,
+        };
+      }      
     }
   
-    // ========== POSITIVAÇÃO GERAL (AZZO) ==========
+    // ========== RELATÓRIO GERAL AZZO ==========
     const marcasPorClienteAzzo = new Map<number, Set<string>>();
     const clientesPositivadosSetAzzo = new Set<number>();
   
@@ -779,8 +790,8 @@ export class SellsService implements ISellsRepository {
     };
   
     return relatorio;
-  }   
-
+  }
+  
   async getPositivity(): Promise<PositivityResponse> {
     const vendas = await this.sellsBetweenDates('2025-03-01', '2025-04-01');
     const clientes = await this.clienteService.findAllCustomers();

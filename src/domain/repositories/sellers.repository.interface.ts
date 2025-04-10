@@ -5,4 +5,5 @@ export interface ISellersRepository {
   syncroSellers(): Promise<void>;
   processSeller(seller: SellerAPIResponse): Promise<Vendedor>;
   findBy(id: number): Promise<Vendedor>;
+  findAllSellers(): Promise<Vendedor[]>;
 }
