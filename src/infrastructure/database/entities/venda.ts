@@ -48,6 +48,9 @@ export class Venda {
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   desconto: number;
 
+  @Column({ type: 'int', nullable: true })
+  volume: number;
+
   @Column({ type: 'tinyint', nullable: true })
   exportado: number;
 

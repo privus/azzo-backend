@@ -9,4 +9,5 @@ export interface ISellsRepository {
   updateSellStatus(UpdateSellStatusDto: UpdateSellStatusDto): Promise<string>;
   deleteSell(id: number): Promise<string>;
   getDailyRakingSells(): Promise<RakingSellsResponse>;
+  addVolumeSell(id: number, volume: number): Promise<string>;
 }

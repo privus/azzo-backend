@@ -204,6 +204,7 @@ export class PrintOrderService {
             { text: `Vendedor: ${order.vendedor?.nome ?? '-'}`, fontSize: 10 },
             { text: `Responsável: ${responsible}`, fontSize: 10 },
             { text: `Pagamento: ${forma_pagamento}`, fontSize: 10 },
+            { text: `Volumes: ${order.volume}`, fontSize: 10 },
           ],
           alignment: 'right',
         },

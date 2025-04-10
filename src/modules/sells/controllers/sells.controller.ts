@@ -65,6 +65,13 @@ export class SellsController {
     return { message: resultMessage };
   }
 
+  @ApiOperation({ summary: 'Adiciona Volume no pedido'})
+  @Get('vol/:id')
+  async volumeSell(@Param('id') id: number, @Query('volume') volume: number) {  
+    const resultMessage = await this.sellsService.addVolumeSell(id, volume);
+    return { message: resultMessage };
+  }
+
   @ApiOperation({ summary: 'Sincronizar todas as vendas' })
   @Get('syncro')
   async syncroAllSells() {

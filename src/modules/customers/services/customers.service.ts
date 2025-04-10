@@ -4,7 +4,7 @@ import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CustomerAPIResponse, TinyCustomerDto, TinyCustomerResponse } from '../dto';
-import { Regiao, StatusCliente, Cidade, Cliente } from '../../../infrastructure/database/entities';
+import { Regiao, StatusCliente, Cidade, Cliente, CategoriaCliente } from '../../../infrastructure/database/entities';
 import { ICustomersRepository, ISellersRepository } from '../../../domain/repositories';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import * as fs from 'fs';
@@ -25,6 +25,7 @@ export class CustomersService implements ICustomersRepository{
     @InjectRepository(Cidade) private readonly cidadeRepository: Repository<Cidade>,
     @InjectRepository(Regiao) private readonly regiaoRepository: Repository<Regiao>,
     @InjectRepository(StatusCliente) private readonly statusClienteRepository: Repository<StatusCliente>,
+    @InjectRepository(CategoriaCliente) private readonly categoriaRepository: Repository<CategoriaCliente>,
     @Inject('ISellersRepository') private readonly sellersSevice: ISellersRepository,
     private readonly tinyAuthService: TinyAuthService,  
     private readonly httpService: HttpService,
@@ -78,8 +79,15 @@ export class CustomersService implements ICustomersRepository{
       where: { codigo: client.code },
     });
 
+    const segmento = await this.categoriaRepository.findOne({
+      where: { categoria_id: client.segment_id },
+    }); 
+
+    existingClient.categoria = segmento;
+
     if (existingClient) {
       console.log(`Customer with code ${client.code} already exists. Skipping...`);
+      await this.saveCustomer(existingClient);
       return;
     }
 
@@ -97,7 +105,7 @@ export class CustomersService implements ICustomersRepository{
 
     if (!regiao) {
       regiao = await this.regiaoRepository.findOne({where: { codigo: 9}});;
-  }
+    }
 
     if (existingClient) {
       console.log(`Customer with code ${client.code} already exists. Skipping...`);
@@ -140,6 +148,7 @@ export class CustomersService implements ICustomersRepository{
       data_atualizacao: new Date(client.updated_at),
       status_cliente: status || null,
       segmento_id: +client.segment_id,
+      categoria: segmento,
     });
 
     await this.clienteRepository.save(novoCliente);

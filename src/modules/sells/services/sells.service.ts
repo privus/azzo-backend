@@ -3,7 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, MoreThanOrEqual, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente } from '../../../infrastructure/database/entities';
-import { DailyRakingSellsResponse, OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity } from '../dto';
+import { DailyRakingSellsResponse, OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository } from '../../../domain/repositories';
 
 @Injectable()
@@ -522,20 +522,12 @@ export class SellsService implements ISellsRepository {
   
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 2); 
-    console.log('Today =============>', today);
-    console.log('Yesterday =============>', yesterday);
   
     const todaySales = await this.sellsByDate(today.toISOString());
     const yesterdaySales = await this.sellsBetweenDates(yesterday.toISOString());
-    console.log('Today Sales =============>', todaySales);
-  
+
     const buildRanking = (sells: Venda[], date: Date) => {
-      const rankingMap: Record<number, {
-        nome: string;
-        total: number;
-        numero_vendas: number;
-        codigos_vendas: number[];
-      }> = {};
+      const rankingMap: Record<number, RankingItem> = {};
   
       for (const sell of sells) {
         const { vendedor, tipo_pedido } = sell;
@@ -594,11 +586,9 @@ export class SellsService implements ISellsRepository {
         };
       }
   
-      // Soma para o vendedor
       relatorio[vendedorNome].totalPedidos += 1;
       relatorio[vendedorNome].totalFaturado += Number(venda.valor_final) || 0;
   
-      // Soma para a empresa "Azzo"
       relatorio["Azzo"].totalPedidos += 1;
       relatorio["Azzo"].totalFaturado += Number(venda.valor_final) || 0;
   
@@ -608,14 +598,12 @@ export class SellsService implements ISellsRepository {
         const quantidade = Number(item.quantidade);
         const valor = Number(item.valor_total);
   
-        // Marca no vendedor
         if (!relatorio[vendedorNome].marcas[marca]) {
           relatorio[vendedorNome].marcas[marca] = { quantidade: 0, valor: 0 };
         }
         relatorio[vendedorNome].marcas[marca].quantidade += quantidade;
         relatorio[vendedorNome].marcas[marca].valor += valor;
   
-        // Marca na empresa
         if (!relatorio["Azzo"].marcas[marca]) {
           relatorio["Azzo"].marcas[marca] = { quantidade: 0, valor: 0 };
         }
@@ -623,8 +611,7 @@ export class SellsService implements ISellsRepository {
         relatorio["Azzo"].marcas[marca].valor += valor;
       }
     }
-  
-    // Arredondamento final
+
     for (const key in relatorio) {
       relatorio[key].totalFaturado = Number(relatorio[key].totalFaturado.toFixed(2));
   
@@ -637,29 +624,14 @@ export class SellsService implements ISellsRepository {
   }
   
   
-  async reportPositivityByBrand(): Promise<{
-    [vendedor: string]: {
-      totalClientes: number;
-      clientesPositivados: number;
-      positivacaoGeral: number;
-      marcas: Record<string, BrandPositivity>;
-    };
-  }> {
+  async reportPositivityByBrand(): Promise<ReportBrandPositivity> {
     const vendas = (await this.sellsBetweenDates('2025-03-01', '2025-04-01'))
       .filter(v => v.tipo_pedido?.tipo_pedido_id === 10438);
   
     const clientes = await this.clienteService.findAllCustomers();
   
-    const relatorio: {
-      [vendedor: string]: {
-        totalClientes: number;
-        clientesPositivados: number;
-        positivacaoGeral: number;
-        marcas: Record<string, BrandPositivity>;
-      };
-    } = {};
+    const relatorio: ReportBrandPositivity = {};
   
-    // Agrupa clientes por vendedor (apenas os vinculados)
     const clientesPorVendedor = new Map<number, Cliente[]>();
     for (const cliente of clientes) {
       const vendedorId = cliente.vendedor?.vendedor_id;
@@ -678,17 +650,14 @@ export class SellsService implements ISellsRepository {
   
       const totalClientes = clientesVendedor.length;
       const marcasPorCliente = new Map<number, Set<string>>();
-  
-      // Mapeia vendas dos clientes do vendedor
+
       for (const venda of vendas) {
         const clienteId = venda.cliente?.cliente_id;
         if (!clienteId) continue;
   
-        const pertenceAoVendedor =
-        venda.vendedor?.vendedor_id === vendedorId &&
+        const pertenceAoVendedor = venda.vendedor?.vendedor_id === vendedorId &&
         clientesVendedor.some(c => c.cliente_id === clienteId);
-        if (!pertenceAoVendedor) continue;
-      
+        if (!pertenceAoVendedor) continue;      
   
         if (!marcasPorCliente.has(clienteId)) {
           marcasPorCliente.set(clienteId, new Set());
@@ -811,11 +780,7 @@ export class SellsService implements ISellsRepository {
     return relatorio;
   }   
 
-  async getPositivity(): Promise<{
-    totalClientes: number;
-    clientesPositivados: number;
-    positivacaoGeral: number;
-  }> {
+  async getPositivity(): Promise<PositivityResponse> {
     const vendas = await this.sellsBetweenDates('2025-03-01', '2025-04-01');
     const clientes = await this.clienteService.findAllCustomers();
   
@@ -877,4 +842,12 @@ export class SellsService implements ISellsRepository {
     }));
   }
 
+  addVolumeSell(id: number, volume: number): Promise<string> {
+    return this.vendaRepository.update({ venda_id: id }, { volume })
+      .then(() => `Volume de venda ${id} atualizado para ${volume}.`)
+      .catch((error) => {
+        console.error('Erro ao atualizar o volume da venda:', error);
+        throw new Error(`Erro ao atualizar o volume da venda ${id}: ${error.message}`);
+      });
+  }
 }
