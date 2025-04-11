@@ -97,84 +97,48 @@ export class DebtsService {
     return dates;
   }
 
+  @Cron(CronExpression.EVERY_DAY_AT_2AM)
   async updateOverdueParcels(): Promise<void> {
     const today = new Date();
-    today.setDate(today.getDate() - 1);
+    today.setDate(today.getDate() - 1); // Permite que a parcela só fique em atraso no dia seguinte ao vencimento
+
+    // Buscar todas as parcelas vencidas e não pagas
+    const overdueParcels = await this.parcelaRepository.find({
+        where: {
+            data_vencimento: LessThan(today), // Só marca como "Atrasada" se a data for anterior a HOJE
+            data_pagamento: null,
+        },
+        relations: ['debito', 'status_pagamento'],
+    });
+
+    if (overdueParcels.length === 0) return;
 
     const statusEmAtraso = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 3 } });
-    const statusPago = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 2 } });
     const statusPendente = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 1 } });
 
-    if (!statusEmAtraso || !statusPago || !statusPendente) {
-      throw new Error('Erro ao buscar status de pagamento.');
-    }
-
-    // === Step 1: Fetch and update overdue parcelas that are unpaid ===
-    const overdueParcels = await this.parcelaRepository.find({
-      where: {
-        data_vencimento: LessThan(today),
-        data_pagamento: null,
-      },
-      relations: ['debito', 'status_pagamento'],
-    });
+    const updatedDebts = new Set<number>();
 
     for (const parcela of overdueParcels) {
-      if (parcela.status_pagamento?.status_pagamento_id !== 3) {
-        parcela.status_pagamento = statusEmAtraso;
-      }
+        if (!parcela.data_pagamento) {
+            parcela.status_pagamento = statusEmAtraso;
+            updatedDebts.add(parcela.debito.debito_id);
+        }
     }
 
-    // === Step 2: Fetch all parcelas and update those with data_pagamento ===
-    const allParcels = await this.parcelaRepository.find({
-      relations: ['debito', 'status_pagamento'],
-    });
+    await this.parcelaRepository.save(overdueParcels);
 
-    for (const parcela of allParcels) {
-      if (parcela.data_pagamento && parcela.status_pagamento?.status_pagamento_id !== 2) {
-        parcela.status_pagamento = statusPago;
-      }
-    }
-
-    await this.parcelaRepository.save([...overdueParcels, ...allParcels]);
-
-    // === Step 3: Group parcelas by debito ===
-    const parcelsByDebt = new Map<number, typeof allParcels>();
-
-    for (const parcela of allParcels) {
-      const debitoId = parcela.debito.debito_id;
-      if (!parcelsByDebt.has(debitoId)) {
-        parcelsByDebt.set(debitoId, []);
-      }
-      parcelsByDebt.get(debitoId)!.push(parcela);
-    }
-
-    // === Step 4: Update each debito based on parcelas ===
-    for (const [debitoId, parcelas] of parcelsByDebt.entries()) {
-      const todasPagas = parcelas.every(p => p.status_pagamento?.status_pagamento_id === 2);
-      const temAtraso = parcelas.some(p => p.status_pagamento?.status_pagamento_id === 3);
-
-      if (todasPagas) {
-        const ultima = parcelas
-          .filter(p => p.data_pagamento)
-          .map(p => new Date(p.data_pagamento))
-          .sort((a, b) => b.getTime() - a.getTime())[0];
-
-        await this.debtRepository.update(debitoId, {
-          status_pagamento: statusPago,
-          data_pagamento: ultima ?? null,
-        });
-
-      } else if (temAtraso) {
-        await this.debtRepository.update(debitoId, {
-          status_pagamento: statusEmAtraso,
-        });
-
-      } else {
-        await this.debtRepository.update(debitoId, {
-          status_pagamento: statusPendente,
-        });
-      }
-    }
+    for (const debitoId of updatedDebts) {
+      const parcelasDebito = await this.parcelaRepository.find({
+        where: { debito: { debito_id: debitoId } },
+        relations: ['status_pagamento'],
+      });
+    
+      const temAtraso = parcelasDebito.some(parcela => parcela.status_pagamento?.status_pagamento_id === 3);
+    
+      const novoStatus = temAtraso ? statusEmAtraso : statusPendente;
+    
+      await this.debtRepository.update(debitoId, { status_pagamento: novoStatus });
+    }    
   }
 
 
@@ -253,25 +217,40 @@ export class DebtsService {
 
   async updateDebtStatus(updateStatus: UpdateDebtStatusDto): Promise<string> {
     const { debito_id, status_pagamento_id } = updateStatus;
-
+  
     const debt = await this.debtRepository.findOne({
       where: { debito_id },
       relations: ['status_pagamento'],
     });
-
+  
     if (!debt) {
       throw new Error(`Débito com ID ${debito_id} não encontrado.`);
     }
-
+  
     const novoStatus = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id } });
-
+  
     if (!novoStatus) {
       throw new Error(`Status de débito com o ID ${status_pagamento_id} não encontrado.`);
     }
-
+  
     debt.status_pagamento = novoStatus;
+  
+    if (status_pagamento_id === 2) { // Pago
+      const parcelas = await this.parcelaRepository.find({
+        where: { debito: { debito_id } },
+        order: { numero: 'ASC' }, // Ensure ordered
+      });
+  
+      if (parcelas.length > 0) {
+        const ultimaParcela = parcelas[parcelas.length - 1];
+        if (ultimaParcela.data_pagamento) {
+          debt.data_pagamento = ultimaParcela.data_pagamento;
+        }
+      }
+    }
+  
     await this.debtRepository.save(debt);
-
+  
     return `Status do débito ${debt.debito_id} atualizado para ${novoStatus.nome}.`;
   }
 

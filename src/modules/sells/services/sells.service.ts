@@ -788,7 +788,7 @@ export class SellsService implements ISellsRepository {
       positivacaoGeral: positivacaoGeralAzzo,
       marcas: marcasAzzo,
     };
-  
+      
     return relatorio;
   }
   
