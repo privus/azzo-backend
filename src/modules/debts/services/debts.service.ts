@@ -97,20 +97,20 @@ export class DebtsService {
     return dates;
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_2AM)
+  @Cron(CronExpression.EVERY_5_MINUTES)
   async updateOverdueParcels(): Promise<void> {
     const today = new Date();
-    today.setDate(today.getDate() - 1 ); //
-  
+    today.setDate(today.getDate() - 1);
+
     const statusEmAtraso = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 3 } });
     const statusPago = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 2 } });
     const statusPendente = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 1 } });
-  
+
     if (!statusEmAtraso || !statusPago || !statusPendente) {
       throw new Error('Erro ao buscar status de pagamento.');
     }
-  
-    // === Atualiza apenas parcelas não pagas e vencidas ===
+
+    // === Step 1: Fetch and update overdue parcelas that are unpaid ===
     const overdueParcels = await this.parcelaRepository.find({
       where: {
         data_vencimento: LessThan(today),
@@ -118,27 +118,29 @@ export class DebtsService {
       },
       relations: ['debito', 'status_pagamento'],
     });
-  
-    const updatedDebts = new Set<number>();
-  
+
     for (const parcela of overdueParcels) {
       if (parcela.status_pagamento?.status_pagamento_id !== 3) {
         parcela.status_pagamento = statusEmAtraso;
-        updatedDebts.add(parcela.debito.debito_id);
       }
     }
-  
-    if (overdueParcels.length > 0) {
-      await this.parcelaRepository.save(overdueParcels);
-    }
-  
-    // === Atualiza status dos débitos ===
+
+    // === Step 2: Fetch all parcelas and update those with data_pagamento ===
     const allParcels = await this.parcelaRepository.find({
       relations: ['debito', 'status_pagamento'],
     });
-  
+
+    for (const parcela of allParcels) {
+      if (parcela.data_pagamento && parcela.status_pagamento?.status_pagamento_id !== 2) {
+        parcela.status_pagamento = statusPago;
+      }
+    }
+
+    await this.parcelaRepository.save([...overdueParcels, ...allParcels]);
+
+    // === Step 3: Group parcelas by debito ===
     const parcelsByDebt = new Map<number, typeof allParcels>();
-  
+
     for (const parcela of allParcels) {
       const debitoId = parcela.debito.debito_id;
       if (!parcelsByDebt.has(debitoId)) {
@@ -146,47 +148,35 @@ export class DebtsService {
       }
       parcelsByDebt.get(debitoId)!.push(parcela);
     }
-  
+
+    // === Step 4: Update each debito based on parcelas ===
     for (const [debitoId, parcelas] of parcelsByDebt.entries()) {
       const todasPagas = parcelas.every(p => p.status_pagamento?.status_pagamento_id === 2);
       const temAtraso = parcelas.some(p => p.status_pagamento?.status_pagamento_id === 3);
-  
-      let novoStatus = statusPendente;
-  
+
       if (todasPagas) {
-        novoStatus = statusPago;
-  
-        // Pega a mais recente data de pagamento real
         const ultima = parcelas
           .filter(p => p.data_pagamento)
           .map(p => new Date(p.data_pagamento))
           .sort((a, b) => b.getTime() - a.getTime())[0];
-  
-        if (ultima) {
-          await this.debtRepository.update(debitoId, {
-            status_pagamento: novoStatus,
-            data_pagamento: ultima,
-          });
-        } else {
-          await this.debtRepository.update(debitoId, {
-            status_pagamento: novoStatus,
-          });
-        }
-  
-      } else if (temAtraso) {
-        novoStatus = statusEmAtraso;
+
         await this.debtRepository.update(debitoId, {
-          status_pagamento: novoStatus,
+          status_pagamento: statusPago,
+          data_pagamento: ultima ?? null,
         });
-  
+
+      } else if (temAtraso) {
+        await this.debtRepository.update(debitoId, {
+          status_pagamento: statusEmAtraso,
+        });
+
       } else {
         await this.debtRepository.update(debitoId, {
-          status_pagamento: novoStatus,
+          status_pagamento: statusPendente,
         });
       }
     }
   }
-  
 
 
   getAllDepartments(): Promise<Departamento[]> {
