@@ -97,7 +97,6 @@ export class DebtsService {
     return dates;
   }
 
-  @Cron(CronExpression.EVERY_5_MINUTES)
   async updateOverdueParcels(): Promise<void> {
     const today = new Date();
     today.setDate(today.getDate() - 1);
