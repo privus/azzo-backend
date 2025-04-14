@@ -306,20 +306,12 @@ export class CustomersService implements ICustomersRepository{
     }
   
     for (const cliente of clientes) {
-      // CORREÇÃO: status 104 sem compra vai para 103
-      if (cliente.status_cliente.status_cliente_id === 104 && !cliente.ultima_compra) {
-        cliente.status_cliente = status180;
-        cliente.prox_status = null;
-        await this.clienteRepository.save(cliente);
-        console.log(`🔁 Corrigido: Cliente ${cliente.codigo} estava no status 104 sem compra. Reclassificado para 103.`);
-        continue;
-      }
   
       let dataRef = cliente.ultima_compra || cliente.data_criacao;
       const isUsingDataCriacao = !cliente.ultima_compra;
       
       if (isUsingDataCriacao) {
-        console.log(`🔹 Cliente ${cliente.codigo} tem menos de 60 dias desde a criação. Mantendo status.`);
+        console.log(`🔹 Cliente ${cliente.codigo} sem data última compra. Mantendo status.`);
         continue;
       }
 
