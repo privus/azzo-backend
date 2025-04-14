@@ -291,7 +291,7 @@ export class CustomersService implements ICustomersRepository{
 
   @Cron(CronExpression.EVERY_5_MINUTES)
   async updateTags(): Promise<void> {
-    const clientes = await this.clienteRepository.find();
+    const clientes = await this.clienteRepository.find({ relations: ['status_cliente'] });
     const hoje = new Date();
   
     // Preload status IDs to avoid multiple DB queries
@@ -307,7 +307,7 @@ export class CustomersService implements ICustomersRepository{
   
     for (const cliente of clientes) {
       // CORREÇÃO: status 104 sem compra vai para 103
-      if (cliente.status_cliente?.status_cliente_id === 104 && !cliente.ultima_compra) {
+      if (cliente.status_cliente.status_cliente_id === 104 && !cliente.ultima_compra) {
         cliente.status_cliente = status180;
         cliente.prox_status = null;
         await this.clienteRepository.save(cliente);
