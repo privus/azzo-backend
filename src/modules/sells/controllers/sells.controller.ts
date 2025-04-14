@@ -42,14 +42,14 @@ export class SellsController {
 
   @ApiOperation({ summary: 'Quanto vendido por marca' })
   @Get('brand')
-  async sellsByBrand() {
-    return this.sellsService.reportBrandSalesBySeller()
+  async sellsByBrand(@Query('fromDate') fromDate: string, @Query('toDate') toDate?: string) {
+    return this.sellsService.reportBrandSalesBySeller(fromDate, toDate)
   }
 
   @ApiOperation({ summary: 'Quanto vendido por marca' })
   @Get('brandPositivity')
-  async sellsByBrandPositivity() {
-    return this.sellsService.reportPositivityByBrand()
+  async sellsByBrandPositivity(@Query('fromDate') fromDate: string, @Query('toDate') toDate?: string) {
+    return this.sellsService.reportPositivityByBrand(fromDate, toDate)
   }
 
   @ApiOperation({ summary: 'Comissão por vendedor' })

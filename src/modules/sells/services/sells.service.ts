@@ -522,7 +522,17 @@ export class SellsService implements ISellsRepository {
     today.setHours(0, 0, 0, 0);
   
     const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 2); 
+  
+    // Se ontem (today - 1) foi domingo, buscar dados de sexta-feira (today - 3)
+    const tempYesterday = new Date(today);
+    tempYesterday.setDate(today.getDate() - 1);
+    if (tempYesterday.getDay() === 0) {
+      // Domingo
+      yesterday.setDate(today.getDate() - 4); // sexta-feira
+    } else {
+      // Caso contrário, considera ontem normalmente
+      yesterday.setDate(today.getDate() - 2);
+    }
   
     const todaySales = await this.sellsByDate(today.toISOString());
     const yesterdaySales = await this.sellsBetweenDates(yesterday.toISOString());
@@ -562,8 +572,8 @@ export class SellsService implements ISellsRepository {
     };
   } 
   
-  async reportBrandSalesBySeller(): Promise<BrandSales> {
-    const vendas = await this.sellsBetweenDates('2025-03-01', '2025-04-01');
+  async reportBrandSalesBySeller(fromDate: string, toDate: string): Promise<BrandSales> {
+    const vendas = await this.sellsBetweenDates(fromDate, toDate);
   
     const relatorio: BrandSales = {};
   
@@ -625,8 +635,8 @@ export class SellsService implements ISellsRepository {
   }
   
   
-  async reportPositivityByBrand(): Promise<ReportBrandPositivity> {
-    const vendas = (await this.sellsBetweenDates('2025-03-01', '2025-04-01'))
+  async reportPositivityByBrand(fromDate: string, toDate: string): Promise<ReportBrandPositivity> {
+    const vendas = (await this.sellsBetweenDates(fromDate, toDate))
       .filter(v => v.tipo_pedido?.tipo_pedido_id === 10438);
   
     const clientes = await this.clienteService.findAllCustomers();
@@ -860,6 +870,6 @@ export class SellsService implements ISellsRepository {
       .catch((error) => {
         console.error('Erro ao atualizar o volume da venda:', error);
         throw new Error(`Erro ao atualizar o volume da venda ${id}: ${error.message}`);
-      });
+    });
   }
 }
