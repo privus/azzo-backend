@@ -293,69 +293,69 @@ export class CustomersService implements ICustomersRepository{
   async updateTags(): Promise<void> {
     const clientes = await this.clienteRepository.find();
     const hoje = new Date();
-
+  
     // Preload status IDs to avoid multiple DB queries
     const status60 = await this.statusClienteRepository.findOne({ where: { status_cliente_id: 104 } });
     const status90 = await this.statusClienteRepository.findOne({ where: { status_cliente_id: 102 } });
     const status180 = await this.statusClienteRepository.findOne({ where: { status_cliente_id: 103 } });
     const statusAtivo = await this.statusClienteRepository.findOne({ where: { status_cliente_id: 101 } });
-
+  
     if (!status60 || !status90 || !status180 || !statusAtivo) {
-        console.error("❌ ERRO: Um ou mais status de cliente não foram encontrados no banco.");
-        return;
+      console.error("❌ ERRO: Um ou mais status de cliente não foram encontrados no banco.");
+      return;
     }
-
+  
     for (const cliente of clientes) {
-        let dataRef = cliente.ultima_compra || cliente.data_criacao;
-        const isUsingDataCriacao = !cliente.ultima_compra;
-
-        if (!dataRef) {
-            console.warn(`⚠️ Cliente ${cliente.codigo} não tem data_criacao nem ultima_compra`);
-            continue;
-        }
-
-        // Converter para Date e remover a parte de horas
-        const dataRefDate = new Date(dataRef);
-        dataRefDate.setHours(0, 0, 0, 0);
-        const hojeSemHora = new Date();
-        hojeSemHora.setHours(0, 0, 0, 0);
-
-        // Calcular a diferença em dias
-        const diferencaEmDias = Math.floor((hojeSemHora.getTime() - dataRefDate.getTime()) / (1000 * 60 * 60 * 24));
-
-        // Se estiver usando data_criacao e tiver menos de 60 dias, ignora
-        if (isUsingDataCriacao) {
-            console.log(`🔹 Cliente ${cliente.codigo} tem menos de 60 dias desde a criação. Mantendo status.`);
-            continue;
-        }
-
-        // Definir novo status
-        let novoStatus = statusAtivo;
-        let proxStatusDias = null; // Inicialmente definido como null
-
-        if (diferencaEmDias > 180) {
-            novoStatus = status180;
-            proxStatusDias = null; // Último status, não há próxima mudança
-        } else if (diferencaEmDias > 90) {
-            novoStatus = status90;
-            proxStatusDias = 180 - diferencaEmDias; // Quantos dias faltam para o status 103
-        } else if (diferencaEmDias > 60) {
-            novoStatus = status60;
-            proxStatusDias = 90 - diferencaEmDias; // Quantos dias faltam para o status 102
-        } else {
-            novoStatus = statusAtivo;
-            proxStatusDias = 60 - diferencaEmDias; // Quantos dias faltam para o status 104
-        }
-
-        // Atualiza status e prox_status do cliente
-        cliente.status_cliente = novoStatus;
-        cliente.prox_status = proxStatusDias;
+      // CORREÇÃO: status 104 sem compra vai para 103
+      if (cliente.status_cliente?.status_cliente_id === 104 && !cliente.ultima_compra) {
+        cliente.status_cliente = status180;
+        cliente.prox_status = null;
         await this.clienteRepository.save(cliente);
-        console.log(`✅ Cliente ${cliente.codigo} atualizado para status ${cliente.status_cliente.status_cliente_id}, próxima mudança em ${proxStatusDias} dias`);
-    }
+        console.log(`🔁 Corrigido: Cliente ${cliente.codigo} estava no status 104 sem compra. Reclassificado para 103.`);
+        continue;
+      }
+  
+      let dataRef = cliente.ultima_compra || cliente.data_criacao;
+      const isUsingDataCriacao = !cliente.ultima_compra;
+      
+      if (isUsingDataCriacao) {
+        console.log(`🔹 Cliente ${cliente.codigo} tem menos de 60 dias desde a criação. Mantendo status.`);
+        continue;
+      }
 
+      const dataRefDate = new Date(dataRef);
+      dataRefDate.setHours(0, 0, 0, 0);
+      const hojeSemHora = new Date();
+      hojeSemHora.setHours(0, 0, 0, 0);
+  
+      const diferencaEmDias = Math.floor((hojeSemHora.getTime() - dataRefDate.getTime()) / (1000 * 60 * 60 * 24));  
+ 
+      let novoStatus = statusAtivo;
+      let proxStatusDias = null;
+  
+      if (diferencaEmDias > 180) {
+        novoStatus = status180;
+        proxStatusDias = null;
+      } else if (diferencaEmDias > 90) {
+        novoStatus = status90;
+        proxStatusDias = 180 - diferencaEmDias;
+      } else if (diferencaEmDias > 60) {
+        novoStatus = status60;
+        proxStatusDias = 90 - diferencaEmDias;
+      } else {
+        novoStatus = statusAtivo;
+        proxStatusDias = 60 - diferencaEmDias;
+      }
+  
+      cliente.status_cliente = novoStatus;
+      cliente.prox_status = proxStatusDias;
+      await this.clienteRepository.save(cliente);
+      console.log(`✅ Cliente ${cliente.codigo} atualizado para status ${cliente.status_cliente.status_cliente_id}, próxima mudança em ${proxStatusDias ?? 'n/a'} dias`);
+    }
+  
     console.log("✅ Atualização de tags concluída.");
   }
+  
 
   async lastPurchase(): Promise<void> {
     const jsonFilePath = 'src/utils/datas-ultima-compra.json';
