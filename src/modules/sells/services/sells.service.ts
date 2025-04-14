@@ -572,8 +572,8 @@ export class SellsService implements ISellsRepository {
     };
   } 
   
-  async reportBrandSalesBySeller(): Promise<BrandSales> {
-    const vendas = await this.sellsBetweenDates('2025-03-01', '2025-04-01');
+  async reportBrandSalesBySeller(fromDate: string, toDate: string): Promise<BrandSales> {
+    const vendas = await this.sellsBetweenDates(fromDate, toDate);
   
     const relatorio: BrandSales = {};
   
@@ -635,8 +635,8 @@ export class SellsService implements ISellsRepository {
   }
   
   
-  async reportPositivityByBrand(): Promise<ReportBrandPositivity> {
-    const vendas = (await this.sellsBetweenDates('2025-03-01', '2025-04-01'))
+  async reportPositivityByBrand(fromDate: string, toDate: string): Promise<ReportBrandPositivity> {
+    const vendas = (await this.sellsBetweenDates(fromDate, toDate))
       .filter(v => v.tipo_pedido?.tipo_pedido_id === 10438);
   
     const clientes = await this.clienteService.findAllCustomers();
@@ -798,7 +798,7 @@ export class SellsService implements ISellsRepository {
       positivacaoGeral: positivacaoGeralAzzo,
       marcas: marcasAzzo,
     };
-  
+      
     return relatorio;
   }
   
@@ -870,6 +870,6 @@ export class SellsService implements ISellsRepository {
       .catch((error) => {
         console.error('Erro ao atualizar o volume da venda:', error);
         throw new Error(`Erro ao atualizar o volume da venda ${id}: ${error.message}`);
-      });
+    });
   }
 }
