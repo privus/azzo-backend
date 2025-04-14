@@ -289,7 +289,7 @@ export class CustomersService implements ICustomersRepository{
     return
   }
 
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Cron(CronExpression.EVERY_DAY_AT_3AM)
   async updateTags(): Promise<void> {
     const clientes = await this.clienteRepository.find({ relations: ['status_cliente'] });
     const hoje = new Date();

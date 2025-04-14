@@ -54,8 +54,8 @@ export class SellsController {
 
   @ApiOperation({ summary: 'Comissão por vendedor' })
   @Get('commissions')
-  async getCommissions() {
-    return this.sellsService.commissionBySeller();
+  async getCommissions(@Query('fromDate') fromDate: string, @Query('toDate') toDate?: string) {
+    return this.sellsService.commissionBySeller(fromDate, toDate);
   }
 
   @ApiOperation({ summary: 'Exportar pedido para o Tiny'})

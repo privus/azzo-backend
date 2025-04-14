@@ -572,7 +572,7 @@ export class SellsService implements ISellsRepository {
     };
   } 
   
-  async reportBrandSalesBySeller(fromDate: string, toDate: string): Promise<BrandSales> {
+  async reportBrandSalesBySeller(fromDate: string, toDate?: string): Promise<BrandSales> {
     const vendas = await this.sellsBetweenDates(fromDate, toDate);
   
     const relatorio: BrandSales = {};
@@ -635,7 +635,7 @@ export class SellsService implements ISellsRepository {
   }
   
   
-  async reportPositivityByBrand(fromDate: string, toDate: string): Promise<ReportBrandPositivity> {
+  async reportPositivityByBrand(fromDate: string, toDate?: string): Promise<ReportBrandPositivity> {
     const vendas = (await this.sellsBetweenDates(fromDate, toDate))
       .filter(v => v.tipo_pedido?.tipo_pedido_id === 10438);
   
@@ -827,8 +827,8 @@ export class SellsService implements ISellsRepository {
     };
   } 
 
-  async commissionBySeller(): Promise<Commissions[]> {
-    const vendasMes = await this.sellsBetweenDates('2025-03-01', '2025-04-01');
+  async commissionBySeller(fromDate: string, toDate?: string): Promise<Commissions[]> {
+    const vendasMes = await this.sellsBetweenDates(fromDate, toDate);
     const vendedorMap = new Map<number, Commissions>();
   
     for (const venda of vendasMes) {
