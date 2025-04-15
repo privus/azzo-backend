@@ -895,6 +895,7 @@ export class SellsService implements ISellsRepository {
   
     // === Usar reportBrandSalesBySeller para dados do mês ===
     const agora = new Date()
+    agora.setDate(agora.getDate() + 1);
     const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString().slice(0, 10);
     const hj = agora.toISOString().slice(0, 10);
   
