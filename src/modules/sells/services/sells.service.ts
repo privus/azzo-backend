@@ -882,8 +882,12 @@ export class SellsService implements ISellsRepository {
     const vendasPeriodo1 = await this.sellsBetweenDates(fromDate1, toDate1);
     const vendasPeriodo2 = await this.sellsBetweenDates(fromDate2, toDate2);
   
-    const totalPeriodo1 = vendasPeriodo1.reduce((acc, venda) => acc + Number(venda.valor_final || 0), 0);
-    const totalPeriodo2 = vendasPeriodo2.reduce((acc, venda) => acc + Number(venda.valor_final || 0), 0);
+    const tipoId = 10438;
+    const vendasValidasPeriodo1 = vendasPeriodo1.filter(v => v.tipo_pedido?.tipo_pedido_id === tipoId);
+    const vendasValidasPeriodo2 = vendasPeriodo2.filter(v => v.tipo_pedido?.tipo_pedido_id === tipoId);
+  
+    const totalPeriodo1 = vendasValidasPeriodo1.reduce((acc, venda) => acc + Number(venda.valor_final || 0), 0);
+    const totalPeriodo2 = vendasValidasPeriodo2.reduce((acc, venda) => acc + Number(venda.valor_final || 0), 0);
   
     const variacao = totalPeriodo1 === 0
       ? (totalPeriodo2 > 0 ? 100 : 0)
@@ -893,18 +897,17 @@ export class SellsService implements ISellsRepository {
     if (variacao > 0) direcao = 'aumento';
     else if (variacao < 0) direcao = 'queda';
   
-    // === Usar reportBrandSalesBySeller para dados do mês ===
-    const agora = new Date()
-    agora.setDate(agora.getDate() + 1);
+    // === Dados do mês atual ===
+    const agora = new Date();
+    agora.setDate(agora.getDate() + 1); // inclui o dia de hoje
     const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString().slice(0, 10);
     const hj = agora.toISOString().slice(0, 10);
   
     const relatorioMesAtual = await this.reportBrandSalesBySeller(inicioMes, hj);
-  
     const azzoData = relatorioMesAtual["Azzo"];
     const faturamentoMesAtual = azzoData.totalFaturado;
-    const faturamentoPorMarcaMesAtual: { [marca: string]: number } = {};
   
+    const faturamentoPorMarcaMesAtual: { [marca: string]: number } = {};
     for (const marca in azzoData.marcas) {
       faturamentoPorMarcaMesAtual[marca] = Number(azzoData.marcas[marca].valor.toFixed(2));
     }
@@ -917,6 +920,6 @@ export class SellsService implements ISellsRepository {
       faturamentoMesAtual,
       faturamentoPorMarcaMesAtual
     };
-  } 
+  }  
   
 }
