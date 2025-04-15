@@ -10,4 +10,10 @@ export interface ISellsRepository {
   deleteSell(id: number): Promise<string>;
   getDailyRakingSells(): Promise<RakingSellsResponse>;
   addVolumeSell(id: number, volume: number): Promise<string>;
+  performanceSalesPeriods(
+    fromDate: string,
+    toDate: string,
+    fromDate2: string,
+    toDate2: string,
+  ): Promise<SalesComparisonReport>;
 }

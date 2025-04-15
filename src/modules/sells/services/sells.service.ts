@@ -872,4 +872,50 @@ export class SellsService implements ISellsRepository {
         throw new Error(`Erro ao atualizar o volume da venda ${id}: ${error.message}`);
     });
   }
+
+  async performanceSalesPeriods(
+    fromDate1: string,
+    toDate1: string,
+    fromDate2: string,
+    toDate2: string
+  ): Promise<SalesComparisonReport> {
+    const vendasPeriodo1 = await this.sellsBetweenDates(fromDate1, toDate1);
+    const vendasPeriodo2 = await this.sellsBetweenDates(fromDate2, toDate2);
+  
+    const totalPeriodo1 = vendasPeriodo1.reduce((acc, venda) => acc + Number(venda.valor_final || 0), 0);
+    const totalPeriodo2 = vendasPeriodo2.reduce((acc, venda) => acc + Number(venda.valor_final || 0), 0);
+  
+    const variacao = totalPeriodo1 === 0
+      ? (totalPeriodo2 > 0 ? 100 : 0)
+      : ((totalPeriodo2 - totalPeriodo1) / totalPeriodo1) * 100;
+  
+    let direcao: 'aumento' | 'queda' | 'neutro' = 'neutro';
+    if (variacao > 0) direcao = 'aumento';
+    else if (variacao < 0) direcao = 'queda';
+  
+    // === Usar reportBrandSalesBySeller para dados do mês ===
+    const agora = new Date()
+    const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString().slice(0, 10);
+    const hj = agora.toISOString().slice(0, 10);
+  
+    const relatorioMesAtual = await this.reportBrandSalesBySeller(inicioMes, hj);
+  
+    const azzoData = relatorioMesAtual["Azzo"];
+    const faturamentoMesAtual = azzoData.totalFaturado;
+    const faturamentoPorMarcaMesAtual: { [marca: string]: number } = {};
+  
+    for (const marca in azzoData.marcas) {
+      faturamentoPorMarcaMesAtual[marca] = Number(azzoData.marcas[marca].valor.toFixed(2));
+    }
+  
+    return {
+      totalPeriodo1: Number(totalPeriodo1.toFixed(2)),
+      totalPeriodo2: Number(totalPeriodo2.toFixed(2)),
+      variacaoPercentual: Number(variacao.toFixed(2)),
+      direcao,
+      faturamentoMesAtual,
+      faturamentoPorMarcaMesAtual
+    };
+  } 
+  
 }
