@@ -15,6 +15,9 @@ export class ItensVenda {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   valor_total: number;
 
+  @Column({ type: 'varchar', length: 180, nullable: true })
+  observacao: string;
+
   @ManyToOne(() => Venda, (venda) => venda.itensVenda, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'venda_id' })
   venda: Venda;

@@ -4,6 +4,7 @@ export interface Product {
   quantity: string;
   unit_price: string;
   total_price: string;
+  notes: string;
 }
 
 export interface SellsApiResponse {
