@@ -122,6 +122,7 @@ export class PrintOrderService {
     sortedItens.forEach((item, idx) => {
       const produto = item.produto;
       const isCaixa = produto?.descricao_uni?.toUpperCase()?.includes('CAIXA');
+      const obs = item.observacao ? `obs: ${item.observacao}` : '';
 
       const row = [
         {
@@ -130,7 +131,12 @@ export class PrintOrderService {
             { text: produto?.ean ?? '-', fontSize: 9, color: '#666' },
           ],
         },
-        { text: produto?.nome ?? '-', fontSize: 10 }, // Aumentando a fonte do nome do produto
+        {
+          stack: [
+            { text: produto?.nome ?? '-', fontSize: 10 },
+            { text: obs, fontSize: 9, color: '#fe4c40'},
+          ]
+        },
         { text: item.quantidade?.toString() ?? '0', alignment: 'center', fontSize: 10 },
         { text: `${Number(item.valor_unitario).toFixed(2)}`, alignment: 'right', fontSize: 10 },
         { text: `${Number(item.valor_total).toFixed(2)}`, alignment: 'right', fontSize: 10 },
@@ -178,14 +184,14 @@ export class PrintOrderService {
   private createHeader(order: any, logoBase64: string, responsible: string) {
     const length = order.forma_pagamento
     const forma_pagamento = order.forma_pagamento.slice(0, length.length - 24 )
-    const volume = order.volume ? order.volume : 'Não informado'
     const doc = order.cliente.tipo_doc === 'cnpj' ? `CNPJ: ${order.cliente.numero_doc}` : `CPF: ${order.cliente.numero_doc}`
+    const categoria = order.cliente.categoria ? order.cliente.categoria_cliente.nome : ''
     return {
       columns: [
         {
           width: '50%',
           stack: [
-            { text: `Cliente - ${order.cliente.categoria_cliente.nome}`, bold: true, fontSize: 10, margin: [0, 0, 0, 2] },
+            { text: `Cliente - ${categoria}`, bold: true, fontSize: 10, margin: [0, 0, 0, 2] },
             { text: order.cliente?.nome_empresa, fontSize: 10 },
             { text: `${doc}`, fontSize: 10 },
             { text: `${order.cliente?.endereco ?? '-'} Nº ${order.cliente?.num_endereco ?? ''}`, fontSize: 10 },
@@ -205,7 +211,6 @@ export class PrintOrderService {
             { text: `Vendedor: ${order.vendedor?.nome ?? '-'}`, fontSize: 10 },
             { text: `Responsável: ${responsible}`, fontSize: 10 },
             { text: `Pagamento: ${forma_pagamento}`, fontSize: 10 },
-            { text: `Volumes: ${volume}`, fontSize: 10 },
           ],
           alignment: 'right',
         },

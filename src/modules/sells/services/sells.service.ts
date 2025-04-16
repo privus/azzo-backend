@@ -185,6 +185,7 @@ export class SellsService implements ISellsRepository {
                 valor_unitario: Number(item.unit_price),
                 valor_total: Number(item.total_price),
                 produto: produtoEncontrado,
+                observacao: item.notes || null,
               };
             });
             existingSell.itensVenda = itensVenda;
@@ -291,6 +292,7 @@ export class SellsService implements ISellsRepository {
           valor_unitario: Number(item.unit_price),
           valor_total: Number(item.total_price),
           produto: produtoEncontrado,
+          observacao: item.notes,
         };
       });
     }
