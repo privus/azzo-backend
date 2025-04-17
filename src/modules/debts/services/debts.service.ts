@@ -335,21 +335,20 @@ export class DebtsService {
     let direcao: 'aumento' | 'queda' | 'neutro' = 'neutro';
     if (variacao > 0) direcao = 'aumento';
     else if (variacao < 0) direcao = 'queda';
-  
-    const agora = new Date();
-    const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
-    const hoje = new Date(); hoje.setHours(23, 59, 59, 999);
-  
-    const despesasMesAtual = await this.debtRepository.find({
-      where: { data_competencia: Between(inicioMes, hoje) },
-      relations: ['departamento']
-    });
-  
+    
     const despesasDepartamento: Record<string, number> = {};
-    for (const debito of despesasMesAtual) {
-      const departamento = debito.departamento?.nome || 'Sem Departamento';
-      despesasDepartamento[departamento] ??= 0;
-      despesasDepartamento[departamento] += Number(debito.valor_total || 0);
+    const despesasCategoria: Record<string, number> = {};
+  
+    for (const debito of debitosPeriodo2) {
+      const depNome = debito.departamento?.nome || 'Sem Departamento';
+      const catNome = debito.categoria?.nome || 'Sem Categoria';
+      const valor = Number(debito.valor_total || 0);
+  
+      despesasDepartamento[depNome] ??= 0;
+      despesasDepartamento[depNome] += valor;
+  
+      despesasCategoria[catNome] ??= 0;
+      despesasCategoria[catNome] += valor;
     }
   
     return {
@@ -357,8 +356,9 @@ export class DebtsService {
       totalPeriodo2: Number(totalPeriodo2.toFixed(2)),
       variacaoPercentual: Number(variacao.toFixed(2)),
       direcao,
-      DepesasMesAtual: totalPeriodo2,
+      DepesasMesAtual: Number(totalPeriodo2.toFixed(2)),
       despesasDepartamento,
+      despesasCategoria,
     };
   }
   

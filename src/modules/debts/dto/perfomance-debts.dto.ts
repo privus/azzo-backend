@@ -7,5 +7,8 @@ export interface DebtsComparisonReport {
     despesasDepartamento: {
       [departamento: string]: number;
     };
+    despesasCategoria: {
+        [categoria: string]: number;
+      };
 }
   
