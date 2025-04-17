@@ -2,8 +2,8 @@ import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, MoreThanOrEqual, Repository } from 'typeorm';
-import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente } from '../../../infrastructure/database/entities';
-import { DailyRakingSellsResponse, OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem } from '../dto';
+import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda } from '../../../infrastructure/database/entities';
+import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository } from '../../../domain/repositories';
 
 @Injectable()
@@ -20,6 +20,7 @@ export class SellsService implements ISellsRepository {
     @Inject('ISellersRepository') private readonly sellersSevice: ISellersRepository,
     @Inject('IRegionsRepository') private readonly regiaoService: IRegionsRepository,
     @InjectRepository(Produto) private readonly produtoRepository: Repository<Produto>,
+    @InjectRepository(ItensVenda) private readonly itensVendaRepository: Repository<ItensVenda>,
     @InjectRepository(ParcelaCredito) private readonly parcelaRepository: Repository<ParcelaCredito>,
     @InjectRepository(StatusPagamento) private readonly statusPagamentoRepository: Repository<StatusPagamento>,
     @InjectRepository(StatusVenda) private readonly statusVendaRepository: Repository<StatusVenda>,
@@ -185,9 +186,11 @@ export class SellsService implements ISellsRepository {
                 valor_unitario: Number(item.unit_price),
                 valor_total: Number(item.total_price),
                 produto: produtoEncontrado,
-                observacao: item.notes || null,
+                observacao: item.notes,
               };
             });
+            await this.itensVendaRepository.delete({ venda: existingSell });
+
             existingSell.itensVenda = itensVenda;
             existingSell.valor_pedido = Number(sell.amount);
             existingSell.valor_final = Number(sell.amount_final);
@@ -648,7 +651,6 @@ export class SellsService implements ISellsRepository {
   
     const relatorio: ReportBrandPositivity = {};
   
-    // Cria mapa de clientes por vendedor_id
     const clientesPorVendedor = new Map<number, Cliente[]>();
     for (const cliente of clientes) {
       const vendedorId = cliente.vendedor?.vendedor_id;
@@ -660,15 +662,12 @@ export class SellsService implements ISellsRepository {
       }
     }
   
-    // ========== RELATÓRIO POR VENDEDOR ==========
     for (const vendedor of allSellers) {
       const vendedorId = vendedor.vendedor_id;
       const vendedorNome = vendedor.nome;
   
       const carteira = clientesPorVendedor.get(vendedorId) ?? clientes;
-
       const usandoCarteiraCompleta = !clientesPorVendedor.has(vendedorId);
-
       const totalClientes = usandoCarteiraCompleta ? 1 : carteira.length;
   
       const marcasPorCliente = new Map<number, Set<string>>();
@@ -736,98 +735,81 @@ export class SellsService implements ISellsRepository {
           positivacaoGeral,
           marcas,
         };
-      }      
+      }
     }
   
-    // ========== RELATÓRIO GERAL AZZO ==========
-    const marcasPorClienteAzzo = new Map<number, Set<string>>();
-    const clientesPositivadosSetAzzo = new Set<number>();
+    return relatorio;
+  }
+  
+  
+  async getPositivityAzzo(fromDate: string, toDate: string): Promise<PositivityResponse> {
+    const vendas = await this.sellsBetweenDates(fromDate, toDate);
+    const clientes = await this.clienteService.findAllCustomers();
+  
+    const totalClientes = clientes.length;
+  
+    const marcasPorCliente = new Map<number, Set<string>>();
+    const clientesPositivadosSet = new Set<number>();
   
     for (const venda of vendas) {
       const clienteId = venda.cliente?.cliente_id;
       if (!clienteId) continue;
   
-      clientesPositivadosSetAzzo.add(clienteId);
+      clientesPositivadosSet.add(clienteId);
   
-      if (!marcasPorClienteAzzo.has(clienteId)) {
-        marcasPorClienteAzzo.set(clienteId, new Set());
+      if (!marcasPorCliente.has(clienteId)) {
+        marcasPorCliente.set(clienteId, new Set());
       }
   
       for (const item of venda.itensVenda) {
         const marca = item.produto?.fornecedor?.nome;
         if (marca) {
-          marcasPorClienteAzzo.get(clienteId)!.add(marca);
+          marcasPorCliente.get(clienteId)!.add(marca);
         }
       }
     }
   
-    const marcasAzzo: Record<string, BrandPositivity> = {};
+    const marcas: Record<string, BrandPositivity> = {};
+  
     for (const cliente of clientes) {
       const clienteId = cliente.cliente_id;
-      const marcasCliente = marcasPorClienteAzzo.get(clienteId);
+      const marcasCliente = marcasPorCliente.get(clienteId);
       if (!marcasCliente || marcasCliente.size === 0) continue;
   
       for (const marca of marcasCliente) {
-        if (!marcasAzzo[marca]) {
-          marcasAzzo[marca] = {
+        if (!marcas[marca]) {
+          marcas[marca] = {
             clientesPositivados: 0,
             positivacaoMarca: 0,
             contribuicaoPercentual: 0,
           };
         }
-        marcasAzzo[marca].clientesPositivados += 1;
-      }
-    }
-  
-    const totalClientesAzzo = clientes.length;
-    const clientesPositivadosAzzo = clientesPositivadosSetAzzo.size;
-    const positivacaoGeralAzzo = Number(((clientesPositivadosAzzo / totalClientesAzzo) * 100).toFixed(2));
-  
-    for (const marca in marcasAzzo) {
-      marcasAzzo[marca].positivacaoMarca = Number(((marcasAzzo[marca].clientesPositivados / totalClientesAzzo) * 100).toFixed(2));
-    }
-  
-    const somaAzzo = Object.values(marcasAzzo).reduce((acc, m) => acc + m.positivacaoMarca, 0);
-  
-    for (const marca in marcasAzzo) {
-      const m = marcasAzzo[marca];
-      m.contribuicaoPercentual = somaAzzo > 0 ? Number(((m.positivacaoMarca / somaAzzo) * 100).toFixed(2)) : 0;
-    }
-  
-    relatorio['Azzo'] = {
-      totalClientes: totalClientesAzzo,
-      clientesPositivados: clientesPositivadosAzzo,
-      positivacaoGeral: positivacaoGeralAzzo,
-      marcas: marcasAzzo,
-    };
-      
-    return relatorio;
-  }
-  
-  async getPositivity(): Promise<PositivityResponse> {
-    const vendas = await this.sellsBetweenDates('2025-03-01', '2025-04-01');
-    const clientes = await this.clienteService.findAllCustomers();
-  
-    const totalClientes = clientes.length;
-  
-    // Clientes que fizeram pelo menos uma compra no período
-    const clientesPositivadosSet = new Set<number>();
-    for (const venda of vendas) {
-      const clienteId = venda.cliente?.cliente_id;
-      if (clienteId) {
-        clientesPositivadosSet.add(clienteId);
+        marcas[marca].clientesPositivados += 1;
       }
     }
   
     const clientesPositivados = clientesPositivadosSet.size;
     const positivacaoGeral = Number(((clientesPositivados / totalClientes) * 100).toFixed(2));
   
+    for (const marca in marcas) {
+      marcas[marca].positivacaoMarca = Number(((marcas[marca].clientesPositivados / totalClientes) * 100).toFixed(2));
+    }
+  
+    const soma = Object.values(marcas).reduce((acc, m) => acc + m.positivacaoMarca, 0);
+  
+    for (const marca in marcas) {
+      const m = marcas[marca];
+      m.contribuicaoPercentual = soma > 0 ? Number(((m.positivacaoMarca / soma) * 100).toFixed(2)) : 0;
+    }
+  
     return {
       totalClientes,
       clientesPositivados,
       positivacaoGeral,
+      marcas,
     };
-  } 
+  }
+  
 
   async commissionBySeller(fromDate: string, toDate?: string): Promise<Commissions[]> {
     const vendasMes = await this.sellsBetweenDates(fromDate, toDate);

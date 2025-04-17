@@ -17,6 +17,7 @@ export interface PositivityResponse {
   totalClientes: number;
   clientesPositivados: number;
   positivacaoGeral: number;
+  marcas?: Record<string, BrandPositivity>;
 }
 
   

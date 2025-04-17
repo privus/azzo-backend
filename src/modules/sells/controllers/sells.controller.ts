@@ -40,16 +40,22 @@ export class SellsController {
     return this.sellsService.getDailyRakingSells();
   }
 
-  @ApiOperation({ summary: 'Quanto vendido por marca' })
+  @ApiOperation({ summary: 'Quanto faturado por marca' })
   @Get('brand')
   async sellsByBrand(@Query('fromDate') fromDate: string, @Query('toDate') toDate?: string) {
     return this.sellsService.reportBrandSalesBySeller(fromDate, toDate)
   }
 
-  @ApiOperation({ summary: 'Quanto vendido por marca' })
+  @ApiOperation({ summary: 'Quanto vendido e positivado por marca vendedores' })
   @Get('brandPositivity')
   async sellsByBrandPositivity(@Query('fromDate') fromDate: string, @Query('toDate') toDate?: string) {
     return this.sellsService.reportPositivityByBrand(fromDate, toDate)
+  }
+
+  @ApiOperation({ summary: 'Quanto vendido e positivado por marca Azzo' })
+  @Get('brandPositivityAzzo')
+  async sellsByBrandPositivityAzzo(@Query('fromDate') fromDate: string, @Query('toDate') toDate?: string) {
+    return this.sellsService.getPositivityAzzo(fromDate, toDate)
   }
 
   @ApiOperation({ summary: 'Comissão por vendedor' })
