@@ -904,6 +904,5 @@ export class SellsService implements ISellsRepository {
       faturamentoMesAtual,
       faturamentoPorMarcaMesAtual
     };
-  }  
-  
+  }
 }

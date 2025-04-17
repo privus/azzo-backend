@@ -66,7 +66,7 @@ export class SellsController {
 
   @ApiOperation({ summary: 'Dados vendas por período' })
   @Get('salesPerformance')
-  async getPerformance(@Query('fromDate1') fromDate1: string, @Query('toDate1') toDate1: string, @Query('fromDate2') fromDate2: string, @Query('toDate2') toDate2: string, ) {
+  async getPerformance(@Query('fromDate1') fromDate1: string, @Query('toDate1') toDate1: string, @Query('fromDate2') fromDate2: string, @Query('toDate2') toDate2: string) {
     return this.sellsService.performanceSalesPeriods(fromDate1, toDate1, fromDate2, toDate2);
   }
 

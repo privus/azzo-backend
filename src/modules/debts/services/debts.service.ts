@@ -4,7 +4,7 @@ import { Repository, LessThan, MoreThanOrEqual, Between, Raw } from 'typeorm';
 import { CategoriaDebito, Debito, Departamento, ParcelaDebito, StatusPagamento } from '../../../infrastructure/database/entities';
 import { DebtsDto } from '../dto/debts.dto';
 import { UpdateInstalmentDto } from '../dto/update-instalment.dto';
-import { UpdateDebtStatusDto } from '../dto';
+import { DebtsComparisonReport, UpdateDebtStatusDto } from '../dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
@@ -314,7 +314,53 @@ export class DebtsService {
         ],
       });
     }
+  }   
+  
+  async performanceDebtsPeriods(
+    fromDate1: string,
+    toDate1: string,
+    fromDate2: string,
+    toDate2: string
+  ): Promise<DebtsComparisonReport> {
+    const debitosPeriodo1 = await this.getDebtsBetweenDates(fromDate1, toDate1);
+    const debitosPeriodo2 = await this.getDebtsBetweenDates(fromDate2, toDate2);
+  
+    const totalPeriodo1 = debitosPeriodo1.reduce((acc, d) => acc + Number(d.valor_total || 0), 0);
+    const totalPeriodo2 = debitosPeriodo2.reduce((acc, d) => acc + Number(d.valor_total || 0), 0);
+  
+    const variacao = totalPeriodo1 === 0
+      ? (totalPeriodo2 > 0 ? 100 : 0)
+      : ((totalPeriodo2 - totalPeriodo1) / totalPeriodo1) * 100;
+  
+    let direcao: 'aumento' | 'queda' | 'neutro' = 'neutro';
+    if (variacao > 0) direcao = 'aumento';
+    else if (variacao < 0) direcao = 'queda';
+  
+    const agora = new Date();
+    const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
+    const hoje = new Date(); hoje.setHours(23, 59, 59, 999);
+  
+    const despesasMesAtual = await this.debtRepository.find({
+      where: { data_competencia: Between(inicioMes, hoje) },
+      relations: ['departamento']
+    });
+  
+    const despesasDepartamento: Record<string, number> = {};
+    for (const debito of despesasMesAtual) {
+      const departamento = debito.departamento?.nome || 'Sem Departamento';
+      despesasDepartamento[departamento] ??= 0;
+      despesasDepartamento[departamento] += Number(debito.valor_total || 0);
+    }
+  
+    return {
+      totalPeriodo1: Number(totalPeriodo1.toFixed(2)),
+      totalPeriodo2: Number(totalPeriodo2.toFixed(2)),
+      variacaoPercentual: Number(variacao.toFixed(2)),
+      direcao,
+      DepesasMesAtual: totalPeriodo2,
+      despesasDepartamento,
+    };
   }
   
-  
+   
 }
