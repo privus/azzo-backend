@@ -385,6 +385,22 @@ export class SellsService implements ISellsRepository {
 
   async getSellById(id: number): Promise<Venda> {
     return this.vendaRepository.findOne({
+      where: { venda_id: id },
+      relations: [
+        'vendedor',
+        'itensVenda.produto',
+        'status_pagamento',
+        'status_venda',
+        'parcela_credito.status_pagamento',
+        'tipo_pedido',
+        'cliente.cidade.estado',
+        'cliente.categoria_cliente',
+      ],
+    });
+  }
+
+  async getSellByCode(id: number): Promise<Venda> {
+    return this.vendaRepository.findOne({
       where: { codigo: id },
       relations: [
         'vendedor',
