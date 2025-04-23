@@ -3,17 +3,20 @@ import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, MoreThanOrEqual, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda } from '../../../infrastructure/database/entities';
-import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem } from '../dto';
+import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository } from '../../../domain/repositories';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class SellsService implements ISellsRepository {
   private readonly apiUrlSellentt: string;
   private readonly apiUrlTiny: string;
   private readonly tokenSellentt: string;
-  private readonly tokenTiny: string;
   private readonly apiTagSellentt = 'orders';
   private readonly orderTag = 'pedidos';
+  private readonly nfeTag = 'notas';
+  private readonly contasReceberTag = 'contas-receber';
+  
 
   constructor(
     @Inject('ICustomersRepository') private readonly clienteService: ICustomersRepository,
@@ -31,7 +34,6 @@ export class SellsService implements ISellsRepository {
     private readonly httpService: HttpService,
   ) {
     this.tokenSellentt = process.env.SELLENTT_API_TOKEN;
-    this.tokenTiny = process.env.TINY_API_TOKEN;
     this.apiUrlSellentt = process.env.SELLENTT_API_URL;
     this.apiUrlTiny= process.env.TINY_API_URL;
   }
@@ -904,5 +906,147 @@ export class SellsService implements ISellsRepository {
       faturamentoMesAtual,
       faturamentoPorMarcaMesAtual
     };
+  }
+
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  async syncroTinyInvoiceNf(): Promise<void> {
+    console.log("🔄 Iniciando sincronização de clientes do Tiny MG e SP...");
+
+    await this.syncroInvoiceNfForState("MG", this.apiUrlTiny);
+    await this.syncroInvoiceNfForState("SP", this.apiUrlTiny);
+    await this.getAccessKeyNf("MG", this.apiUrlTiny);
+    await this.getAccessKeyNf("SP", this.apiUrlTiny);
+
+    console.log("✅ Sincronização de clientes concluída!");
+  }
+
+  private async syncroInvoiceNfForState(uf: string, apiUrl: string): Promise<void> {
+    let offset = 0;
+    const limit = 100;
+    const token = await this.tinyAuthService.getAccessToken(uf);
+  
+    if (!token) {
+      console.error(`❌ Erro ao obter token para ${uf}. Pulando sincronização.`);
+      return;
+    }
+  
+    while (true) {
+      try {
+        const url = `${apiUrl}${this.contasReceberTag}?dataInicialEmissao=2025-03-11&offset=${offset}&limit=${limit}`;
+        const response = await this.httpService.axiosRef.get<{ itens: InvoiceTinyDto[] }>(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+  
+        const invoiceData = response.data.itens;
+  
+        if (!invoiceData || invoiceData.length === 0) {
+          console.log(`🚫 Nenhuma conta encontrada para ${uf} no offset ${offset}.`);
+          break;
+        }
+  
+        for (const invoice of invoiceData) {
+          const historico = invoice.historico;
+          if (!historico.includes('sell')) continue;
+  
+          const matchNota = historico.match(/NF nº (\d+)/);
+          const matchPedido = historico.match(/nº (\d+)_sell/);
+          const matchParcela = historico.match(/\(parcela (\d+)\/(\d+)\)/);
+  
+          if (!matchNota || !matchPedido) {
+            console.warn(`⚠️ Histórico sem formato válido: ${historico}`);
+            continue;
+          }
+  
+          const numeroNota = matchNota[1];
+          const codigoPedido = Number(matchPedido[1]);
+          const numeroParcela = matchParcela ? Number(matchParcela[1]) : 1;
+          console.log('Numero nota =====>', numeroNota);
+          console.log('Numero pedido =====>', codigoPedido);
+          console.log('Numero parcela =====>', numeroParcela);
+  
+          const venda = await this.vendaRepository.findOne({
+            where: { codigo: codigoPedido },
+            relations: ['cliente', 'parcela_credito.status_pagamento'],
+          });
+  
+          if (!venda) {
+            console.warn(`⚠️ Venda não encontrada para código ${codigoPedido}, cliente tiny_id ${invoice.cliente.id}`);
+            continue;
+          }
+  
+          // Marcar parcela como paga com base na data de vencimento e valor
+          const parcela = venda.parcela_credito.find(
+            (p) => Number(p.valor) === invoice.valor && p.numero === numeroParcela);
+          console.log('parcela ======>', parcela)
+          console.log('parcelaVEnda ======>', venda.parcela_credito)
+  
+          if (parcela && invoice.situacao === 'pago') {
+            const statusPago = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 2 } });
+            parcela.status_pagamento = statusPago;
+            parcela.data_pagamento = new Date(invoice.dataVencimento);
+            await this.parcelaRepository.save(parcela);
+            console.log(`💰 Parcela ${parcela.numero} da venda ${codigoPedido} marcada como paga.`);
+          } else {
+            console.warn(`⚠️ Nenhuma parcela correspondente para valor ${invoice.valor} no pedido ${codigoPedido}`);
+          }
+  
+          // Atualizar venda com número da nota
+          venda.numero_nfe = Number(numeroNota);
+          await this.vendaRepository.save(venda);
+          console.log(`✅ Nota fiscal ${numeroNota} vinculada à venda ${codigoPedido}`);
+        }
+
+        offset += limit; // próxima página
+  
+      } catch (error) {
+        console.error(`❌ Erro ao buscar faturas para ${uf}:`, error.message);
+        break;
+      }
+    }
+  }
+
+  private async getAccessKeyNf(uf: string, apiUrl: string): Promise<void> {
+    let offset = 0;
+    const limit = 100;
+    const token = await this.tinyAuthService.getAccessToken(uf);
+  
+    if (!token) {
+      console.error(`❌ Erro ao obter token para ${uf}. Pulando sincronização.`);
+      return;
+    }
+  
+    while (true) {
+      try {
+        const url = `${apiUrl}${this.nfeTag}?dataInicial=2025-03-11&offset=${offset}&limit=${limit}`;
+        const response = await this.httpService.axiosRef.get<{ itens: NfeDto[] }>(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+  
+        const nfData = response.data.itens;
+  
+        if (!nfData || nfData.length === 0) {
+          console.log(`🚫 Nenhuma conta encontrada para ${uf} no offset ${offset}.`);
+          break;
+        }
+  
+        for (const nf of nfData) {
+          const venda = await this.vendaRepository.findOne({
+            where: { numero_nfe: Number(nf.numero) }}); 
+          if (!venda) {
+            console.warn(`⚠️ Venda não encontrada para nota ${nf.numero}`);
+            continue;
+          }
+          venda.chave_acesso = nf.chaveAcesso;
+          venda.data_emissao_nfe = new Date(nf.dataEmissao);
+          venda.nfe_emitida = 1;
+          await this.vendaRepository.save(venda);
+          console.log(`✅ Chave de acesso ${nf.chaveAcesso} vinculada à venda ${venda.codigo}`);        
+        }
+        offset += limit;
+      } catch (error) {
+        console.error(`❌ Erro ao buscar contas para ${uf}:`, error.message);
+        break;
+      }
+    }
   }
 }

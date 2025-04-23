@@ -185,7 +185,7 @@ export class PrintOrderService {
     const length = order.forma_pagamento
     const forma_pagamento = order.forma_pagamento.slice(0, length.length - 24 )
     const doc = order.cliente.tipo_doc === 'cnpj' ? `CNPJ: ${order.cliente.numero_doc}` : `CPF: ${order.cliente.numero_doc}`
-    const categoria = order.cliente.categoria ? order.cliente.categoria_cliente.nome : ''
+    const categoria = order.cliente.categoria_cliente.nome;
     return {
       columns: [
         {

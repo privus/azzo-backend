@@ -1,4 +1,4 @@
-interface SalesComparisonReport {
+export interface SalesComparisonReport {
     totalPeriodo1: number;
     totalPeriodo2: number;
     variacaoPercentual: number;

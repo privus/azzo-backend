@@ -5,3 +5,6 @@ export * from './brand-sales.dto';
 export * from './ranking.dto';
 export * from './commissions.dto'
 export * from './positivity.dto';
+export * from './performance-sales.dto';
+export * from './nf-e.dto';
+export * from './invoice-tiny.dto';

@@ -1,5 +1,5 @@
 import { Venda } from '../../infrastructure/database/entities';
-import { RakingSellsResponse, UpdateSellStatusDto } from '../../modules/sells/dto';
+import { RakingSellsResponse, SalesComparisonReport, UpdateSellStatusDto } from '../../modules/sells/dto';
 
 export interface ISellsRepository {
   syncroSells(): Promise<string>;

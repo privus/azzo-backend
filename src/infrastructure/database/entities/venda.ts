@@ -54,6 +54,18 @@ export class Venda {
   @Column({ type: 'tinyint', nullable: true })
   exportado: number;
 
+  @Column({ type: 'varchar', length: 180, nullable: true, unique: true })
+  chave_acesso: string;
+
+  @Column({ type: 'tinyint', nullable: true })
+  nfe_emitida: number;
+
+  @Column({ type: 'int', nullable: true })
+  numero_nfe: number;
+
+  @Column({ type: 'varchar', nullable: true })
+  data_emissao_nfe: Date;
+
   @ManyToOne(() => Cliente)
   @JoinColumn({ name: 'cliente_id' })
   cliente: Cliente;
