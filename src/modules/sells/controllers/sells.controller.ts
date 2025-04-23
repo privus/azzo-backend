@@ -103,12 +103,6 @@ export class SellsController {
   async getSellById(@Param('id') id: number) {
     return this.sellsService.getSellById(id);
   }
-
-  @ApiOperation({ summary: 'Obter venda por Código' })
-  @Get('code:id')
-  async getSellByCode(@Param('id') id: number) {
-    return this.sellsService.getSellByCode(id);
-  }
   
   @ApiOperation({ summary: 'Gerar etiquetas para um pedido específico via POST' })
   @Post(':id/label')
