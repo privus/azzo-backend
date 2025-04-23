@@ -908,7 +908,7 @@ export class SellsService implements ISellsRepository {
     };
   }
 
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Cron(CronExpression.EVERY_DAY_AT_1AM)
   async syncroTinyInvoiceNf(): Promise<void> {
     console.log("🔄 Iniciando sincronização de clientes do Tiny MG e SP...");
 
