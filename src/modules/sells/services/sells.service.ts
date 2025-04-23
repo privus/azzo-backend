@@ -385,7 +385,7 @@ export class SellsService implements ISellsRepository {
 
   async getSellById(id: number): Promise<Venda> {
     return this.vendaRepository.findOne({
-      where: { venda_id: id },
+      where: { codigo: id },
       relations: [
         'vendedor',
         'itensVenda.produto',
@@ -1014,10 +1014,13 @@ export class SellsService implements ISellsRepository {
       console.error(`❌ Erro ao obter token para ${uf}. Pulando sincronização.`);
       return;
     }
-  
+    const hj = new Date();
+    hj.setDate(hj.getDate() -1);
+    hj.toISOString().split('T')[0];
+
     while (true) {
       try {
-        const url = `${apiUrl}${this.nfeTag}?dataInicial=2025-03-11&offset=${offset}&limit=${limit}`;
+        const url = `${apiUrl}${this.nfeTag}?dataInicial=${hj}&offset=${offset}&limit=${limit}`;
         const response = await this.httpService.axiosRef.get<{ itens: NfeDto[] }>(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
