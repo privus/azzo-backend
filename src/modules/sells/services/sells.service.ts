@@ -1024,6 +1024,7 @@ export class SellsService implements ISellsRepository {
     while (true) {
       try {
         const url = `${apiUrl}${this.nfeTag}?dataInicial=${hj}&offset=${offset}&limit=${limit}`;
+        console.log('URL ========>', url);
         const response = await this.httpService.axiosRef.get<{ itens: NfeDto[] }>(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
