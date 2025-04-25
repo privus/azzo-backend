@@ -16,6 +16,9 @@ import { RegionsModule } from './modules/regions/regions.module';
 import { DebtsModule } from './modules/debts/debts.module';
 import { CreditsModule } from './modules/credits/credits.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { FilesModule } from './modules/files/files.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -55,6 +58,11 @@ import { ScheduleModule } from '@nestjs/schedule';
     DebtsModule,
     CreditsModule,
     ScheduleModule.forRoot(),
+    FilesModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads'),
+      serveRoot: '/static', 
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],

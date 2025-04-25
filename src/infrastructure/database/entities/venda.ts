@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
-import { Cliente, Regiao, Vendedor, ParcelaCredito, ItensVenda, StatusVenda, StatusPagamento, TipoPedido } from './';
+import { Cliente, Regiao, Vendedor, ParcelaCredito, ItensVenda, StatusVenda, StatusPagamento, TipoPedido, Arquivo } from './';
 
 @Entity('venda')
 export class Venda {
@@ -60,6 +60,9 @@ export class Venda {
   @Column({ type: 'tinyint', nullable: true })
   nfe_emitida: number;
 
+  @Column({ type: 'tinyint', nullable: true })
+  anexo: number;
+
   @Column({ type: 'int', nullable: true })
   numero_nfe: number;
 
@@ -95,4 +98,7 @@ export class Venda {
   @ManyToOne(() => TipoPedido)
   @JoinColumn({ name: 'tipo_pedido_id' })
   tipo_pedido: TipoPedido;
+
+  @OneToMany(() => Arquivo, (arquivo) => arquivo.venda, { cascade: true })
+  arquivos: Arquivo[];
 }
