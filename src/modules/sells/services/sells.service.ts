@@ -1016,7 +1016,7 @@ export class SellsService implements ISellsRepository {
       return;
     }
     const hj = new Date();
-    hj.setDate(hj.getDate() -1);
+    hj.setDate(hj.getDate() -5);
     hj.toISOString().split('T')[0];
 
     while (true) {
