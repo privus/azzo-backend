@@ -84,6 +84,7 @@ export class PrintOrderService {
           bold: true,
           margin: [0, 5, 0, 0],
           fontSize: 8,
+          color: '#fe4c40',
         },
   
         {

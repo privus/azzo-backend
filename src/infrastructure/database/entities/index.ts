@@ -27,3 +27,4 @@ export * from './tipoPedido';
 export * from './departamento';
 export * from './categoriaCredito';
 export * from './tinyTokens'
+export * from './arquivo';
