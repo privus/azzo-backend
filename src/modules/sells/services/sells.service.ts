@@ -1017,13 +1017,13 @@ export class SellsService implements ISellsRepository {
       console.error(`❌ Erro ao obter token para ${uf}. Pulando sincronização.`);
       return;
     }
-    const hj = new Date();
-    hj.setDate(hj.getDate() -3);
-    hj.toISOString().split('T')[0];
+    let hj = new Date();
+    hj.setDate(hj.getDate() - 3);
+    const dataInicial = hj.toISOString().split('T')[0];    
 
     while (true) {
       try {
-        const url = `${apiUrl}${this.nfeTag}?dataInicial=${hj}&offset=${offset}&limit=${limit}`;
+        const url = `${apiUrl}${this.nfeTag}?dataInicial=${dataInicial}&offset=${offset}&limit=${limit}`;
         console.log('URL ========>', url);
         const response = await this.httpService.axiosRef.get<{ itens: NfeDto[] }>(url, {
           headers: { Authorization: `Bearer ${token}` },
