@@ -88,8 +88,7 @@ export class SellsService implements ISellsRepository {
         const now = new Date();
         await this.updateLastSyncDate('sells', now);
         await this.updateLastUpdateDate('sells-update', now);
-        await this.getAccessKeyNf("MG", this.apiUrlTiny);
-        await this.getAccessKeyNf("SP", this.apiUrlTiny)
+        await this.syncroTinyInvoiceNf();
 
         // Add summary messages
         if (syncedSales.length > 0) {
