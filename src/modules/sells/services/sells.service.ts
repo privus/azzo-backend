@@ -1016,7 +1016,7 @@ export class SellsService implements ISellsRepository {
       return;
     }
     const hj = new Date();
-    hj.setDate(hj.getDate() -10);
+    hj.setDate(hj.getDate() -5);
     hj.toISOString().split('T')[0];
 
     while (true) {
@@ -1032,10 +1032,11 @@ export class SellsService implements ISellsRepository {
           console.log(`🚫 Nenhuma conta encontrada para ${uf} no offset ${offset}.`);
           break;
         }
-  
+        
         for (const nf of nfData) {
+          const nfNumero = nf.numero.padStart(4, '0');
           const venda = await this.vendaRepository.findOne({
-            where: { numero_nfe: Number(nf.numero) }}); 
+            where: { numero_nfe: Number(nfNumero) }}); 
           if (!venda) {
             console.warn(`⚠️ Venda não encontrada para nota ${nf.numero}`);
             continue;
