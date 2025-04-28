@@ -57,6 +57,9 @@ export class Venda {
   @Column({ type: 'varchar', length: 180, nullable: true, unique: true })
   chave_acesso: string;
 
+  @Column({ type: 'varchar', length: 180, nullable: true, unique: true })
+  nfe_link: string;
+
   @Column({ type: 'tinyint', nullable: true })
   nfe_emitida: number;
 

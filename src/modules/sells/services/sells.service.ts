@@ -177,7 +177,10 @@ export class SellsService implements ISellsRepository {
       existingSell.status_venda = status_venda;
       existingSell.observacao = sell.obs;
       existingSell.comisao = Number(sell.commission) || 0;
-      
+        if (existingSell.nfe_id) {
+          const link = await this.getNflink(existingSell.nfe_id, cliente.cidade.estado.sigla);
+          existingSell.nfe_link = link;
+        }
           if (sell.amount_final != existingSell.valor_final || sell.installment_qty != existingSell.numero_parcelas) {
             const productCodes = sell.products.map((item) => item.code);
             const produtosEncontrados = await this.produtoRepository.find({
@@ -1054,6 +1057,23 @@ export class SellsService implements ISellsRepository {
         console.error(`❌ Erro ao buscar contas para ${uf}:`, error.message);
         break;
       }
+    }
+  }
+
+  private async getNflink(id: number, uf: string): Promise<string | null> {
+    const url = `${this.apiUrlTiny}${this.nfeTag}/${id}/link`;
+    console.log('URL ============>', url);
+    const token = await this.tinyAuthService.getAccessToken(uf);
+    try {
+      const url = `${this.apiUrlTiny}${this.nfeTag}/${id}/link`;
+      const response = await this.httpService.axiosRef.get<{ link: string }>(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const link = response.data.link;
+      return link;
+    } catch (error) {
+      console.error(`❌ Erro ao buscar link da nota para ${uf}:`, error.message);
+      throw new BadRequestException({ message: error.message });
     }
   }
 }
