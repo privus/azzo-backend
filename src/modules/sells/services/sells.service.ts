@@ -180,6 +180,7 @@ export class SellsService implements ISellsRepository {
         if (existingSell.nfe_id) {
           const link = await this.getNflink(existingSell.nfe_id, cliente.cidade.estado.sigla);
           existingSell.nfe_link = link;
+          console.log('Link NFE ==========>', link);
         }
           if (sell.amount_final != existingSell.valor_final || sell.installment_qty != existingSell.numero_parcelas) {
             const productCodes = sell.products.map((item) => item.code);
@@ -1061,11 +1062,12 @@ export class SellsService implements ISellsRepository {
   }
 
   private async getNflink(id: number, uf: string): Promise<string | null> {
+    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
     const url = `${this.apiUrlTiny}${this.nfeTag}/${id}/link`;
     console.log('URL ============>', url);
     const token = await this.tinyAuthService.getAccessToken(uf);
     try {
-      const url = `${this.apiUrlTiny}${this.nfeTag}/${id}/link`;
+      await sleep(500); // 💥 Espera 500ms antes de chamar
       const response = await this.httpService.axiosRef.get<{ link: string }>(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -1076,4 +1078,5 @@ export class SellsService implements ISellsRepository {
       throw new BadRequestException({ message: error.message });
     }
   }
+  
 }
