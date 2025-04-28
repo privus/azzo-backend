@@ -80,7 +80,9 @@ export class CustomersService implements ICustomersRepository{
     });
 
     if (existingClient) {
-      console.log(`Customer with code ${client.code} already exists. Skipping...`);
+      existingClient.ativo = client.is_active;
+      await this.clienteRepository.save(existingClient);
+      console.log(`Cliente código ${client.code} ja exists. Atualizando somente is_active...`);
       return;
     }
 
@@ -99,12 +101,6 @@ export class CustomersService implements ICustomersRepository{
     if (!regiao) {
       regiao = await this.regiaoRepository.findOne({where: { codigo: 9}});;
     }
-
-    if (existingClient) {
-      console.log(`Customer with code ${client.code} already exists. Skipping...`);
-      return;
-    }
-
 
     // If the region exists but the city is not in it, add the city
     if (regiao && cidade && !regiao.cidades.some(c => c.nome === cidade.nome)) {
@@ -152,8 +148,11 @@ export class CustomersService implements ICustomersRepository{
     console.log(`Customer ${novoCliente.nome} saved successfully!`);
   }
 
-  findAllCustomers(): Promise<Cliente[]> {
-    return this.clienteRepository.find({ relations: ['cidade.estado', 'regiao', 'status_cliente', 'regiao.vendedores', 'vendedor', 'categoria_cliente'] });
+  async findAllCustomers(): Promise<Cliente[]> {
+    return await this.clienteRepository.find({ 
+      where: { ativo: 1 },
+      relations: ['cidade.estado', 'regiao', 'status_cliente', 'regiao.vendedores', 'vendedor', 'categoria_cliente'] 
+    });
   }
 
   findCustomerByCode(codigo: number): Promise<Cliente> {
