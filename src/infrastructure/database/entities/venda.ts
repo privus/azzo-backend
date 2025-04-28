@@ -66,6 +66,9 @@ export class Venda {
   @Column({ type: 'int', nullable: true })
   numero_nfe: number;
 
+  @Column({ type: 'int', nullable: true })
+  nfe_id: number;
+
   @Column({ type: 'varchar', nullable: true })
   data_emissao_nfe: Date;
 

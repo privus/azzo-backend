@@ -1045,6 +1045,7 @@ export class SellsService implements ISellsRepository {
           venda.chave_acesso = nf.chaveAcesso;
           venda.data_emissao_nfe = new Date(nf.dataEmissao);
           venda.nfe_emitida = 1;
+          venda.nfe_id = nf.id;
           await this.vendaRepository.save(venda);
           console.log(`✅ Chave de acesso ${nf.chaveAcesso} vinculada à venda ${venda.codigo}`);        
         }

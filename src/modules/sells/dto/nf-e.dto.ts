@@ -5,6 +5,7 @@ export interface NfeDto {
     valor: number;
     numero: string;
     dataEmissao: string;
+    id: number;
 }
 
 export interface ClienteTiny {
