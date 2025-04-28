@@ -89,7 +89,6 @@ export class SellsService implements ISellsRepository {
       const now = new Date();
       await this.updateLastSyncDate('sells', now);
       await this.updateLastUpdateDate('sells-update', now);
-      await this.syncroTinyInvoiceNf();
 
       if (syncedSales.length > 0) {
         messages.push(`Código das vendas sincronizadas: ${syncedSales.join(', ')}.`);
@@ -97,6 +96,7 @@ export class SellsService implements ISellsRepository {
       if (updatedSales.length > 0) {
         messages.push(`Código das vendas atualizadas: ${updatedSales.join(', ')}.`);
       }
+      await this.syncroTinyInvoiceNf();
   
       console.log(messages.join(' | '));
       return messages.join(' | ');
