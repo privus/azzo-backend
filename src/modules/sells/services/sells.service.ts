@@ -89,7 +89,8 @@ export class SellsService implements ISellsRepository {
       const now = new Date();
       await this.updateLastSyncDate('sells', now);
       await this.updateLastUpdateDate('sells-update', now);
-  
+      await this.syncroTinyInvoiceNf();
+
       if (syncedSales.length > 0) {
         messages.push(`Código das vendas sincronizadas: ${syncedSales.join(', ')}.`);
       }
@@ -316,8 +317,8 @@ export class SellsService implements ISellsRepository {
       observacao: sell.obs,
       numero_parcelas: sell.installment_qty,
       valor_parcela: Number(sell.installment_value),
-      metodo_pagamento: sell.payment_method_text || '',  // Corrigido para evitar valor NULL
-      forma_pagamento: sell.payment_term_text || '',  // Corrigido para evitar valor NULL
+      metodo_pagamento: sell.payment_method_text || '',
+      forma_pagamento: sell.payment_term_text || '',
       data_criacao: sell.order_date,
       valor_pedido: Number(sell.amount),
       valor_final: Number(sell.amount_final),

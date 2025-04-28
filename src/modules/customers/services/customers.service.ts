@@ -79,8 +79,19 @@ export class CustomersService implements ICustomersRepository{
       where: { codigo: client.code },
     });
 
+    let regiao = await this.regiaoRepository.findOne({
+      where: { codigo: client.region_code },
+      relations: ['cidades'],  // Ensure we get the list of associated cities
+    });
+
+    if (!regiao) {
+      regiao = await this.regiaoRepository.findOne({where: { codigo: 9}});;
+    }
+
     if (existingClient) {
+      existingClient.regiao = regiao;
       existingClient.ativo = client.is_active;
+      
       await this.clienteRepository.save(existingClient);
       console.log(`Cliente código ${client.code} ja exists. Atualizando somente is_active...`);
       return;
@@ -91,16 +102,6 @@ export class CustomersService implements ICustomersRepository{
       where: { nome: client.address_city },
       relations: ['estado'],
     });
-
-    // Fetch the region
-    let regiao = await this.regiaoRepository.findOne({
-      where: { codigo: client.region_code },
-      relations: ['cidades'],  // Ensure we get the list of associated cities
-    });
-
-    if (!regiao) {
-      regiao = await this.regiaoRepository.findOne({where: { codigo: 9}});;
-    }
 
     // If the region exists but the city is not in it, add the city
     if (regiao && cidade && !regiao.cidades.some(c => c.nome === cidade.nome)) {
