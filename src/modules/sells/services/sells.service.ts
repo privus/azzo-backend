@@ -1066,17 +1066,24 @@ export class SellsService implements ISellsRepository {
     const url = `${this.apiUrlTiny}${this.nfeTag}/${id}/link`;
     console.log('URL ============>', url);
     const token = await this.tinyAuthService.getAccessToken(uf);
+  
     try {
-      await sleep(500); // 💥 Espera 500ms antes de chamar
+      await sleep(1000); // 💥 Espera 1 segundo antes de cada chamada
       const response = await this.httpService.axiosRef.get<{ link: string }>(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const link = response.data.link;
       return link;
     } catch (error) {
-      console.error(`❌ Erro ao buscar link da nota para ${uf}:`, error.message);
-      throw new BadRequestException({ message: error.message });
+      if (error.response?.status === 429) {
+        console.warn('⚠️ 429 recebido. Aguardando 5 segundos antes de tentar novamente...');
+        await sleep(5000); // Espera 5 segundos
+        return this.getNflink(id, uf); // 🔁 Tenta de novo!
+      } else {
+        console.error(`❌ Erro ao buscar link da nota para ${uf}:`, error.message);
+        throw new BadRequestException({ message: error.message });
+      }
     }
-  }
+  }  
   
 }
