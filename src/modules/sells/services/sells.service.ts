@@ -177,7 +177,7 @@ export class SellsService implements ISellsRepository {
       existingSell.status_venda = status_venda;
       existingSell.observacao = sell.obs;
       existingSell.comisao = Number(sell.commission) || 0;
-        if (existingSell.nfe_id) {
+        if (existingSell.nfe_id && !existingSell.nfe_link) {
           const link = await this.getNflink(existingSell.nfe_id, cliente.cidade.estado.sigla);
           existingSell.nfe_link = link;
           console.log('Link NFE ==========>', link);
