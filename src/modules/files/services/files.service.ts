@@ -11,10 +11,11 @@ export class FileService {
   ) {}
   async saveMultipleFilesMetadata(files: Express.Multer.File[], id: number) {
     const venda = await this.vendaRepository.findOneByOrFail({ venda_id: id });
+    const name = `pedido_${venda.codigo}`;
 
     const arquivos = files.map(file =>
       this.arquivoRepository.create({
-        filename: file.filename,
+        filename: name,
         path: file.path,
         mimetype: file.mimetype,
         size: file.size,
