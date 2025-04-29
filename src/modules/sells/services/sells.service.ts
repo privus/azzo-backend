@@ -96,7 +96,6 @@ export class SellsService implements ISellsRepository {
       if (updatedSales.length > 0) {
         messages.push(`Código das vendas atualizadas: ${updatedSales.join(', ')}.`);
       }
-      await this.syncroTinyInvoiceNf();
   
       console.log(messages.join(' | '));
       return messages.join(' | ');
@@ -368,7 +367,7 @@ export class SellsService implements ISellsRepository {
       end.setHours(20, 59, 59, 999);
     } else {
       end = new Date(fromDate);
-      end.setHours(44, 59, 59, 999);
+      end.setHours(54, 59, 59, 999);
     }
     console.log('Start END ===============>', start, end);
   
@@ -1039,11 +1038,11 @@ export class SellsService implements ISellsRepository {
         }
         
         for (const nf of nfData) {
-          const nfNumero = nf.numero.padStart(4, '0');
+          const nfNumero = nf.numero.replace(/^0+/, '');
           const venda = await this.vendaRepository.findOne({
             where: { numero_nfe: Number(nfNumero) }}); 
-          if (!venda) {
-            console.warn(`⚠️ Venda não encontrada para nota ${nf.numero}`);
+          if (!venda || venda.chave_acesso) {
+            console.warn(`⚠️ Venda não encontrada ou ja esta vinculada nf-e:${nf.numero}`);
             continue;
           }
           venda.chave_acesso = nf.chaveAcesso;
