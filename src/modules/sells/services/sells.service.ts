@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, In, MoreThanOrEqual, Repository } from 'typeorm';
+import { Between, In, LessThan, MoreThanOrEqual, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda } from '../../../infrastructure/database/entities';
 import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository } from '../../../domain/repositories';
@@ -1085,4 +1085,31 @@ export class SellsService implements ISellsRepository {
       }
     }
   }
+
+  @Cron(CronExpression.EVERY_MINUTE)
+  async applyVolumeToOldOrders(): Promise<string> {
+    const hoje = new Date();
+    const dia12 = new Date(hoje.getFullYear(), hoje.getMonth(), 12);
+    console.log('Data de referência:', dia12.toLocaleDateString());
+  
+    const vendas = await this.vendaRepository.find({
+      where: {
+        data_criacao: LessThan(dia12),
+        volume: null,
+      },
+    });
+  
+    if (!vendas.length) {
+      return 'Nenhuma venda antiga sem volume encontrada.';
+    }
+  
+    for (const venda of vendas) {
+      venda.volume = 1;
+      await this.vendaRepository.save(venda);
+      console.log(`✅ Volume definido para venda ${venda.codigo}`);
+    }
+  
+    return `${vendas.length} venda(s) com data anterior a ${dia12.toLocaleDateString()} atualizadas com volume = 1.`;
+  }
+  
 }
