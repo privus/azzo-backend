@@ -98,6 +98,7 @@ export class SellsService implements ISellsRepository {
       }
   
       console.log(messages.join(' | '));
+      this.syncroTinyInvoiceNf()
       return messages.join(' | ');
   
     } catch (error) {
@@ -981,7 +982,7 @@ export class SellsService implements ISellsRepository {
   
           // Marcar parcela como paga com base na data de vencimento e valor
           const parcela = venda.parcela_credito.find(
-            (p) => Number(p.valor) === invoice.valor && p.numero === numeroParcela);
+            (p) => Math.floor(Number(p.valor)) === Math.floor(invoice.valor) && p.numero === numeroParcela);
           console.log('parcela ======>', parcela)
           console.log('parcelaVEnda ======>', venda.parcela_credito)
   
@@ -1083,6 +1084,8 @@ export class SellsService implements ISellsRepository {
         throw new BadRequestException({ message: error.message });
       }
     }
-  }  
+  }
+  
+  
   
 }
