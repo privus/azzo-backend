@@ -367,7 +367,7 @@ export class SellsService implements ISellsRepository {
       end.setHours(20, 59, 59, 999);
     } else {
       end = new Date(fromDate);
-      end.setHours(54, 59, 59, 999);
+      end.setHours(48, 59, 59, 999);
     }
     console.log('Start END ===============>', start, end);
   
