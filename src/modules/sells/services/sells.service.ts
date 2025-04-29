@@ -1084,32 +1084,5 @@ export class SellsService implements ISellsRepository {
         throw new BadRequestException({ message: error.message });
       }
     }
-  }
-
-  @Cron(CronExpression.EVERY_MINUTE)
-  async applyVolumeToOldOrders(): Promise<string> {
-    const hoje = new Date();
-    const dia12 = new Date(hoje.getFullYear(), hoje.getMonth(), 12);
-    console.log('Data de referência:', dia12.toLocaleDateString());
-  
-    const vendas = await this.vendaRepository.find({
-      where: {
-        data_criacao: LessThan(dia12),
-        volume: null,
-      },
-    });
-  
-    if (!vendas.length) {
-      return 'Nenhuma venda antiga sem volume encontrada.';
-    }
-  
-    for (const venda of vendas) {
-      venda.volume = 1;
-      await this.vendaRepository.save(venda);
-      console.log(`✅ Volume definido para venda ${venda.codigo}`);
-    }
-  
-    return `${vendas.length} venda(s) com data anterior a ${dia12.toLocaleDateString()} atualizadas com volume = 1.`;
-  }
-  
+  } 
 }
