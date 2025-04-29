@@ -14,4 +14,11 @@ export class UpdateSellStatusDto {
    */
   @IsNumber({}, { message: 'O ID do status da venda deve ser um número.' })
   status_venda_id: number;
+
+  /**
+   * Numero notafiscal.
+   * Exemplo: 56789
+   */
+  @IsNumber({}, { message: 'O número da nota fiscal deve ser um número.' })
+  numero_nfe: number;
 }

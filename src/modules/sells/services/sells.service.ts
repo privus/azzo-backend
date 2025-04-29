@@ -405,7 +405,7 @@ export class SellsService implements ISellsRepository {
   }
 
   async updateSellStatus(UpdateSellStatusDto: UpdateSellStatusDto): Promise<string> {
-    const { venda_id, status_venda_id } = UpdateSellStatusDto;
+    const { venda_id, status_venda_id, numero_nfe } = UpdateSellStatusDto;
 
     const venda = await this.vendaRepository.findOne({
       where: { venda_id },
@@ -423,9 +423,10 @@ export class SellsService implements ISellsRepository {
     }
 
     venda.status_venda = novoStatus;
+    venda.numero_nfe = numero_nfe;
     await this.vendaRepository.save(venda);
 
-    return `Status da venda ${venda.codigo} atualizado para ${novoStatus.nome}.`;
+    return `Status da venda ${venda.codigo} atualizado para ${novoStatus.nome}, Nf-e nº ${numero_nfe}.`;
   }
 
   async exportTiny(id: number): Promise<string> {
