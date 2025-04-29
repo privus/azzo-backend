@@ -98,7 +98,6 @@ export class SellsService implements ISellsRepository {
       }
   
       console.log(messages.join(' | '));
-      this.syncroTinyInvoiceNf()
       return messages.join(' | ');
   
     } catch (error) {
