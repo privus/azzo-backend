@@ -8,4 +8,5 @@ export interface ICustomersRepository {
   syncroIdTiny(): Promise<void>;
   registerCustomerTiny(id: number): Promise<number>;
   saveCustomer(customer: Cliente): Promise<void>;
+  syncroLastPageCustomers(): Promise<void>;
 }

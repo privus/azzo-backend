@@ -73,6 +73,48 @@ export class CustomersService implements ICustomersRepository{
     console.log('Customer synchronization completed!');
   }
 
+  async syncroLastPageCustomers(): Promise<void> {
+    try {
+      const urlFirstPage = `${this.apiUrlSellentt}${this.storeTag}?page=1`;
+  
+      const firstResponse = await this.httpService.axiosRef.get<{ meta: { last_page: number } }>(urlFirstPage, {
+        headers: {
+          Authorization: `Bearer ${this.tokenSellentt}`,
+        },
+      });
+  
+      const lastPage = firstResponse.data.meta.last_page;
+      if (!lastPage) {
+        console.error('❌ Não foi possível identificar a última página.');
+        return;
+      }
+  
+      const urlLastPage = `${this.apiUrlSellentt}${this.storeTag}?page=${lastPage}`;
+  
+      const lastResponse = await this.httpService.axiosRef.get<{ data: CustomerAPIResponse[] }>(urlLastPage, {
+        headers: {
+          Authorization: `Bearer ${this.tokenSellentt}`,
+        },
+      });
+  
+      const clientesData = lastResponse.data.data;
+      if (!clientesData || clientesData.length === 0) {
+        console.warn('⚠️ Nenhum cliente encontrado na última página.');
+        return;
+      } 
+  
+      for (const client of clientesData) {
+        await this.processarCliente(client);
+      }
+  
+      console.log('✅ Clientes da última página sincronizados com sucesso!');
+      
+    } catch (error) {
+      console.error('❌ Erro ao sincronizar clientes da última página:', error.message);
+      throw error;
+    }
+  } 
+
   private async processarCliente(client: CustomerAPIResponse) {
     // Check if the customer already exists
     const existingClient = await this.clienteRepository.findOne({
