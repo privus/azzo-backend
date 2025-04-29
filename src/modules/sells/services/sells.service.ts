@@ -919,8 +919,8 @@ export class SellsService implements ISellsRepository {
 
     const updatedSales = new Set<string>();
 
-    await this.syncroInvoiceNfForState("MG", this.apiUrlTiny, updatedSales);
-    await this.syncroInvoiceNfForState("SP", this.apiUrlTiny, updatedSales);
+    await this.syncroInvoiceNfForState("MG", this.apiUrlTiny);
+    await this.syncroInvoiceNfForState("SP", this.apiUrlTiny);
     await this.getAccessKeyNf("MG", this.apiUrlTiny, updatedSales);
     await this.getAccessKeyNf("SP", this.apiUrlTiny, updatedSales);
 
@@ -929,7 +929,7 @@ export class SellsService implements ISellsRepository {
     return `Sincronização de boletos e nf-e concluída! Vendas atualizadas: ${Array.from(updatedSales).join(", ")}`;
   }
 
-  private async syncroInvoiceNfForState(uf: string, apiUrl: string, updatedSales: Set<string>): Promise<void> {
+  private async syncroInvoiceNfForState(uf: string, apiUrl: string): Promise<void> {
     let offset = 0;
     const limit = 100;
     const token = await this.tinyAuthService.getAccessToken(uf);
@@ -996,7 +996,6 @@ export class SellsService implements ISellsRepository {
 
           venda.numero_nfe = Number(numeroNota);
           await this.vendaRepository.save(venda);
-          updatedSales.add(venda.codigo.toString());
           console.log(`✅ Nota fiscal ${numeroNota} vinculada à venda ${codigoPedido}`);
         }
 
