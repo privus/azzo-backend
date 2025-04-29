@@ -913,78 +913,77 @@ export class SellsService implements ISellsRepository {
     };
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_1AM)
-  async syncroTinyInvoiceNf(): Promise<void> {
+  @Cron(CronExpression.EVERY_DAY_AT_9AM)
+  async syncroTinyInvoiceNf(): Promise<string> {
     console.log("🔄 Iniciando sincronização de clientes do Tiny MG e SP...");
 
-    await this.syncroInvoiceNfForState("MG", this.apiUrlTiny);
-    await this.syncroInvoiceNfForState("SP", this.apiUrlTiny);
-    await this.getAccessKeyNf("MG", this.apiUrlTiny);
-    await this.getAccessKeyNf("SP", this.apiUrlTiny);
+    const updatedSales = new Set<string>();
+
+    await this.syncroInvoiceNfForState("MG", this.apiUrlTiny, updatedSales);
+    await this.syncroInvoiceNfForState("SP", this.apiUrlTiny, updatedSales);
+    await this.getAccessKeyNf("MG", this.apiUrlTiny, updatedSales);
+    await this.getAccessKeyNf("SP", this.apiUrlTiny, updatedSales);
 
     console.log("✅ Sincronização de clientes concluída!");
+
+    return `Sincronização de boletos e nf-e concluída! Vendas atualizadas: ${Array.from(updatedSales).join(", ")}`;
   }
 
-  private async syncroInvoiceNfForState(uf: string, apiUrl: string): Promise<void> {
+  private async syncroInvoiceNfForState(uf: string, apiUrl: string, updatedSales: Set<string>): Promise<void> {
     let offset = 0;
     const limit = 100;
     const token = await this.tinyAuthService.getAccessToken(uf);
-  
+
     if (!token) {
       console.error(`❌ Erro ao obter token para ${uf}. Pulando sincronização.`);
       return;
     }
-  
+
     while (true) {
       try {
         const url = `${apiUrl}${this.contasReceberTag}?dataInicialEmissao=2025-03-11&offset=${offset}&limit=${limit}`;
         const response = await this.httpService.axiosRef.get<{ itens: InvoiceTinyDto[] }>(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
-  
+
         const invoiceData = response.data.itens;
-  
+
         if (!invoiceData || invoiceData.length === 0) {
           console.log(`🚫 Nenhuma conta encontrada para ${uf} no offset ${offset}.`);
           break;
         }
-  
+
         for (const invoice of invoiceData) {
           const historico = invoice.historico;
           if (!historico.includes('sell')) continue;
-  
+
           const matchNota = historico.match(/NF nº (\d+)/);
           const matchPedido = historico.match(/nº (\d+)_sell/);
           const matchParcela = historico.match(/\(parcela (\d+)\/(\d+)\)/);
-  
+
           if (!matchNota || !matchPedido) {
             console.warn(`⚠️ Histórico sem formato válido: ${historico}`);
             continue;
           }
-  
+
           const numeroNota = matchNota[1];
           const codigoPedido = Number(matchPedido[1]);
           const numeroParcela = matchParcela ? Number(matchParcela[1]) : 1;
-          console.log('Numero nota =====>', numeroNota);
-          console.log('Numero pedido =====>', codigoPedido);
-          console.log('Numero parcela =====>', numeroParcela);
-  
+
           const venda = await this.vendaRepository.findOne({
             where: { codigo: codigoPedido },
             relations: ['cliente', 'parcela_credito.status_pagamento'],
           });
-  
+
           if (!venda) {
             console.warn(`⚠️ Venda não encontrada para código ${codigoPedido}, cliente tiny_id ${invoice.cliente.id}`);
             continue;
           }
-  
-          // Marcar parcela como paga com base na data de vencimento e valor
+
           const parcela = venda.parcela_credito.find(
-            (p) => Math.floor(Number(p.valor)) === Math.floor(invoice.valor) && p.numero === numeroParcela);
-          console.log('parcela ======>', parcela)
-          console.log('parcelaVEnda ======>', venda.parcela_credito)
-  
+            (p) => Math.floor(Number(p.valor)) === Math.floor(invoice.valor) && p.numero === numeroParcela
+          );
+
           if (parcela && invoice.situacao === 'pago') {
             const statusPago = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 2 } });
             parcela.status_pagamento = statusPago;
@@ -994,15 +993,14 @@ export class SellsService implements ISellsRepository {
           } else {
             console.warn(`⚠️ Nenhuma parcela correspondente para valor ${invoice.valor} no pedido ${codigoPedido}`);
           }
-  
-          // Atualizar venda com número da nota
+
           venda.numero_nfe = Number(numeroNota);
           await this.vendaRepository.save(venda);
+          updatedSales.add(venda.codigo.toString());
           console.log(`✅ Nota fiscal ${numeroNota} vinculada à venda ${codigoPedido}`);
         }
 
-        offset += limit; // próxima página
-  
+        offset += limit;
       } catch (error) {
         console.error(`❌ Erro ao buscar faturas para ${uf}:`, error.message);
         break;
@@ -1010,18 +1008,19 @@ export class SellsService implements ISellsRepository {
     }
   }
 
-  private async getAccessKeyNf(uf: string, apiUrl: string): Promise<void> {
+  private async getAccessKeyNf(uf: string, apiUrl: string, updatedSales: Set<string>): Promise<void> {
     let offset = 0;
     const limit = 100;
     const token = await this.tinyAuthService.getAccessToken(uf);
-  
+
     if (!token) {
       console.error(`❌ Erro ao obter token para ${uf}. Pulando sincronização.`);
       return;
     }
+
     let hj = new Date();
     hj.setDate(hj.getDate() - 2);
-    const data = hj.toISOString().split('T')[0];    
+    const data = hj.toISOString().split('T')[0];
 
     while (true) {
       try {
@@ -1029,29 +1028,33 @@ export class SellsService implements ISellsRepository {
         const response = await this.httpService.axiosRef.get<{ itens: NfeDto[] }>(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
-  
+
         const nfData = response.data.itens;
-  
+
         if (!nfData || nfData.length === 0) {
           console.log(`🚫 Nenhuma conta encontrada para ${uf} no offset ${offset}.`);
           break;
         }
-        
+
         for (const nf of nfData) {
           const nfNumero = nf.numero.replace(/^0+/, '');
-          const venda = await this.vendaRepository.findOne({
-            where: { numero_nfe: Number(nfNumero) }}); 
+          const venda = await this.vendaRepository.findOne({ where: { numero_nfe: Number(nfNumero) } });
+
           if (!venda || venda.chave_acesso) {
-            console.warn(`⚠️ Venda não encontrada ou ja esta vinculada nf-e:${nf.numero}`);
+            console.warn(`⚠️ Venda não encontrada ou ja está vinculada nf-e: ${nf.numero}`);
             continue;
           }
+
           venda.chave_acesso = nf.chaveAcesso;
           venda.data_emissao_nfe = new Date(nf.dataEmissao);
           venda.nfe_emitida = 1;
           venda.nfe_id = nf.id;
+          venda.nfe_link = await this.getNflink(nf.id, uf);
           await this.vendaRepository.save(venda);
-          console.log(`✅ Chave de acesso ${nf.chaveAcesso} vinculada à venda ${venda.codigo}`);        
+          updatedSales.add(venda.codigo.toString());
+          console.log(`✅ Chave de acesso ${nf.chaveAcesso} vinculada à venda ${venda.codigo}`);
         }
+
         offset += limit;
       } catch (error) {
         console.error(`❌ Erro ao buscar contas para ${uf}:`, error.message);
@@ -1063,28 +1066,23 @@ export class SellsService implements ISellsRepository {
   private async getNflink(id: number, uf: string): Promise<string | null> {
     const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
     const url = `${this.apiUrlTiny}${this.nfeTag}/${id}/link`;
-    console.log('URL ============>', url);
     const token = await this.tinyAuthService.getAccessToken(uf);
-  
+
     try {
-      await sleep(1000); // 💥 Espera 1 segundo antes de cada chamada
+      await sleep(1000);
       const response = await this.httpService.axiosRef.get<{ link: string }>(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const link = response.data.link;
-      return link;
+      return response.data.link;
     } catch (error) {
       if (error.response?.status === 429) {
         console.warn('⚠️ 429 recebido. Aguardando 5 segundos antes de tentar novamente...');
-        await sleep(5000); // Espera 5 segundos
-        return this.getNflink(id, uf); // 🔁 Tenta de novo!
+        await sleep(5000);
+        return this.getNflink(id, uf);
       } else {
         console.error(`❌ Erro ao buscar link da nota para ${uf}:`, error.message);
         throw new BadRequestException({ message: error.message });
       }
     }
   }
-  
-  
-  
 }

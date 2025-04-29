@@ -84,12 +84,19 @@ export class SellsController {
     return { message: resultMessage };
   }
 
+  @ApiOperation({ summary: 'Sincronizar boletos e Nfs' })
+  @Get('syncroInvoiceNfe')
+  async syncroAllInvoiceNfs() {
+    const resultMessage = await this.sellsService.syncroTinyInvoiceNf();
+    return { message: resultMessage };
+  }  
+
   @ApiOperation({ summary: 'Sincronizar todas as vendas' })
   @Get('syncro')
   async syncroAllSells() {
     const resultMessage = await this.sellsService.syncroSells();
     return { message: resultMessage };
-  }
+  } 
 
   @ApiOperation({ summary: 'Excluir venda e suas parcelas' })
   @Delete(':id')
