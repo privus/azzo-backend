@@ -366,7 +366,7 @@ export class SellsService implements ISellsRepository {
     let end: Date;
     if (toDate) {
       end = new Date(toDate);
-      end.setHours(20, 59, 59, 999);
+      end.setHours(44, 59, 59, 999);
     } else {
       end = new Date(fromDate);
       end.setHours(48, 59, 59, 999);
@@ -893,11 +893,14 @@ export class SellsService implements ISellsRepository {
   
     // === Dados do mês atual ===
     const agora = new Date();
+
     const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString().slice(0, 10);
     const hj = agora.toISOString().slice(0, 10);
+    console.log('Inicio do mês ====>', inicioMes);
   
     const relatorioMesAtual = await this.reportBrandSalesBySeller(inicioMes, hj);
     const azzoData = relatorioMesAtual["Azzo"];
+    console.log('Azzo Data ====>', azzoData);
     const faturamentoMesAtual = azzoData.totalFaturado;
   
     const faturamentoPorMarcaMesAtual: { [marca: string]: number } = {};
