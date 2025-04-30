@@ -19,6 +19,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { FilesModule } from './modules/files/files.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { EmailMarketingModule } from './modules/email-marketing/email-marketing.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { join } from 'path';
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/static', 
     }),
+    EmailMarketingModule
   ],
   controllers: [AppController],
   providers: [AppService],
