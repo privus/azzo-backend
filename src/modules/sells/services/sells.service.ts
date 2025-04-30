@@ -893,12 +893,13 @@ export class SellsService implements ISellsRepository {
   
     // === Dados do mês atual ===
     const agora = new Date();
-    agora.setDate(agora.getDate() + 1); // inclui o dia de hoje
     const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString().slice(0, 10);
     const hj = agora.toISOString().slice(0, 10);
+    console.log('Inicio do mês ====>', inicioMes);
   
     const relatorioMesAtual = await this.reportBrandSalesBySeller(inicioMes, hj);
     const azzoData = relatorioMesAtual["Azzo"];
+    console.log('Azzo Data ====>', azzoData);
     const faturamentoMesAtual = azzoData.totalFaturado;
   
     const faturamentoPorMarcaMesAtual: { [marca: string]: number } = {};
