@@ -13,7 +13,7 @@ async function bootstrap() {
 
   const logger = new Logger('Bootstrap');
 
-  const allowedOrigins = ['http://localhost:4200', 'https://geecom.com.br'];
+  const allowedOrigins = ['http://localhost:4200', 'https://geecom.com.br', 'https://p.geecom.com.br'];
 
   const uploadsPath = join(__dirname, '..', 'uploads');
 
