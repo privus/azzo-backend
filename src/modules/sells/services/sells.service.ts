@@ -893,7 +893,6 @@ export class SellsService implements ISellsRepository {
   
     // === Dados do mês atual ===
     const agora = new Date();
-    agora.setDate(agora.getDate() + 1); // inclui o dia de hoje
     const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString().slice(0, 10);
     const hj = agora.toISOString().slice(0, 10);
   
