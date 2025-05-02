@@ -1185,4 +1185,47 @@ export class SellsService implements ISellsRepository {
   
     return result;
   } 
+
+    async reportSalesByBrandAndProduct(): Promise<
+    Record<string, Record<string, { quantidade: number; valor: number }>>
+  > {
+    const vendas = await this.vendaRepository.find({
+      relations: ['itensVenda', 'itensVenda.produto', 'itensVenda.produto.fornecedor'],
+    });
+
+    const relatorio: Record<string, Record<string, { quantidade: number; valor: number }>> = {};
+
+    for (const venda of vendas) {
+      for (const item of venda.itensVenda) {
+        const produto = item?.produto;
+        const marca = produto?.fornecedor?.nome || 'Desconhecida';
+        const nomeProduto = produto?.nome || 'Produto sem nome';
+        const quantidade = Number(item.quantidade);
+        const valor = Number(item.valor_total);
+
+        if (!relatorio[marca]) {
+          relatorio[marca] = {};
+        }
+
+        if (!relatorio[marca][nomeProduto]) {
+          relatorio[marca][nomeProduto] = { quantidade: 0, valor: 0 };
+        }
+
+        relatorio[marca][nomeProduto].quantidade += quantidade;
+        relatorio[marca][nomeProduto].valor += valor;
+      }
+    }
+
+    // Formatar valores com 2 casas decimais
+    for (const marca in relatorio) {
+      for (const produto in relatorio[marca]) {
+        relatorio[marca][produto].valor = Number(
+          relatorio[marca][produto].valor.toFixed(2)
+        );
+      }
+    }
+
+    return relatorio;
+  }
+
 }

@@ -43,7 +43,7 @@ export class SellsController {
   @ApiOperation({ summary: 'Obter mix' })
   @Get('mix')
   async getMix() {
-    return this.sellsService.reportUniqueEanBySegment();
+    return this.sellsService.reportSalesByBrandAndProduct();
   }
 
   @ApiOperation({ summary: 'Quanto faturado por marca' })
