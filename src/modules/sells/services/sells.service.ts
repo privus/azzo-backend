@@ -1140,6 +1140,8 @@ export class SellsService implements ISellsRepository {
         fornecedores: fornecedorData,
       };
     }
+
+    console.log('relatorio ====>', result);
   
     return result;
   }
