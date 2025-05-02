@@ -1112,9 +1112,9 @@ export class SellsService implements ISellsRepository {
   
       for (const item of venda.itensVenda) {
         const ean = item.produto?.ean?.toString();
-        const fornecedor = item.produto?.fornecedor?.nome || 'Desconhecido';
-        const custo = item.produto?.preco_custo || 0;
-        const receita = item.valor_total || 0;
+        const fornecedor = item.produto?.fornecedor?.nome;
+        const custo = item.produto?.preco_custo;
+        const receita = item.valor_total;
   
         if (!ean) continue;
   
