@@ -1090,7 +1090,7 @@ export class SellsService implements ISellsRepository {
     }
   } 
 
-  async reportUniqueEanBySegment(): Promise<Record<string, { totalVendas: number, fornecedores: Record<string, { uniqueEansCount: number, uniqueEans: string[] }> }>> {
+  async reportUniqueEanBySegment(): Promise<Record<string, { totalVendas: number, fornecedores: Record<string, { uniqueEansCount: number }> }>> {
     const vendas = await this.vendaRepository.find({
       relations: ['cliente.categoria_cliente', 'itensVenda', 'itensVenda.produto', 'itensVenda.produto.fornecedor'],
     });
@@ -1123,15 +1123,14 @@ export class SellsService implements ISellsRepository {
       }
     }
   
-    const result: Record<string, { totalVendas: number, fornecedores: Record<string, { uniqueEansCount: number, uniqueEans: string[] }> }> = {};
+    const result: Record<string, { totalVendas: number, fornecedores: Record<string, { uniqueEansCount: number }> }> = {};
   
     for (const categoria in segmentoMap) {
-      const fornecedorData: Record<string, { uniqueEansCount: number, uniqueEans: string[] }> = {};
+      const fornecedorData: Record<string, { uniqueEansCount: number }> = {};
       for (const fornecedor in segmentoMap[categoria].fornecedores) {
         const eanSet = segmentoMap[categoria].fornecedores[fornecedor];
         fornecedorData[fornecedor] = {
           uniqueEansCount: eanSet.size,
-          uniqueEans: Array.from(eanSet),
         };
       }
       result[categoria] = {
@@ -1139,7 +1138,7 @@ export class SellsService implements ISellsRepository {
         fornecedores: fornecedorData,
       };
     }
-
+  
     console.log('relatorio ====>', result);
   
     return result;
