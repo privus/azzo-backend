@@ -1189,7 +1189,7 @@ export class SellsService implements ISellsRepository {
     async reportSalesByBrandAndProduct(): Promise<
     Record<string, Record<string, { quantidade: number; valor: number }>>
   > {
-    const vendas = await this.sellsBetweenDates('2025-04-01', '2025-05-01')
+    const vendas = await this.sellsBetweenDates('2025-04-01', '2025-04-30')
 
     const relatorio: Record<string, Record<string, { quantidade: number; valor: number }>> = {};
 
