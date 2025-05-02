@@ -1113,16 +1113,12 @@ export class SellsService implements ISellsRepository {
       for (const item of venda.itensVenda) {
         const ean = item.produto?.ean?.toString();
         const fornecedor = item.produto?.fornecedor?.nome;
-        const precoCusto = item.produto?.preco_custo;
-        const quantidade = item.quantidade;
-        const receita = item.valor_total;
-        console.log('receita ====>', receita);
-        console.log('precoCusto ====>', precoCusto);
-        console.log('quantidade ====>', quantidade);
-        console.log('fornecedor ====>', fornecedor);
+        const precoCusto = Number(item.produto?.preco_custo);
+        const quantidade = Number(item.quantidade);
+        const receita = Number(item.valor_total);
         const custoTotal = precoCusto * quantidade;
   
-        if (!ean || receita === 0) continue;
+        if (!ean || receita <= 0) continue;
   
         if (!segmentoMap[categoria].fornecedores[fornecedor]) {
           segmentoMap[categoria].fornecedores[fornecedor] = {
@@ -1145,8 +1141,8 @@ export class SellsService implements ISellsRepository {
       const fornecedorData: Record<string, { uniqueEansCount: number, margem: number }> = {};
       for (const fornecedor in segmentoMap[categoria].fornecedores) {
         const data = segmentoMap[categoria].fornecedores[fornecedor];
-        const receita = data.receita;
-        const custo = data.custo;
+        const receita = Number(data.receita);
+        const custo = Number(data.custo);
         const margem = receita > 0 ? Number((((receita - custo) / receita) * 100).toFixed(2)) : 0;
   
         fornecedorData[fornecedor] = {
@@ -1159,7 +1155,9 @@ export class SellsService implements ISellsRepository {
         fornecedores: fornecedorData,
       };
     }
- 
+  
+    console.log('relatorio ====>', result);
+  
     return result;
-  }     
+  }  
 }
