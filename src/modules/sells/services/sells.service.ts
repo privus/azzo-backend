@@ -1091,12 +1091,12 @@ export class SellsService implements ISellsRepository {
   } 
 
   @Cron(CronExpression.EVERY_MINUTE)
-  async reportUniqueEanBySegment(): Promise<Record<string, { totalVendas: number, uniqueEansCount: number, uniqueEans: string[] }>> {
+  async reportUniqueEanBySegment(): Promise<Record<string, { totalVendas: number, fornecedores: Record<string, { uniqueEansCount: number, uniqueEans: string[] }> }>> {
     const vendas = await this.vendaRepository.find({
-      relations: ['cliente.categoria_cliente', 'itensVenda', 'itensVenda.produto'],
+      relations: ['cliente.categoria_cliente', 'itensVenda', 'itensVenda.produto', 'itensVenda.produto.fornecedor'],
     });
-
-    const segmentoMap: Record<string, { totalVendas: number, uniqueEans: Set<string> }> = {};
+  
+    const segmentoMap: Record<string, { totalVendas: number, fornecedores: Record<string, Set<string>> }> = {};
   
     for (const venda of vendas) {
       const categoria = venda.cliente?.categoria_cliente?.nome;
@@ -1105,7 +1105,7 @@ export class SellsService implements ISellsRepository {
       if (!segmentoMap[categoria]) {
         segmentoMap[categoria] = {
           totalVendas: 0,
-          uniqueEans: new Set<string>(),
+          fornecedores: {},
         };
       }
   
@@ -1113,24 +1113,35 @@ export class SellsService implements ISellsRepository {
   
       for (const item of venda.itensVenda) {
         const ean = item.produto?.ean?.toString();
-        console.log('EAN ====>', ean);
-        if (ean) {
-          segmentoMap[categoria].uniqueEans.add(ean);
+        const fornecedor = item.produto?.fornecedor?.nome || 'Desconhecido';
+        if (!ean) continue;
+  
+        if (!segmentoMap[categoria].fornecedores[fornecedor]) {
+          segmentoMap[categoria].fornecedores[fornecedor] = new Set<string>();
         }
+  
+        segmentoMap[categoria].fornecedores[fornecedor].add(ean);
       }
     }
   
-    const result: Record<string, { totalVendas: number, uniqueEansCount: number, uniqueEans: string[] }> = {};
+    const result: Record<string, { totalVendas: number, fornecedores: Record<string, { uniqueEansCount: number, uniqueEans: string[] }> }> = {};
   
     for (const categoria in segmentoMap) {
+      const fornecedorData: Record<string, { uniqueEansCount: number, uniqueEans: string[] }> = {};
+      for (const fornecedor in segmentoMap[categoria].fornecedores) {
+        const eanSet = segmentoMap[categoria].fornecedores[fornecedor];
+        fornecedorData[fornecedor] = {
+          uniqueEansCount: eanSet.size,
+          uniqueEans: Array.from(eanSet),
+        };
+      }
       result[categoria] = {
         totalVendas: segmentoMap[categoria].totalVendas,
-        uniqueEansCount: segmentoMap[categoria].uniqueEans.size,
-        uniqueEans: Array.from(segmentoMap[categoria].uniqueEans),
+        fornecedores: fornecedorData,
       };
     }
   
-    console.log('Relatório de EANs únicos por segmento:', result);
     return result;
   }
+  
 }
