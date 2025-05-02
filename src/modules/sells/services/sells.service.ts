@@ -1112,11 +1112,13 @@ export class SellsService implements ISellsRepository {
   
       for (const item of venda.itensVenda) {
         const ean = item.produto?.ean?.toString();
-        const fornecedor = item.produto?.fornecedor?.nome;
-        const custo = item.produto?.preco_custo;
-        const receita = item.valor_total;
+        const fornecedor = item.produto?.fornecedor?.nome || 'Desconhecido';
+        const precoCusto = item.produto?.preco_custo || 0;
+        const quantidade = item.quantidade || 1;
+        const receita = item.valor_total || 0;
+        const custoTotal = precoCusto * quantidade;
   
-        if (!ean) continue;
+        if (!ean || receita === 0) continue;
   
         if (!segmentoMap[categoria].fornecedores[fornecedor]) {
           segmentoMap[categoria].fornecedores[fornecedor] = {
@@ -1129,7 +1131,7 @@ export class SellsService implements ISellsRepository {
         const fornecedorData = segmentoMap[categoria].fornecedores[fornecedor];
         fornecedorData.eans.add(ean);
         fornecedorData.receita += receita;
-        fornecedorData.custo += custo * (item.quantidade || 1);
+        fornecedorData.custo += custoTotal;
       }
     }
   
@@ -1139,7 +1141,9 @@ export class SellsService implements ISellsRepository {
       const fornecedorData: Record<string, { uniqueEansCount: number, margem: number }> = {};
       for (const fornecedor in segmentoMap[categoria].fornecedores) {
         const data = segmentoMap[categoria].fornecedores[fornecedor];
-        const margem = data.receita > 0 ? Number((((data.receita - data.custo) / data.receita) * 100).toFixed(2)) : 0;
+        const receita = data.receita;
+        const custo = data.custo;
+        const margem = receita > 0 ? Number((((receita - custo) / receita) * 100).toFixed(2)) : 0;
   
         fornecedorData[fornecedor] = {
           uniqueEansCount: data.eans.size,
