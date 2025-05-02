@@ -1089,4 +1089,48 @@ export class SellsService implements ISellsRepository {
       }
     }
   } 
+
+  @Cron(CronExpression.EVERY_MINUTE)
+  async reportUniqueEanBySegment(): Promise<Record<string, { totalVendas: number, uniqueEansCount: number, uniqueEans: string[] }>> {
+    const vendas = await this.vendaRepository.find({
+      relations: ['cliente.categoria_cliente', 'itensVenda', 'itensVenda.produto'],
+    });
+
+    const segmentoMap: Record<string, { totalVendas: number, uniqueEans: Set<string> }> = {};
+  
+    for (const venda of vendas) {
+      const categoria = venda.cliente?.categoria_cliente?.nome;
+      if (!categoria) continue;
+  
+      if (!segmentoMap[categoria]) {
+        segmentoMap[categoria] = {
+          totalVendas: 0,
+          uniqueEans: new Set<string>(),
+        };
+      }
+  
+      segmentoMap[categoria].totalVendas += 1;
+  
+      for (const item of venda.itensVenda) {
+        const ean = item.produto?.ean?.toString();
+        console.log('EAN ====>', ean);
+        if (ean) {
+          segmentoMap[categoria].uniqueEans.add(ean);
+        }
+      }
+    }
+  
+    const result: Record<string, { totalVendas: number, uniqueEansCount: number, uniqueEans: string[] }> = {};
+  
+    for (const categoria in segmentoMap) {
+      result[categoria] = {
+        totalVendas: segmentoMap[categoria].totalVendas,
+        uniqueEansCount: segmentoMap[categoria].uniqueEans.size,
+        uniqueEans: Array.from(segmentoMap[categoria].uniqueEans),
+      };
+    }
+  
+    console.log('Relatório de EANs únicos por segmento:', result);
+    return result;
+  }
 }
