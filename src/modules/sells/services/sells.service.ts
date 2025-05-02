@@ -1112,10 +1112,14 @@ export class SellsService implements ISellsRepository {
   
       for (const item of venda.itensVenda) {
         const ean = item.produto?.ean?.toString();
-        const fornecedor = item.produto?.fornecedor?.nome || 'Desconhecido';
-        const precoCusto = item.produto?.preco_custo || 0;
-        const quantidade = item.quantidade || 1;
-        const receita = item.valor_total || 0;
+        const fornecedor = item.produto?.fornecedor?.nome;
+        const precoCusto = item.produto?.preco_custo;
+        const quantidade = item.quantidade;
+        const receita = item.valor_total;
+        console.log('receita ====>', receita);
+        console.log('precoCusto ====>', precoCusto);
+        console.log('quantidade ====>', quantidade);
+        console.log('fornecedor ====>', fornecedor);
         const custoTotal = precoCusto * quantidade;
   
         if (!ean || receita === 0) continue;
@@ -1155,11 +1159,7 @@ export class SellsService implements ISellsRepository {
         fornecedores: fornecedorData,
       };
     }
-  
-    console.log('relatorio ====>', result);
-  
+ 
     return result;
-  }
-  
-  
+  }     
 }
