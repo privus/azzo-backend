@@ -1090,12 +1090,20 @@ export class SellsService implements ISellsRepository {
     }
   } 
 
-  async reportUniqueEanBySegment(): Promise<Record<string, { totalVendas: number, fornecedores: Record<string, { uniqueEansCount: number, margem: number }> }>> {
+  async reportUniqueEanBySegment(): Promise<Record<string, { totalVendas: number, faturamento: number, fornecedores: Record<string, { uniqueEansCount: number, margem: number, participacao: number }> }>> {
     const vendas = await this.vendaRepository.find({
       relations: ['cliente.categoria_cliente', 'itensVenda', 'itensVenda.produto', 'itensVenda.produto.fornecedor'],
     });
   
-    const segmentoMap: Record<string, { totalVendas: number, fornecedores: Record<string, { eans: Set<string>, receita: number, custo: number }> }> = {};
+    const segmentoMap: Record<string, {
+      totalVendas: number,
+      faturamento: number,
+      fornecedores: Record<string, {
+        eans: Set<string>,
+        receita: number,
+        custo: number
+      }>
+    }> = {};
   
     for (const venda of vendas) {
       const categoria = venda.cliente?.categoria_cliente?.nome;
@@ -1104,6 +1112,7 @@ export class SellsService implements ISellsRepository {
       if (!segmentoMap[categoria]) {
         segmentoMap[categoria] = {
           totalVendas: 0,
+          faturamento: 0,
           fornecedores: {},
         };
       }
@@ -1120,6 +1129,8 @@ export class SellsService implements ISellsRepository {
   
         if (!ean || receita <= 0) continue;
   
+        segmentoMap[categoria].faturamento += receita;
+  
         if (!segmentoMap[categoria].fornecedores[fornecedor]) {
           segmentoMap[categoria].fornecedores[fornecedor] = {
             eans: new Set<string>(),
@@ -1135,23 +1146,37 @@ export class SellsService implements ISellsRepository {
       }
     }
   
-    const result: Record<string, { totalVendas: number, fornecedores: Record<string, { uniqueEansCount: number, margem: number }> }> = {};
+    const result: Record<string, {
+      totalVendas: number,
+      faturamento: number,
+      fornecedores: Record<string, {
+        uniqueEansCount: number,
+        margem: number,
+        participacao: number
+      }>
+    }> = {};
   
     for (const categoria in segmentoMap) {
-      const fornecedorData: Record<string, { uniqueEansCount: number, margem: number }> = {};
+      const totalFaturamento = segmentoMap[categoria].faturamento;
+      const fornecedorData: Record<string, { uniqueEansCount: number, margem: number, participacao: number }> = {};
+  
       for (const fornecedor in segmentoMap[categoria].fornecedores) {
         const data = segmentoMap[categoria].fornecedores[fornecedor];
         const receita = Number(data.receita);
         const custo = Number(data.custo);
         const margem = receita > 0 ? Number((((receita - custo) / receita) * 100).toFixed(2)) : 0;
+        const participacao = totalFaturamento > 0 ? Number(((receita / totalFaturamento) * 100).toFixed(2)) : 0;
   
         fornecedorData[fornecedor] = {
           uniqueEansCount: data.eans.size,
           margem,
+          participacao,
         };
       }
+  
       result[categoria] = {
         totalVendas: segmentoMap[categoria].totalVendas,
+        faturamento: Number(totalFaturamento.toFixed(2)),
         fornecedores: fornecedorData,
       };
     }
@@ -1159,5 +1184,5 @@ export class SellsService implements ISellsRepository {
     console.log('relatorio ====>', result);
   
     return result;
-  }  
+  } 
 }
