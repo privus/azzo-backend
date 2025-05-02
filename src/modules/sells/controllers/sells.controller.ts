@@ -40,6 +40,12 @@ export class SellsController {
     return this.sellsService.getDailyRakingSells();
   }
 
+  @ApiOperation({ summary: 'Obter mix' })
+  @Get('mix')
+  async getMix() {
+    return this.sellsService.reportUniqueEanBySegment();
+  }
+
   @ApiOperation({ summary: 'Quanto faturado por marca' })
   @Get('brand')
   async sellsByBrand(@Query('fromDate') fromDate: string, @Query('toDate') toDate?: string) {

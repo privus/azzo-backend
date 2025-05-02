@@ -1090,7 +1090,6 @@ export class SellsService implements ISellsRepository {
     }
   } 
 
-  @Cron(CronExpression.EVERY_MINUTE)
   async reportUniqueEanBySegment(): Promise<Record<string, { totalVendas: number, fornecedores: Record<string, { uniqueEansCount: number, uniqueEans: string[] }> }>> {
     const vendas = await this.vendaRepository.find({
       relations: ['cliente.categoria_cliente', 'itensVenda', 'itensVenda.produto', 'itensVenda.produto.fornecedor'],
