@@ -107,7 +107,51 @@ export class SellsService implements ISellsRepository {
       return 'Erro ao sincronizar vendas.';
     }
   }
+
+  @Cron(CronExpression.EVERY_30_MINUTES)
+  async syncroStatusSells(): Promise<void> {
+    let currentPage = 1;
+    const maxPage = 8;
   
+    try {
+      while (currentPage <= maxPage) {
+        const url = `${this.apiUrlSellentt}${this.apiTagSellentt}?page=${currentPage}`;
+        console.log(`📄 Fetching page ${currentPage} -> ${url}`);
+  
+        const response = await this.httpService.axiosRef.get<{
+          data: SellsApiResponse[];
+          meta: { current_page: number; last_page: number };
+        }>(url, {
+          headers: { Authorization: `Bearer ${this.tokenSellentt}` },
+        });
+  
+        const sellsData = response.data.data;
+  
+        if (!sellsData.length) {
+          console.warn(`⚠️ Página ${currentPage} sem vendas. Encerrando...`);
+          break;
+        }
+  
+        for (const sell of sellsData) {
+          const existingSell = await this.vendaRepository.findOne({
+            where: { codigo: Number(sell.code) },
+          });
+  
+          if (existingSell) {
+            const newStatus = await this.statusVendaRepository.findOne({
+              where: { status_venda_id: sell.status.id },
+            });
+            existingSell.status_venda = newStatus;
+            await this.vendaRepository.save(existingSell);
+              console.log(`✅ Status updated for venda: ${sell.code}`);
+            }
+        }  
+        currentPage++;
+      }
+    } catch (error) {
+      console.error('❌ Erro ao sincronizar status de vendas:', error);
+    }
+  }
 
   private formatDateWithTime(date: Date): string {
     const offset = -3 * 60; // UTC-3 in minutes
@@ -1214,7 +1258,6 @@ export class SellsService implements ISellsRepository {
       }
     }
 
-    // Formatar valores com 2 casas decimais
     for (const marca in relatorio) {
       for (const produto in relatorio[marca]) {
         relatorio[marca][produto].valor = Number(
