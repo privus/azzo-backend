@@ -98,7 +98,8 @@ export class SellsService implements ISellsRepository {
       if (updatedSales.length > 0) {
         messages.push(`Código das vendas atualizadas: ${updatedSales.join(', ')}.`);
       }
-  
+      
+      this.syncroStatusSells();
       console.log(messages.join(' | '));
       return messages.join(' | ');
   
@@ -108,7 +109,6 @@ export class SellsService implements ISellsRepository {
     }
   }
 
-  @Cron(CronExpression.EVERY_30_MINUTES)
   async syncroStatusSells(): Promise<void> {
     let currentPage = 1;
     const maxPage = 8;
@@ -1269,4 +1269,21 @@ export class SellsService implements ISellsRepository {
     return relatorio;
   }
 
+  updateStatusSell(id: number): Promise<void> {
+    const url = `${this.apiUrlTiny}${this.orderTag}/${id}`;
+    try {
+      return this.httpService.axiosRef.put(url, { status_id: 1 }, {
+        headers: {
+          Authorization: `Bearer ${this.tokenSellentt}`,
+          'Content-Type': 'application/json',
+        },
+      }).then(() => {
+        console.log(`Status da venda ${id} atualizado com sucesso.`);
+      });
+    }
+    catch (error) {
+      console.error(`Erro ao atualizar o status da venda ${id}:`, error.message);
+      throw new BadRequestException({ message: error.message });
+    }
+  }
 }
