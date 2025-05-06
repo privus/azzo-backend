@@ -13,7 +13,7 @@ export class LabelService {
     if (!order) {
       throw new Error(`Pedido ID ${orderId} não encontrado.`);
     }
-    await this.sellsSevice.updateStatusSell(orderId);
+
     // Caminho do logo
     const logoPath = path.resolve('src/utils/azzo.png');
     const logoBase64 = await this.getBase64Image(logoPath);
