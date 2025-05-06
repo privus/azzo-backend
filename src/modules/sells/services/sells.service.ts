@@ -1272,7 +1272,7 @@ export class SellsService implements ISellsRepository {
   updateStatusSell(id: number): Promise<void> {
     const url = `${this.apiUrlTiny}${this.orderTag}/${id}`;
     try {
-      return this.httpService.axiosRef.put(url, { status_id: 1 }, {
+      return this.httpService.axiosRef.put(url, { status_id: 11541 }, {
         headers: {
           Authorization: `Bearer ${this.tokenSellentt}`,
           'Content-Type': 'application/json',
