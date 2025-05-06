@@ -1270,7 +1270,8 @@ export class SellsService implements ISellsRepository {
   }
 
   updateStatusSell(id: number): Promise<void> {
-    const url = `${this.apiUrlSellentt}${this.orderTag}/${id}`;
+    const url = `${this.apiUrlSellentt}${this.apiTagSellentt}/${id}`;
+    console.log('URL ====>', url);
     try {
       return this.httpService.axiosRef.put(url, { status_id: 11541 }, {
         headers: {
