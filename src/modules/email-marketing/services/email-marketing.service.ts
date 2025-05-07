@@ -23,10 +23,47 @@ export class EmailMarketingService implements IEmailMarketingService {
     });
   }
 
-  async sendCampaign(campaign: CreateCampaignDto): Promise<void> {
-    const clientes = await this.clienteRepo.find();
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 
+  private async sendInBatches(emails: string[], batchSize: number, delay: number, campaign: CreateCampaignDto): Promise<void> {
+    for (let i = 0; i < emails.length; i += batchSize) {
+      const batch = emails.slice(i, i + batchSize);
+      this.logger.log(`📦 Enviando lote de ${batch.length} emails (${i + 1} - ${i + batch.length})`);
+
+      const results = await Promise.allSettled(
+        batch.map(email => this.transporter.sendMail({
+          from: campaign.from,
+          to: email,
+          subject: campaign.subject,
+          html: campaign.htmlContent,
+          headers: {
+            'List-Unsubscribe': '<https://azzodistribuidora.com.br/unsubscribe>'
+          }
+        }))
+      );
+
+      results.forEach((result, idx) => {
+        const target = batch[idx];
+        if (result.status === 'fulfilled') {
+          this.logger.log(`✅ Email enviado para: ${target}`);
+        } else {
+          this.logger.error(`❌ Falha ao enviar para: ${target}`, result.reason);
+        }
+      });
+
+      if (i + batchSize < emails.length) {
+        this.logger.log(`🕒 Aguardando ${delay / 1000}s antes do próximo lote...`);
+        await this.sleep(delay);
+      }
+    }
+  }
+
+  async sendCampaign(campaign: CreateCampaignDto): Promise<void> {
+    const clientes = await this.clienteRepo.find(); // mantido caso você use em outro lugar
     const emails = [
+      ...clientes.map(c => c.email),
       ...(campaign.to || []),
     ]
       .filter(Boolean)
@@ -34,22 +71,8 @@ export class EmailMarketingService implements IEmailMarketingService {
       .filter((v, i, a) => a.indexOf(v) === i)
       .filter(email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
 
-    this.logger.log(`Enviando campanha para ${emails.length} destinatários`);
+    this.logger.log(`📨 Iniciando envio para ${emails.length} destinatários`);
 
-    for (const email of emails) {
-      try {
-        const info = await this.transporter.sendMail({
-          from: campaign.from,
-          to: email,
-          subject: campaign.subject,
-          html: campaign.htmlContent,
-        });
-        this.logger.log(`✅ Email enviado para: ${email} | Resposta: ${JSON.stringify(info)}`);
-        
-        this.logger.log(`✅ Email enviado para: ${email}`);
-      } catch (err) {
-        this.logger.error(`❌ Erro ao enviar para ${email}`, err);
-      }
-    }
+    await this.sendInBatches(emails, 100, 60000, campaign);
   }
 }
