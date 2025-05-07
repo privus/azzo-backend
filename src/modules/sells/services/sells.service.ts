@@ -1067,7 +1067,7 @@ export class SellsService implements ISellsRepository {
     }
 
     let hj = new Date();
-    hj.setDate(hj.getDate() - 25);
+    hj.setDate(hj.getDate() - 15);
     const data = hj.toISOString().split('T')[0];
 
     while (true) {
