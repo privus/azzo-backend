@@ -44,11 +44,8 @@ export class EmailMarketingService implements IEmailMarketingService {
   }
 
   async sendCampaign(campaign: CreateCampaignDto): Promise<void> {
-    const clientes = await this.clienteRepo.find();
-
-    const emails = [
-      ...(campaign.to || []),
-    ]
+    const emails = (campaign.to || [])
+    
       .filter(Boolean)
       .map(email => email.trim().toLowerCase())
       .filter((v, i, a) => a.indexOf(v) === i)
