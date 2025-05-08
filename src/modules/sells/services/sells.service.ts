@@ -462,6 +462,8 @@ export class SellsService implements ISellsRepository {
       throw new Error(`Venda com ID ${venda_id} não encontrada.`);
     }
 
+    await this.updateStatusSell(venda.codigo, status_venda_id);
+
     const novoStatus = await this.statusVendaRepository.findOne({ where: { status_venda_id } });
 
     if (!novoStatus) {
@@ -1269,11 +1271,11 @@ export class SellsService implements ISellsRepository {
     return relatorio;
   }
 
-  updateStatusSell(id: number): Promise<void> {
+  updateStatusSell(id: number, status_id: number): Promise<void> {
     const url = `${this.apiUrlSellentt}${this.apiTagSellentt}/${id}`;
     console.log('URL ====>', url);
     try {
-      return this.httpService.axiosRef.put(url, { status_id: 11541 }, {
+      return this.httpService.axiosRef.put(url, { status_id }, {
         headers: {
           Authorization: `Bearer ${this.tokenSellentt}`,
           'Content-Type': 'application/json',
@@ -1287,4 +1289,39 @@ export class SellsService implements ISellsRepository {
       throw new BadRequestException({ message: error.message });
     }
   }
+
+  async projectStockByProduct(
+    fromDate: string,
+    toDate?: string,
+    statusVendaIds?: number[]
+  ): Promise<{ codigo: string; nome: string; quantidade: number, sku: number }[]> {
+    const vendas = await this.sellsBetweenDates(fromDate, toDate);
+  
+    const vendasFiltradas = statusVendaIds?.length
+      ? vendas.filter(venda => statusVendaIds.includes(venda.status_venda?.status_venda_id))
+      : vendas;
+  
+    const resultMap: Map<string, { codigo: string; nome: string; quantidade: number, sku: number }> = new Map();
+  
+    for (const venda of vendasFiltradas) {
+      for (const item of venda.itensVenda) {
+        const produto = item.produto;
+        if (!produto?.codigo || !produto.nome) continue;
+  
+        if (!resultMap.has(produto.codigo)) {
+          resultMap.set(produto.codigo, {
+            codigo: produto.codigo,
+            nome: produto.nome,
+            sku: produto.ean,
+            quantidade: 0,
+          });
+        }
+  
+        resultMap.get(produto.codigo)!.quantidade += Number(item.quantidade);
+      }
+    }
+  
+    return Array.from(resultMap.values());
+  }  
+
 }

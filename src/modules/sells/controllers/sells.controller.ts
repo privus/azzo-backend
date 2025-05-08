@@ -70,6 +70,15 @@ export class SellsController {
     return this.sellsService.commissionBySeller(fromDate, toDate);
   }
 
+  @ApiOperation({ summary: 'Projeção estoque por periodo' })
+  @Get('projectStock')
+  async getProjectStock(@Query('fromDate') fromDate: string, @Query('toDate') toDate?: string, @Query('statusVendaIds') statusVendaIds?: string) {
+    const statusIds: number[] | undefined = statusVendaIds
+    ? statusVendaIds.split(',').map(Number).filter(id => !isNaN(id))
+    : undefined;
+    return this.sellsService.projectStockByProduct(fromDate, toDate, statusIds);
+  }
+
   @ApiOperation({ summary: 'Dados vendas por período' })
   @Get('salesPerformance')
   async getPerformance(@Query('fromDate1') fromDate1: string, @Query('toDate1') toDate1: string, @Query('fromDate2') fromDate2: string, @Query('toDate2') toDate2: string) {
