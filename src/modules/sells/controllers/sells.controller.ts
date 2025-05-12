@@ -72,11 +72,8 @@ export class SellsController {
 
   @ApiOperation({ summary: 'Projeção estoque por periodo' })
   @Get('projectStock')
-  async getProjectStock(@Query('fromDate') fromDate: string, @Query('toDate') toDate?: string, @Query('statusVendaIds') statusVendaIds?: string) {
-    const statusIds: number[] | undefined = statusVendaIds
-    ? statusVendaIds.split(',').map(Number).filter(id => !isNaN(id))
-    : undefined;
-    return this.sellsService.projectStockByProduct(fromDate, toDate, statusIds);
+  async getProjectStock() {
+    return this.sellsService.projectStockByProduct();
   }
 
   @ApiOperation({ summary: 'Dados vendas por período' })

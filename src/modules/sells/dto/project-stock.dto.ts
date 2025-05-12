@@ -3,5 +3,7 @@ export interface ProjectStockDto {
   nome: string;
   quantidade: number;
   sku: number;
-  pedidos: number[];
+  descricao_uni: string;
+  pedidos: number[]; // agora é array
 }
+

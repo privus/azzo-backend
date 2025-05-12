@@ -3,7 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, LessThan, MoreThanOrEqual, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda } from '../../../infrastructure/database/entities';
-import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto } from '../dto';
+import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto, ProjectStockDto } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository } from '../../../domain/repositories';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
@@ -436,7 +436,7 @@ export class SellsService implements ISellsRepository {
 
   async getSellById(id: number): Promise<Venda> {
     return this.vendaRepository.findOne({
-      where: { venda_id: id },
+      where: { codigo: id },
       relations: [
         'vendedor',
         'itensVenda.produto',
@@ -1273,7 +1273,7 @@ export class SellsService implements ISellsRepository {
 
   updateStatusSell(id: number, status_id: number): Promise<void> {
     const url = `${this.apiUrlSellentt}${this.apiTagSellentt}/${id}`;
-    console.log('URL ====>', url);
+    
     try {
       return this.httpService.axiosRef.put(url, { status_id }, {
         headers: {
@@ -1290,20 +1290,16 @@ export class SellsService implements ISellsRepository {
     }
   }
 
-  async projectStockByProduct(
-    fromDate: string,
-    toDate?: string,
-    statusVendaIds?: number[]
-  ): Promise<{ codigo: string; nome: string; quantidade: number, sku: number }[]> {
-    const vendas = await this.sellsBetweenDates(fromDate, toDate);
+  async projectStockByProduct(): Promise<ProjectStockDto[]> {
+    const statusVendaIds = [ 11139, 11138]
+    const vendas = await this.vendaRepository.find({ where: { status_venda: { status_venda_id: In(statusVendaIds || []) } }, relations: ['itensVenda', 'itensVenda.produto'] });
   
-    const vendasFiltradas = statusVendaIds?.length
-      ? vendas.filter(venda => statusVendaIds.includes(venda.status_venda?.status_venda_id))
-      : vendas;
-  
-    const resultMap: Map<string, { codigo: string; nome: string; quantidade: number, sku: number }> = new Map();
-  
-    for (const venda of vendasFiltradas) {
+    const resultMap: Map<string, ProjectStockDto> = new Map();
+    
+    const stripHtml = (html: string): string =>
+      html.replace(/<[^>]+>/g, '').trim();
+    
+    for (const venda of vendas) {
       for (const item of venda.itensVenda) {
         const produto = item.produto;
         if (!produto?.codigo || !produto.nome) continue;
@@ -1314,14 +1310,23 @@ export class SellsService implements ISellsRepository {
             nome: produto.nome,
             sku: produto.ean,
             quantidade: 0,
+            descricao_uni: stripHtml(produto.descricao_uni || ''),
+            pedidos: [],
           });
         }
   
-        resultMap.get(produto.codigo)!.quantidade += Number(item.quantidade);
+        const entry = resultMap.get(produto.codigo)!;
+        entry.quantidade += Number(item.quantidade);
+        if (venda.codigo) {
+          entry.pedidos.push(venda.codigo);
+        }
       }
     }
   
-    return Array.from(resultMap.values());
+    return Array.from(resultMap.values()).map(p => ({
+      ...p,
+      pedidos: Array.from(p.pedidos),
+    }));
   }  
 
 }
