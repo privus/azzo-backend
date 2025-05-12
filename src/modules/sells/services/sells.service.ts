@@ -462,8 +462,6 @@ export class SellsService implements ISellsRepository {
       throw new Error(`Venda com ID ${venda_id} não encontrada.`);
     }
 
-    await this.updateStatusSell(venda.codigo, status_venda_id);
-
     const novoStatus = await this.statusVendaRepository.findOne({ where: { status_venda_id } });
 
     if (!novoStatus) {
@@ -473,6 +471,8 @@ export class SellsService implements ISellsRepository {
     venda.status_venda = novoStatus;
     venda.numero_nfe = numero_nfe;
     await this.vendaRepository.save(venda);
+    await this.updateStatusSell(venda.codigo, status_venda_id);
+
 
     return `Status da venda ${venda.codigo} atualizado para ${novoStatus.nome}, Nf-e nº ${numero_nfe}.`;
   }
@@ -1273,7 +1273,7 @@ export class SellsService implements ISellsRepository {
 
   updateStatusSell(id: number, status_id: number): Promise<void> {
     const url = `${this.apiUrlSellentt}${this.apiTagSellentt}/${id}`;
-    
+    console.log('url ======', url)    
     try {
       return this.httpService.axiosRef.put(url, { status_id }, {
         headers: {
