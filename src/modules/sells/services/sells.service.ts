@@ -227,7 +227,8 @@ export class SellsService implements ISellsRepository {
           existingSell.nfe_link = link;
           console.log('Link NFE ==========>', link);
         }
-          if (sell.amount_final != existingSell.valor_final || sell.installment_qty != existingSell.numero_parcelas) {
+          if (existingSell.valor_final != sell.amount_final || sell.installment_qty != existingSell.numero_parcelas) {
+            console.log('Venda já existente e atualizando carrinho =>', sell.code);
             const productCodes = sell.products.map((item) => item.code);
             const produtosEncontrados = await this.produtoRepository.find({
               where: { codigo: In(productCodes) },
@@ -434,7 +435,7 @@ export class SellsService implements ISellsRepository {
     });
   }  
 
-  async getSellById(id: number): Promise<Venda> {
+  async getSellByCode(id: number): Promise<Venda> {
     return this.vendaRepository.findOne({
       where: { codigo: id },
       relations: [
@@ -1327,6 +1328,10 @@ export class SellsService implements ISellsRepository {
       ...p,
       pedidos: Array.from(p.pedidos),
     }));
-  }  
+  }
 
+  async saveSell(venda: Venda): Promise<void> {
+    await this.vendaRepository.save(venda);
+    return
+  }
 }

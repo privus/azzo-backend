@@ -28,3 +28,5 @@ export * from './departamento';
 export * from './categoriaCredito';
 export * from './tinyTokens'
 export * from './arquivo';
+export * from './transportadora';
+export * from './romaneio';

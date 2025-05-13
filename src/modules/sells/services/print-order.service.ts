@@ -9,7 +9,7 @@ export class PrintOrderService {
   constructor(@Inject('ISellsRepository') private readonly sellsSevice: ISellsRepository) {}
 
   async printOrder(orderId: number, responsible: string): Promise<{ fileName: string; pdfBuffer: Buffer }> {
-    const order = await this.sellsSevice.getSellById(orderId);
+    const order = await this.sellsSevice.getSellByCode(orderId);
     if (!order) {
       throw new Error(`Pedido ID ${orderId} não encontrado.`);
     }
@@ -84,7 +84,7 @@ export class PrintOrderService {
           alignment: 'right',
           bold: true,
           margin: [0, 5, 0, 0],
-          fontSize: 8,
+          fontSize: 10,
           color: '#fe4c40',
         },
   

@@ -6,10 +6,10 @@ import * as PdfPrinter from 'pdfmake';
 
 @Injectable()
 export class LabelService {
-  constructor( @Inject('ISellsRepository') private readonly sellsSevice: ISellsRepository,) {}
+  constructor( @Inject('ISellsRepository') private readonly sellsSevice: ISellsRepository) {}
 
   async generateLabel(orderId: number, totalVolumes: number, responsible: string): Promise<Buffer> {
-    const order = await this.sellsSevice.getSellById(orderId);
+    const order = await this.sellsSevice.getSellByCode(orderId);
     if (!order) {
       throw new Error(`Pedido ID ${orderId} não encontrado.`);
     }

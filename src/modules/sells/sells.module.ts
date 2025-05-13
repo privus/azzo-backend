@@ -13,6 +13,8 @@ import {
   Syncro,
   TipoPedido,
   TinyTokens,
+  Romaneio,
+  Transportadora,
 } from '../../infrastructure/database/entities';
 import { SellsController } from './controllers/sells.controller';
 import { HttpModule } from '@nestjs/axios';
@@ -23,6 +25,7 @@ import { TinyAuthService } from './services/tiny-auth.service';
 import { TinyTokenService } from './services/tiny-token.service';
 import { LabelService } from './services/label.service';
 import { PrintOrderService } from './services/print-order.service';
+import { RomaneioService } from './services/romaneio.service';
 
 @Module({
   imports: [
@@ -37,6 +40,8 @@ import { PrintOrderService } from './services/print-order.service';
       Syncro,
       TipoPedido,
       TinyTokens,
+      Romaneio,
+      Transportadora
     ]),
     HttpModule,
     CustomersModule,
@@ -50,6 +55,7 @@ import { PrintOrderService } from './services/print-order.service';
     SellsService,
     TinyAuthService,
     TinyTokenService,
+    RomaneioService,
     { provide: 'ITinyAuthRepository', useClass: TinyAuthService },
     { provide: 'ITinyTokenRepository', useClass: TinyTokenService },
     { provide: 'ISellsRepository', useClass: SellsService },

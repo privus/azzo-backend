@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
-import { Cliente, Regiao, Vendedor, ParcelaCredito, ItensVenda, StatusVenda, StatusPagamento, TipoPedido, Arquivo } from './';
+import { Cliente, Regiao, Vendedor, ParcelaCredito, ItensVenda, StatusVenda, StatusPagamento, TipoPedido, Arquivo, Romaneio } from './';
 
 @Entity('venda')
 export class Venda {
@@ -107,4 +107,9 @@ export class Venda {
 
   @OneToMany(() => Arquivo, (arquivo) => arquivo.venda, { cascade: true })
   arquivos: Arquivo[];
+
+  @ManyToOne(() => Romaneio, (romaneio) => romaneio.vendas, { nullable: true })
+  @JoinColumn({ name: 'romaneio_id' })
+  romaneio: Romaneio;
+
 }

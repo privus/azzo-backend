@@ -2,9 +2,10 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Res } from '@
 import { Response } from 'express';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SellsService } from '../services/sells.service';
-import { UpdateSellStatusDto } from '../dto';
+import { RomaneioDto, UpdateSellStatusDto } from '../dto';
 import { LabelService } from '../services/label.service';
 import { PrintOrderService } from '../services/print-order.service';
+import { RomaneioService } from '../services/romaneio.service';
 
 @ApiTags('sells')
 @Controller('sells')
@@ -12,7 +13,8 @@ export class SellsController {
   constructor(
     private readonly sellsService: SellsService, 
     private readonly labelService: LabelService, 
-    private readonly printOrderService: PrintOrderService
+    private readonly printOrderService: PrintOrderService,
+    private readonly romaneioService: RomaneioService
   ) {}
 
   @ApiOperation({ summary: 'Vendas por data' })
@@ -82,6 +84,19 @@ export class SellsController {
     return this.sellsService.performanceSalesPeriods(fromDate1, toDate1, fromDate2, toDate2);
   }
 
+  @ApiOperation({ summary: 'Gerar romaneio' })
+  @Post('romaneio')
+  async generateRomaneio(@Body() romaneioDto: RomaneioDto) {
+    const resultMessage = await this.romaneioService.generateRomaneio(romaneioDto);
+    return { message: resultMessage };
+  }
+
+  @ApiOperation({ summary: 'Obter romaneios' })
+  @Get('romaneio')
+  async getRomaneios() {
+    return this.romaneioService.getRomaneios();
+  }
+
   @ApiOperation({ summary: 'Exportar pedido para o Tiny'})
   @Get('export/:id')
   async exportToTiny(@Param('id') id: number) {
@@ -120,7 +135,7 @@ export class SellsController {
   @ApiOperation({ summary: 'Obter venda por ID' })
   @Get(':id')
   async getSellById(@Param('id') id: number) {
-    return this.sellsService.getSellById(id);
+    return this.sellsService.getSellByCode(id);
   }
   
   @ApiOperation({ summary: 'Gerar etiquetas para um pedido específico via POST' })
