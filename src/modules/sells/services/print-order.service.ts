@@ -123,7 +123,7 @@ export class PrintOrderService {
 
     sortedItens.forEach((item, idx) => {
       const produto = item.produto;
-      const isCaixa = produto?.descricao_uni?.toUpperCase()?.includes('CAIXA');
+      const isCaixa = produto?.descricao_uni?.toUpperCase()?.includes('CAIXA') || produto.quantidade > 11;
       const obs = item.observacao ? `obs: ${item.observacao}` : '';
 
       const row = [
