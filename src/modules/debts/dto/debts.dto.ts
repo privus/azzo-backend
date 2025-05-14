@@ -22,7 +22,7 @@ export class DebtsDto {
    * Exemplo: '2025-01-08'
    */
   @IsString({ message: 'A data de competencia deve ser uma string.' })
-  @Length(3, 90, { message: 'O banco deve ter entre 3 e 180 caracteres.' })
+  @Length(3, 90, { message: 'A data competencia deve ter entre 3 e 180 caracteres.' })
   data_competencia: string;
 
   /**

@@ -97,6 +97,12 @@ export class SellsController {
     return this.romaneioService.getRomaneios();
   }
 
+  @ApiOperation({ summary: 'Abter transportadoras' })
+  @Get('trans')
+  async getTransportadoras() {
+    return this.romaneioService.getTransportadoras();
+  }
+
   @ApiOperation({ summary: 'Exportar pedido para o Tiny'})
   @Get('export/:id')
   async exportToTiny(@Param('id') id: number) {

@@ -14,7 +14,7 @@ export class RomaneioService {
   ) {}
    
   async generateRomaneio(romaneioDto: RomaneioDto): Promise<string> {
-    const { codes, transportadora_id, transportadora_nome } = romaneioDto;
+    const { codigos, transportadora_id, transportadora_nome, data_criacao } = romaneioDto;
     let transportadora = await this.transportadoraRepository.findOne({ where: { transportadora_id }});
   
     if (!transportadora) {
@@ -23,12 +23,13 @@ export class RomaneioService {
     }
   
     const vendas = await Promise.all(
-      codes.map(async (code) => await this.sellsService.getSellByCode(code))
+      codigos.map(async (code) => await this.sellsService.getSellByCode(code))
     );
   
     const novoRomaneio = this.romaneioRepository.create({
       vendas,
       transportadora,
+      data_criacao,
     });
   
     await this.romaneioRepository.save(novoRomaneio);
@@ -42,6 +43,10 @@ export class RomaneioService {
   } 
 
   getRomaneios(): Promise<Romaneio[]> {
-    return this.romaneioRepository.find({ relations: ['vendas', 'transportadora'] });
+    return this.romaneioRepository.find({ relations: ['vendas.cliente', 'transportadora'] });
+  }
+
+  getTransportadoras(): Promise<Transportadora[]> {
+    return this.transportadoraRepository.find();
   }
 }

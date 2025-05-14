@@ -6,7 +6,7 @@ export class Romaneio {
   @PrimaryGeneratedColumn('increment')
   romaneio_id: number;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ type: 'varchar', nullable: false })
   data_criacao: Date;
 
   @ManyToOne(() => Transportadora)
