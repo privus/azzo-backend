@@ -1292,14 +1292,21 @@ export class SellsService implements ISellsRepository {
   }
 
   async projectStockByProduct(): Promise<ProjectStockDto[]> {
-    const statusVendaIds = [ 11139, 11138]
-    const vendas = await this.vendaRepository.find({ where: { status_venda: { status_venda_id: In(statusVendaIds || []) } }, relations: ['itensVenda', 'itensVenda.produto'] });
+    const statusVendaIds = [11139, 11138];
+    const vendas = await this.vendaRepository.find({
+      where: {
+        status_venda: {
+          status_venda_id: In(statusVendaIds || [])
+        }
+      },
+      relations: ['itensVenda', 'itensVenda.produto', 'cliente'],
+    });
   
     const resultMap: Map<string, ProjectStockDto> = new Map();
-    
+  
     const stripHtml = (html: string): string =>
       html.replace(/<[^>]+>/g, '').trim();
-    
+  
     for (const venda of vendas) {
       for (const item of venda.itensVenda) {
         const produto = item.produto;
@@ -1319,17 +1326,18 @@ export class SellsService implements ISellsRepository {
         const entry = resultMap.get(produto.codigo)!;
         entry.quantidade += Number(item.quantidade);
         if (venda.codigo) {
-          entry.pedidos.push(venda.codigo);
+          entry.pedidos.push({
+            codigo: venda.codigo,
+            cliente: venda.cliente?.nome || '',
+            data: venda.data_criacao ? new Date(venda.data_criacao).toISOString() : '',
+          });
         }
       }
     }
   
-    return Array.from(resultMap.values()).map(p => ({
-      ...p,
-      pedidos: Array.from(p.pedidos),
-    }));
+    return Array.from(resultMap.values());
   }
-
+  
   async saveSell(venda: Venda): Promise<void> {
     await this.vendaRepository.save(venda);
     return

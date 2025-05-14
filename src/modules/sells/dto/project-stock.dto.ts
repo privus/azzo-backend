@@ -1,9 +1,12 @@
 export interface ProjectStockDto {
   codigo: string;
   nome: string;
-  quantidade: number;
   sku: number;
+  quantidade: number;
   descricao_uni: string;
-  pedidos: number[]; // agora é array
+  pedidos: {
+    codigo: number;
+    cliente: string;
+    data: string; // ou Date
+  }[];
 }
-
