@@ -42,31 +42,28 @@ export class SellsService implements ISellsRepository {
     const messages: string[] = [];
     const syncedSales: string[] = [];
     const updatedSales: string[] = [];
-
+  
     await this.clienteService.syncroLastPageCustomers();
   
-    try {
-      const lastSync = await this.getLastSyncDate('sells');
-      const lastUpdate = await this.getLastUpdateDate('sells-update');
+    const lastSync = await this.getLastSyncDate('sells');
+    const lastUpdate = await this.getLastUpdateDate('sells-update');
   
-      console.log('Última sincronização:', lastSync);
-      console.log('Última atualização:', lastUpdate);
+    console.log('Última sincronização:', lastSync);
+    console.log('Última atualização:', lastUpdate);
   
-      // Build query parameters
-      const params = [];
-      if (lastSync) params.push(`after_created=${this.formatDateWithTime(lastSync)}`);
-      if (lastUpdate) params.push(`after_updated=${this.formatDateWithTime(lastUpdate)}`);
-  
+    const fetchSells = async (queryParam: string, type: 'created' | 'updated') => {
       let currentPage = 1;
       let lastPage = 1;
       const maxPage = 12;
   
       do {
-        // Construct URL with pagination
-        const url = `${this.apiUrlSellentt}${this.apiTagSellentt}?${params.join('&')}&page=${currentPage}`;
+        const url = `${this.apiUrlSellentt}${this.apiTagSellentt}?${queryParam}&page=${currentPage}`;
         console.log('Fetching URL:', url);
   
-        const response = await this.httpService.axiosRef.get<{ data: SellsApiResponse[], meta: { current_page: number, last_page: number } }>(url, {
+        const response = await this.httpService.axiosRef.get<{
+          data: SellsApiResponse[],
+          meta: { current_page: number, last_page: number }
+        }>(url, {
           headers: { Authorization: `Bearer ${this.tokenSellentt}` },
         });
   
@@ -84,30 +81,39 @@ export class SellsService implements ISellsRepository {
         }
   
         currentPage++;
-  
       } while (currentPage <= lastPage && currentPage <= maxPage);
+    };
   
-      // Update sync timestamps
+    try {
+      if (lastSync) {
+        const createdParam = `after_created=${this.formatDateWithTime(lastSync)}`;
+        await fetchSells(createdParam, 'created');
+      }
+  
+      if (lastUpdate) {
+        const updatedParam = `after_updated=${this.formatDateWithTime(lastUpdate)}`;
+        await fetchSells(updatedParam, 'updated');
+      }
+  
       const now = new Date();
       await this.updateLastSyncDate('sells', now);
       await this.updateLastUpdateDate('sells-update', now);
-
+  
       if (syncedSales.length > 0) {
         messages.push(`Código das vendas sincronizadas: ${syncedSales.join(', ')}.`);
       }
       if (updatedSales.length > 0) {
         messages.push(`Código das vendas atualizadas: ${updatedSales.join(', ')}.`);
       }
-      
+  
       this.syncroStatusSells();
       console.log(messages.join(' | '));
       return messages.join(' | ');
-  
     } catch (error) {
       console.error('Erro ao sincronizar vendas:', error);
       return 'Erro ao sincronizar vendas.';
     }
-  }
+  } 
 
   async syncroStatusSells(): Promise<void> {
     let currentPage = 1;
