@@ -1242,7 +1242,8 @@ export class SellsService implements ISellsRepository {
     async reportSalesByBrandAndProduct(): Promise<
     Record<string, Record<string, { quantidade: number; valor: number }>>
   > {
-    const vendas = await this.sellsBetweenDates('2025-04-01', '2025-04-30')
+    const todasAsVendas = await this.sellsBetweenDates('2025-04-01', '2025-04-30')
+    const vendas = todasAsVendas.filter(venda => venda.vendedor && venda.vendedor.vendedor_id === 14);
 
     const relatorio: Record<string, Record<string, { quantidade: number; valor: number }>> = {};
 
