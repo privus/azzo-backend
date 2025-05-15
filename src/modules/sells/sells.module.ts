@@ -26,6 +26,7 @@ import { TinyTokenService } from './services/tiny-token.service';
 import { LabelService } from './services/label.service';
 import { PrintOrderService } from './services/print-order.service';
 import { RomaneioService } from './services/romaneio.service';
+import { PrintOrderResumeService } from './services/print-order-resume.service';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { RomaneioService } from './services/romaneio.service';
     TinyAuthService,
     TinyTokenService,
     RomaneioService,
+    PrintOrderResumeService,
     { provide: 'ITinyAuthRepository', useClass: TinyAuthService },
     { provide: 'ITinyTokenRepository', useClass: TinyTokenService },
     { provide: 'ISellsRepository', useClass: SellsService },
@@ -63,6 +65,7 @@ import { RomaneioService } from './services/romaneio.service';
   exports: [
     LabelService,
     PrintOrderService,
+    PrintOrderResumeService,
     SellsService,
     TinyAuthService,
     TinyTokenService,

@@ -6,6 +6,7 @@ import { RomaneioDto, UpdateSellStatusDto } from '../dto';
 import { LabelService } from '../services/label.service';
 import { PrintOrderService } from '../services/print-order.service';
 import { RomaneioService } from '../services/romaneio.service';
+import { PrintOrderResumeService } from '../services/print-order-resume.service';
 
 @ApiTags('sells')
 @Controller('sells')
@@ -14,7 +15,8 @@ export class SellsController {
     private readonly sellsService: SellsService, 
     private readonly labelService: LabelService, 
     private readonly printOrderService: PrintOrderService,
-    private readonly romaneioService: RomaneioService
+    private readonly romaneioService: RomaneioService,
+    private readonly printOrderResumeService: PrintOrderResumeService,
   ) {}
 
   @ApiOperation({ summary: 'Vendas por data' })
@@ -129,7 +131,19 @@ export class SellsController {
   async syncroAllSells() {
     const resultMessage = await this.sellsService.syncroSells();
     return { message: resultMessage };
-  } 
+  }
+
+  @Post('printResume')
+  async printOrderResume(
+    @Body('ids') ids: number[],
+    @Res() res: Response,
+  ) {
+    const { fileName, pdfBuffer } = await this.printOrderResumeService.printOrderResume(ids);
+  
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename=' + fileName); // 👈 inline, não attachment
+    return res.send(pdfBuffer);
+  }   
 
   @ApiOperation({ summary: 'Excluir venda e suas parcelas' })
   @Delete(':id')

@@ -446,7 +446,7 @@ export class SellsService implements ISellsRepository {
       where: { codigo: id },
       relations: [
         'vendedor',
-        'itensVenda.produto',
+        'itensVenda.produto.fornecedor',
         'status_pagamento',
         'status_venda',
         'parcela_credito.status_pagamento',

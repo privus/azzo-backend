@@ -123,7 +123,7 @@ export class PrintOrderService {
 
     sortedItens.forEach((item, idx) => {
       const produto = item.produto;
-      const isCaixa = produto?.descricao_uni?.toUpperCase()?.includes('CAIXA') || produto.quantidade > 11;
+      const isCaixa = produto?.descricao_uni?.toUpperCase()?.includes('CAIXA');
       const obs = item.observacao ? `obs: ${item.observacao}` : '';
 
       const row = [
@@ -171,6 +171,7 @@ export class PrintOrderService {
       margin: [0, 10, 0, 0],
     };
   }
+  
   private generatePdfBuffer(printer: any, docDefinition: any): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       const pdfDoc = printer.createPdfKitDocument(docDefinition);
