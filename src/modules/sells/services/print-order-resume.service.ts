@@ -18,9 +18,9 @@ export class PrintOrderResumeService {
     const logoPath = path.resolve('src/utils/azzo.png');
     const logoBase64 = await this.getBase64Image(logoPath);
     const aggregatedProducts = this.aggregateProducts(validOrders);
-    console.log('Produtos agregados:', aggregatedProducts);
 
-    const pdfBuffer = await this.createPdf(orderCodes, aggregatedProducts, logoBase64);
+    const pdfBuffer = await this.createPdf(orderCodes, aggregatedProducts, logoBase64, validOrders);
+
     const fileName = `resumo_pedidos_${Date.now()}.pdf`;
 
     return { fileName, pdfBuffer };
@@ -45,7 +45,12 @@ export class PrintOrderResumeService {
         if (!key) return;
 
         if (!productMap.has(key)) {
-          productMap.set(key, { ...item, quantidade: 0, valor_total: 0, marca: item.produto?.fornecedor?.nome });
+          productMap.set(key, {
+            ...item,
+            quantidade: 0,
+            valor_total: 0,
+            marca: item.produto?.fornecedor?.nome || '-'
+          });
         }
 
         const agg = productMap.get(key);
@@ -54,23 +59,26 @@ export class PrintOrderResumeService {
       });
     });
 
-    return Array.from(productMap.values());
+    return Array.from(productMap.values()).sort((a, b) =>
+      (a.marca ?? '').localeCompare(b.marca ?? '')
+    );
   }
 
-  private async createPdf(orderCodes: string, products: any[], logoBase64: string): Promise<Buffer> {
+  private async createPdf(orderCodes: string, products: any[], logoBase64: string, orders: any[]): Promise<Buffer> {
     const fonts = {
       Helvetica: { normal: 'Helvetica', bold: 'Helvetica-Bold' },
     };
     const printer = new PdfPrinter(fonts);
-
+  
     const docDefinition = {
       pageSize: 'A4',
       pageMargins: [40, 40, 40, 40],
       defaultStyle: { font: 'Helvetica' },
       content: [
-        { image: logoBase64, width: 100, alignment: 'center', margin: [0, 0, 0, 10] },
-        { text: `Resumo de Pedidos: ${orderCodes}`, style: 'header', alignment: 'center', margin: [0, 0, 0, 20] },
-        this.createProductsTable(products)
+        { image: logoBase64, width: 100, alignment: 'center', margin: [0, 0, 0, 5] },
+        { text: `Pedidos: ${orderCodes}`, style: 'header', alignment: 'center', margin: [0, 0, 0, 5] },
+        ...this.createRegionSummaryHeader(orders),
+        this.createProductsTable(products),
       ],
       styles: {
         header: { fontSize: 14, bold: true },
@@ -78,9 +86,10 @@ export class PrintOrderResumeService {
         table: { margin: [0, 5, 0, 15], fontSize: 9 },
       }
     };
-
+  
     return this.generatePdfBuffer(printer, docDefinition);
   }
+  
 
   private createProductsTable(products: any[]) {
     const header = [
@@ -89,15 +98,15 @@ export class PrintOrderResumeService {
       { text: 'Qtd.', style: 'tableHeader', alignment: 'center' },
       { text: 'Marca', style: 'tableHeader', alignment: 'center' },
     ];
-  
+
     const caixaRowIndexes: number[] = [];
     const rows = products.map((item, index) => {
       const produto = item.produto ?? {};
       const isCaixa = produto?.descricao_uni?.toUpperCase()?.includes('CAIXA') || produto.quantidade > 11;
       const obs = item.observacao ? `obs: ${item.observacao}` : '';
-  
-      if (isCaixa) caixaRowIndexes.push(index + 1); // +1 pelo header
-  
+
+      if (isCaixa) caixaRowIndexes.push(index + 1);
+
       return [
         {
           stack: [
@@ -115,12 +124,11 @@ export class PrintOrderResumeService {
         { text: produto?.fornecedor?.nome ?? '-', alignment: 'center', fontSize: 10 },
       ];
     });
-  
+
     return {
       table: {
         headerRows: 1,
-        widths: ['auto', '*', 'auto', 'auto'], // 3 colunas agora!
-
+        widths: ['auto', '*', 'auto', 'auto'],
         body: [header, ...rows],
       },
       layout: {
@@ -137,7 +145,38 @@ export class PrintOrderResumeService {
       margin: [0, 10, 0, 0],
     };
   }
-  
+
+  private createRegionSummaryHeader(orders: any[]) {
+    const groupedByRegion = new Map<string, any[]>();
+
+    orders.forEach(order => {
+      const region = order.cliente?.regiao?.nome || 'Sem Região';
+      if (!groupedByRegion.has(region)) groupedByRegion.set(region, []);
+      groupedByRegion.get(region).push(order);
+    });
+
+    const regionBlocks = Array.from(groupedByRegion.entries()).map(([region, regionOrders]) => {
+      const sorted = regionOrders.sort((a, b) => b.valor_final - a.valor_final);
+      const pedidos = sorted
+        .map(o => `#${o.codigo} (R$ ${(+o.valor_final).toFixed(2)})`)
+        .join(', ');
+
+      return {
+        text: `${region}: ${pedidos}`,
+        fontSize: 10,
+        margin: [0, 0, 0, 5],
+      };
+    });
+
+    return [
+      ...regionBlocks,
+      {
+        canvas: [{ type: 'line', x1: 0, y1: 5, x2: 515, y2: 5, lineWidth: 1 }],
+        margin: [0, 5, 0, 5],
+      },
+    ];
+  }
+
   private generatePdfBuffer(printer: any, docDefinition: any): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       const pdfDoc = printer.createPdfKitDocument(docDefinition);
