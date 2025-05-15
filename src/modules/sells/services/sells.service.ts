@@ -86,15 +86,14 @@ export class SellsService implements ISellsRepository {
     };
   
     try {
-      if (lastSync) {
-        const createdParam = `after_created=${this.formatDateWithTime(lastSync)}`;
-        await fetchSells(createdParam, 'created');
-      }
-  
-      if (lastUpdate) {
-        const updatedParam = `after_updated=${this.formatDateWithTime(lastUpdate)}`;
-        await fetchSells(updatedParam, 'updated');
-      }
+      const defaultStart = new Date('2025-04-28T00:00:00Z');
+
+      const createdParam = `after_created=${this.formatDateWithTime(lastSync ?? defaultStart)}`;
+      await fetchSells(createdParam, 'created');
+      
+      const updatedParam = `after_updated=${this.formatDateWithTime(lastUpdate ?? defaultStart)}`;
+      await fetchSells(updatedParam, 'updated');
+      
   
       const now = new Date();
       await this.updateLastSyncDate('sells', now);
