@@ -69,6 +69,7 @@ export class SellsService implements ISellsRepository {
   
         const sellsData = response.data.data;
         lastPage = response.data.meta.last_page;
+        console.log('lastPage ===============>', lastPage);
   
         for (const sell of sellsData) {
           const result = await this.processSell(sell);
