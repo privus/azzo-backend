@@ -102,7 +102,7 @@ export class PrintOrderResumeService {
     const caixaRowIndexes: number[] = [];
     const rows = products.map((item, index) => {
       const produto = item.produto ?? {};
-      const isCaixa = produto?.descricao_uni?.toUpperCase()?.includes('CAIXA') || produto.quantidade > 11;
+      const isCaixa = produto?.descricao_uni?.toUpperCase()?.includes('CAIXA');
       const obs = item.observacao ? `obs: ${item.observacao}` : '';
 
       if (isCaixa) caixaRowIndexes.push(index + 1);
