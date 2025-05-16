@@ -20,6 +20,7 @@ import { FilesModule } from './modules/files/files.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { EmailMarketingModule } from './modules/email-marketing/email-marketing.module';
+import { StockModule } from './modules/stock/stock.module';
 
 @Module({
   imports: [
@@ -64,7 +65,8 @@ import { EmailMarketingModule } from './modules/email-marketing/email-marketing.
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/static', 
     }),
-    EmailMarketingModule
+    EmailMarketingModule,
+    StockModule,
   ],
   controllers: [AppController],
   providers: [AppService],

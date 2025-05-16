@@ -10,3 +10,4 @@ export * from './sells.repository.interface';
 export * from './credits.repository.interface';
 export * from './tinyToken.repository.interface';
 export * from './tinyAuth.repository.interface';
+export * from './stock.repository.interface';

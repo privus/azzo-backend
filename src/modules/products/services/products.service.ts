@@ -251,5 +251,10 @@ export class ProductsService {
     await this.produtoRepository.update(id, updateTinyDto);
     return 'Produtos atualizados com Sucesso!';
   }
+
+  async incrementStock(produto_id: number, quantidade: number): Promise<void> {
+    await this.produtoRepository.increment({ produto_id }, 'saldo_estoque', quantidade);
+    return 
+  }
   
 }

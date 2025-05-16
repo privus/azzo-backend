@@ -30,3 +30,6 @@ export * from './tinyTokens'
 export * from './arquivo';
 export * from './transportadora';
 export * from './romaneio';
+export * from './estoque';
+export * from './saidaEstoque';
+export * from './distribuidor';
