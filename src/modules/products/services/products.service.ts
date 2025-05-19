@@ -248,6 +248,21 @@ export class ProductsService implements IProductsRepository {
     return this.produtoRepository.findOne({ where: param });
   }
 
+  async findByEan(ean: number): Promise<Produto | null> { 
+    const produtos = await this.produtoRepository.find({
+      where: { ean },
+      relations: ['categoria', 'fornecedor'],
+    });
+  
+    if (produtos.length === 1) return produtos[0];
+  
+    const produtoComUnidade = produtos.find(p =>
+      !p.descricao_uni.toLowerCase().includes('caixa')
+    );
+  
+    return produtoComUnidade || null;
+  }  
+
   async updateTinyCodes(id: number, updateTinyDto: { tiny_mg: number; tiny_sp: number }): Promise<string> {
     await this.produtoRepository.update(id, updateTinyDto);
     return 'Produtos atualizados com Sucesso!';
@@ -259,27 +274,17 @@ export class ProductsService implements IProductsRepository {
   }
   
   async findProductByPartialCode(partialCode: string): Promise<Produto | undefined> {
-    const codeWithUni = `${partialCode}UNI`;
-  
-    // Tenta encontrar diretamente com 'UNI' no código
-    let produto = await this.produtoRepository.createQueryBuilder('produto')
-      .where('produto.codigo LIKE :codigo', { codigo: `${codeWithUni}%` })
-      .getOne();
-  
-    if (produto) {
-      return produto;
-    }
-  
-    // Se não encontrou, busca todos com baseCode
-    const candidatos = await this.produtoRepository.createQueryBuilder('produto')
+    const produtos = await this.produtoRepository.createQueryBuilder('produto')
       .where('produto.codigo LIKE :codigo', { codigo: `${partialCode}%` })
       .getMany();
   
-    // Filtra pelo nome contendo 'UNI'
-    const produtoComNomeUni = candidatos.find(p => p.nome?.toUpperCase().includes('UNI'));
+    if (!produtos.length) return undefined;
   
-    return produtoComNomeUni ?? candidatos[0]; // fallback: retorna o primeiro, se houver
-  }
+    const produtoComUnidade = produtos.find(p =>
+      !p.descricao_uni?.toLowerCase().includes('caixa')
+    );
   
+    return produtoComUnidade ?? produtos[0];
+  }  
   
 }

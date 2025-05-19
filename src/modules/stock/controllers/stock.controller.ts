@@ -1,7 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { Response } from 'express';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { StockService } from '../services/stock.service';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
 
 ApiTags('stock')
 @Controller('stock')
@@ -16,9 +18,17 @@ export class StockController {
     return this.stockService.getStock();
   }
 
-  @ApiOperation({ summary: 'Inserir estoque por nota fiscal' })
-  @Post('insertNf')
-  async insertStockByNf(@Body('nf_id') nf_id: number, @Body('fornecedor_id') fornecedor_id: number, @Body('uf') uf: string) {
-    return this.stockService.insertStockByNf(nf_id, fornecedor_id, uf);
+  @Post('upload/:id')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: './uploads/xml',
+      filename: (req, file, cb) => {
+        cb(null, `${Date.now()}-${file.originalname}`);
+      },
+    }),
+  }))
+  async uploadNfeFile(@Param('id') id: number, @UploadedFile() file: Express.Multer.File): Promise<string> {
+    return this.stockService.importStockFromNfeXml(file.path, id);
   }
+
 }

@@ -6,5 +6,8 @@ export class Distribuidor {
   distribuido_id: number;
 
   @Column({ type: 'varchar', length: 45 })
+  cnpj: string;
+
+  @Column({ type: 'varchar', length: 45 })
   nome: string;
 }

@@ -10,4 +10,5 @@ export interface IProductsRepository {
   updateTinyCodes(id: number, updateTinyDto: { tiny_mg: number; tiny_sp: number }): Promise<string>;
   incrementStock(produto_id: number, quantidade: number): Promise<void>;
   findProductByPartialCode(partialCode: string): Promise<Produto | undefined>;
+  findByEan(ean: number): Promise<Produto | null>;
 }
