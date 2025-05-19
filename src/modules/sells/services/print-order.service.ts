@@ -13,7 +13,9 @@ export class PrintOrderService {
     if (!order) {
       throw new Error(`Pedido ID ${orderId} não encontrado.`);
     }
-    await this.sellsSevice.updateStatusSell(order.codigo, 11139);
+    if (order.tipo_pedido.tipo_pedido_id === 11138) {
+      await this.sellsSevice.updateStatusSell(order.codigo, 11139);
+    }
 
     const logoPath = path.resolve('src/utils/azzo.png');
     const logoBase64 = await this.getBase64Image(logoPath);
