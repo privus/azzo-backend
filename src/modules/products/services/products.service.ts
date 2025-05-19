@@ -4,10 +4,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CategoriaProduto, Fornecedor, Produto } from '../../../infrastructure/database/entities';
 import { ProdutoAPIResponse } from '../dto/products.dto';
+import { IProductsRepository } from '../../../domain/repositories';
 import * as fs from 'fs';
 
 @Injectable()
-export class ProductsService {
+export class ProductsService implements IProductsRepository {
   private readonly apiUrl: string;
   private readonly token: string;
   private readonly apiTag = 'products'; // Inicializa corretamente o apiTag
@@ -256,5 +257,29 @@ export class ProductsService {
     await this.produtoRepository.increment({ produto_id }, 'saldo_estoque', quantidade);
     return 
   }
+  
+  async findProductByPartialCode(partialCode: string): Promise<Produto | undefined> {
+    const codeWithUni = `${partialCode}UNI`;
+  
+    // Tenta encontrar diretamente com 'UNI' no código
+    let produto = await this.produtoRepository.createQueryBuilder('produto')
+      .where('produto.codigo LIKE :codigo', { codigo: `${codeWithUni}%` })
+      .getOne();
+  
+    if (produto) {
+      return produto;
+    }
+  
+    // Se não encontrou, busca todos com baseCode
+    const candidatos = await this.produtoRepository.createQueryBuilder('produto')
+      .where('produto.codigo LIKE :codigo', { codigo: `${partialCode}%` })
+      .getMany();
+  
+    // Filtra pelo nome contendo 'UNI'
+    const produtoComNomeUni = candidatos.find(p => p.nome?.toUpperCase().includes('UNI'));
+  
+    return produtoComNomeUni ?? candidatos[0]; // fallback: retorna o primeiro, se houver
+  }
+  
   
 }

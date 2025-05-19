@@ -7,8 +7,16 @@ import { CategoriaProduto, Fornecedor, Produto } from '../../infrastructure/data
 
 @Module({
   imports: [TypeOrmModule.forFeature([Produto, CategoriaProduto, Fornecedor]), HttpModule],
-  providers: [ProductsService, { provide: 'IProductsRepository', useClass: ProductsService }],
+  providers: [
+    ProductsService,
+    {
+      provide: 'IProductsRepository',
+      useExisting: ProductsService,
+    },
+  ],
   controllers: [ProductsController],
-  exports: [ProductsService, 'IProductsRepository'],
+  exports: ['IProductsRepository'],
 })
 export class ProductsModule {}
+
+

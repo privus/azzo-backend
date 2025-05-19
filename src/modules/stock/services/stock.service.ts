@@ -26,8 +26,8 @@ export class StockService implements IStockRepository {
     });
   }
 
-  async insertStockByNf(nf_id: number, fornecedor_id: number): Promise<string> {
-    const nf = await this.getNfById(nf_id);
+  async insertStockByNf(nf_id: number, fornecedor_id: number, uf: string): Promise<string> {
+    const nf = await this.getNfById(nf_id, uf);
     console.log(`🔍 NF encontrada ================================+>`, nf);
     const itens = nf.itens || [];
   
@@ -39,17 +39,35 @@ export class StockService implements IStockRepository {
       let produto;
   
       switch (fornecedor_id) {
-        case 918650432:
-          const tiny_mg =  item.idProduto;
+        case 918650432: 
+          const tiny_mg = item.idProduto;
           produto = await this.productRepository.findBy({ tiny_mg });
           break;
         
-        case 918544743
+      
+        case 918544743:
+          const descricao = item.descricao || '';
+          const match = descricao.match(/^([A-Z]{2,3}\d{3})/);
         
-  
+          if (!match) {
+            console.warn(`❌ Código não extraído da descrição: ${descricao}`);
+            continue;
+          }
+        
+          const baseCode = match[1];
+          const codeWithUni = baseCode + 'UNI';
+        
+          // Tenta primeiro com 'UNI'
+          produto = await this.productRepository.findProductByPartialCode(codeWithUni);          
+          break;                 
+
+      
         default:
           throw new Error(`Fornecedor ${fornecedor_id} ainda não mapeado.`);
       }
+      
+    
+      
   
       if (!produto) {
         console.warn(`Produto não localizado: tiny_mg = ${item.idProduto}`);
@@ -77,8 +95,8 @@ export class StockService implements IStockRepository {
     return `Estoque importado da NF ${nf_id}`;
   }
 
-  async getNfById(id: number): Promise<NfeSupplierDto> {
-    const token = await this.tinyAuthService.getAccessToken('MG');
+  async getNfById(id: number, uf: string): Promise<NfeSupplierDto> {
+    const token = await this.tinyAuthService.getAccessToken(uf);
     try {
         const url = `${this.apiUrlTiny}${this.nfeTag}/${id}`;
         console.log(`🔍 Buscando Nf ==============================> em: ${url}`);

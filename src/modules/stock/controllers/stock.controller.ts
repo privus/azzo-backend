@@ -18,7 +18,7 @@ export class StockController {
 
   @ApiOperation({ summary: 'Inserir estoque por nota fiscal' })
   @Post('insertNf')
-  async insertStockByNf(@Body('nf_id') nf_id: number, @Body('fornecedor_id') fornecedor_id: number) {
-    return this.stockService.insertStockByNf(nf_id, fornecedor_id);
+  async insertStockByNf(@Body('nf_id') nf_id: number, @Body('fornecedor_id') fornecedor_id: number, @Body('uf') uf: string) {
+    return this.stockService.insertStockByNf(nf_id, fornecedor_id, uf);
   }
 }
