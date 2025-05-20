@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { CategoriaProduto, Fornecedor, Produto } from '../../../infrastructure/database/entities';
 import { ProdutoAPIResponse } from '../dto/products.dto';
 import { IProductsRepository } from '../../../domain/repositories';
@@ -274,9 +274,11 @@ export class ProductsService implements IProductsRepository {
   }
   
   async findProductByPartialCode(partialCode: string): Promise<Produto | undefined> {
-    const produtos = await this.produtoRepository.createQueryBuilder('produto')
-      .where('produto.codigo LIKE :codigo', { codigo: `${partialCode}%` })
-      .getMany();
+    const produtos = await this.produtoRepository.find({
+      where: {
+        codigo: Like(`${partialCode}%`)
+      }, relations: ['categoria', 'fornecedor'],
+    });
   
     if (!produtos.length) return undefined;
   
