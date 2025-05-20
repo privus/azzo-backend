@@ -1,13 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { CategoriaProduto, Fornecedor, Produto } from '../../../infrastructure/database/entities';
 import { ProdutoAPIResponse } from '../dto/products.dto';
+import { IProductsRepository } from '../../../domain/repositories';
 import * as fs from 'fs';
 
 @Injectable()
-export class ProductsService {
+export class ProductsService implements IProductsRepository {
   private readonly apiUrl: string;
   private readonly token: string;
   private readonly apiTag = 'products'; // Inicializa corretamente o apiTag
@@ -247,9 +248,45 @@ export class ProductsService {
     return this.produtoRepository.findOne({ where: param });
   }
 
+  async findByEan(ean: number): Promise<Produto | null> { 
+    const produtos = await this.produtoRepository.find({
+      where: { ean },
+      relations: ['categoria', 'fornecedor'],
+    });
+  
+    if (produtos.length === 1) return produtos[0];
+  
+    const produtoComUnidade = produtos.find(p =>
+      !p.descricao_uni.toLowerCase().includes('caixa')
+    );
+  
+    return produtoComUnidade || null;
+  }  
+
   async updateTinyCodes(id: number, updateTinyDto: { tiny_mg: number; tiny_sp: number }): Promise<string> {
     await this.produtoRepository.update(id, updateTinyDto);
     return 'Produtos atualizados com Sucesso!';
   }
+
+  async incrementStock(produto_id: number, quantidade: number): Promise<void> {
+    await this.produtoRepository.increment({ produto_id }, 'saldo_estoque', quantidade);
+    return 
+  }
+  
+  async findProductByPartialCode(partialCode: string): Promise<Produto | undefined> {
+    const produtos = await this.produtoRepository.find({
+      where: {
+        codigo: Like(`${partialCode}%`)
+      }, relations: ['categoria', 'fornecedor'],
+    });
+  
+    if (!produtos.length) return undefined;
+  
+    const produtoComUnidade = produtos.find(p =>
+      !p.descricao_uni?.toLowerCase().includes('caixa')
+    );
+  
+    return produtoComUnidade ?? produtos[0];
+  }  
   
 }

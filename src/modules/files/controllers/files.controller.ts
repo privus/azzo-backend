@@ -34,7 +34,7 @@ export class FileController {
       fileFilter: (req, file, cb) => {
           if (file.mimetype !== 'application/pdf') {
 
-          cb(new Error('Only XML files are allowed!'), false);
+          cb(new Error('Only Pdf files are allowed!'), false);
         } else {
           cb(null, true);
         }

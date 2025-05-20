@@ -33,6 +33,9 @@ export class Produto {
   @Column({ type: 'decimal', nullable: true })
   peso_grs: number;
 
+  @Column('int', { default: 0 })
+  saldo_estoque: number;
+
   @Column({ type: 'varchar', length: 255, nullable: true })
   fotoUrl: string;
 

@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, In, LessThan, MoreThanOrEqual, Repository } from 'typeorm';
+import { Between, In, MoreThanOrEqual, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda } from '../../../infrastructure/database/entities';
 import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto, ProjectStockDto } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository } from '../../../domain/repositories';
@@ -35,7 +35,7 @@ export class SellsService implements ISellsRepository {
   ) {
     this.tokenSellentt = process.env.SELLENTT_API_TOKEN;
     this.apiUrlSellentt = process.env.SELLENTT_API_URL;
-    this.apiUrlTiny= process.env.TINY_API_URL;
+    this.apiUrlTiny = process.env.TINY_API_URL;
   }
 
   async syncroSells(): Promise<string> {
