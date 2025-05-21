@@ -118,7 +118,7 @@ export class SellsService implements ISellsRepository {
 
   async syncroStatusSells(): Promise<void> {
     let currentPage = 1;
-    const maxPage = 4;
+    const maxPage = 10;
   
     try {
       while (currentPage <= maxPage) {

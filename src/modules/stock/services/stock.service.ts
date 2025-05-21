@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Distribuidor, Estoque, Fornecedor } from '../../../infrastructure/database/entities';
 import { IProductsRepository, IStockRepository } from '../../../domain/repositories';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { XMLParser } from 'fast-xml-parser';
 import * as fs from 'fs';
 
@@ -127,5 +127,45 @@ export class StockService implements IStockRepository {
   
     return `Importados ${quantidadeImportada} produtos. Não encontrados: ${produtosNaoEncontrados.join(', ')}`;
   }
+
+  // async projectStockInUnits(): Promise<Record<string, number>> {
+  //   const statusVendaIds = [11139, 11138];
+  //   const vendas = await this.vendaRepository.find({
+  //     where: {
+  //       status_venda: {
+  //         status_venda_id: In(statusVendaIds)
+  //       }
+  //     },
+  //     relations: ['itensVenda', 'itensVenda.produto'],
+  //   });
+  
+  //   const unidadesVendidas: Record<string, number> = {};
+  
+  //   for (const venda of vendas) {
+  //     for (const item of venda.itensVenda) {
+  //       const produto = item.produto;
+  //       if (!produto || !produto.codigo) continue;
+  
+  //       const descricao = produto.descricao_uni || '';
+  //       const match = descricao.match(/CAIXA\s*C\/\s*(\d+)\s*UNIDADES/i);
+  
+  //       let unidadeMultiplicador = 1;
+  //       if (match) {
+  //         unidadeMultiplicador = parseInt(match[1], 10);
+  
+  //         const produtoUnidade = await this.productRepository.findProductByPartialCode(produto.codigo);
+  //         if (produtoUnidade && produtoUnidade.codigo) {
+  //           const codigoUnidade = produtoUnidade.codigo;
+  //           if (!unidadesVendidas[codigoUnidade]) {
+  //             unidadesVendidas[codigoUnidade] = 0;
+  //           }
+  //           unidadesVendidas[codigoUnidade] += Number(item.quantidade) * unidadeMultiplicador;
+  //         }
+  //       }
+  //     }
+  //   }
+  
+  //   return unidadesVendidas;
+  // } 
   
 }
