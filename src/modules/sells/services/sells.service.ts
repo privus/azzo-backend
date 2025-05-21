@@ -106,7 +106,8 @@ export class SellsService implements ISellsRepository {
         messages.push(`Código das vendas atualizadas: ${updatedSales.join(', ')}.`);
       }
   
-      this.syncroStatusSells();
+      // this.syncroStatusSells();
+      this.associatePairedSells();
       console.log(messages.join(' | '));
       return messages.join(' | ');
     } catch (error) {
@@ -149,7 +150,6 @@ export class SellsService implements ISellsRepository {
             });
             existingSell.status_venda = newStatus;
             await this.vendaRepository.save(existingSell);
-              console.log(`✅ Status updated for venda: ${sell.code}`);
             }
         }  
         currentPage++;
@@ -308,7 +308,6 @@ export class SellsService implements ISellsRepository {
     // Se a venda não existir, crie-a
     console.log('Criando nova venda =>', sell.code);
 
-
     const regiao = await this.regiaoService.getRegionByCode(sell.region);
 
     let datas_vencimento = [];
@@ -394,6 +393,38 @@ export class SellsService implements ISellsRepository {
 
     await this.vendaRepository.save(novaVenda);
     return `Venda código ${sell.code} foi Recebida`;
+  }
+
+  async associatePairedSells(): Promise<void> {
+    const today = new Date();
+    const date = today.toISOString().split('T')[0];
+    console.log('Dia ============>', date);
+  
+    const vendasHoje = await this.sellsBetweenDates(date);
+  
+    const vendasPorCliente: Map<number, Venda[]> = new Map();
+  
+    for (const venda of vendasHoje) {
+      const clienteId = venda.cliente?.cliente_id;
+      if (!clienteId) continue;
+      if (!vendasPorCliente.has(clienteId)) {
+        vendasPorCliente.set(clienteId, []);
+      }
+      vendasPorCliente.get(clienteId)!.push(venda);
+    }
+  
+    for (const vendas of vendasPorCliente.values()) {
+      if (vendas.length < 2) continue;
+  
+      const vendaPrincipal = vendas.find(v => v.tipo_pedido?.tipo_pedido_id === 10438);
+      const vendaAssociada = vendas.find(v => v.tipo_pedido?.tipo_pedido_id !== 10438);
+  
+      if (vendaPrincipal && vendaAssociada) {
+        vendaPrincipal.associado = vendaAssociada.codigo;
+        vendaAssociada.associado = vendaPrincipal.codigo;
+        await this.vendaRepository.save([vendaPrincipal, vendaAssociada]);
+      }
+    }
   }
 
   async sellsByDate(fromDate?: string): Promise<Venda[]> {

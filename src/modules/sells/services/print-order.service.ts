@@ -191,6 +191,7 @@ export class PrintOrderService {
     const forma_pagamento = order.forma_pagamento.slice(0, length.length - 24 )
     const doc = order.cliente.tipo_doc === 'cnpj' ? `CNPJ: ${order.cliente.numero_doc}` : `CPF: ${order.cliente.numero_doc}`
     const categoria = order.cliente.categoria_cliente.nome;
+    const associado = order.associado ? `/ Associado: #${order.associado}` : '';
     return {
       columns: [
         {
@@ -210,7 +211,7 @@ export class PrintOrderService {
           width: '50%',
           stack: [
             { text: 'Pedido', bold: true, fontSize: 10, margin: [0, 0, 0, 2] },
-            { text: `Código: #${order.codigo}`, fontSize: 10 },
+            { text: `Código: #${order.codigo} ${associado}`, fontSize: 10 },
             { text: `Tipo: ${order.tipo_pedido.nome}`, fontSize: 10 },
             { text: `Data: ${new Date(order.data_criacao).toLocaleDateString('pt-BR')}`, fontSize: 10 },
             { text: `Vendedor: ${order.vendedor?.nome ?? '-'}`, fontSize: 10 },
