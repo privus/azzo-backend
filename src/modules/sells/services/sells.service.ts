@@ -150,6 +150,7 @@ export class SellsService implements ISellsRepository {
             });
             existingSell.status_venda = newStatus;
             await this.vendaRepository.save(existingSell);
+            console.log(`✅ Status updated for venda: ${sell.code}`);
             }
         }  
         currentPage++;
