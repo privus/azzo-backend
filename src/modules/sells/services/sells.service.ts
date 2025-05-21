@@ -106,7 +106,7 @@ export class SellsService implements ISellsRepository {
         messages.push(`Código das vendas atualizadas: ${updatedSales.join(', ')}.`);
       }
   
-      // this.syncroStatusSells();
+      this.syncroStatusSells();
       this.associatePairedSells();
       console.log(messages.join(' | '));
       return messages.join(' | ');
@@ -118,7 +118,7 @@ export class SellsService implements ISellsRepository {
 
   async syncroStatusSells(): Promise<void> {
     let currentPage = 1;
-    const maxPage = 8;
+    const maxPage = 4;
   
     try {
       while (currentPage <= maxPage) {
@@ -397,10 +397,12 @@ export class SellsService implements ISellsRepository {
 
   async associatePairedSells(): Promise<void> {
     const today = new Date();
-    const date = today.toISOString().split('T')[0];
-    console.log('Dia ============>', date);
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const t = today.toISOString().split('T')[0];
+    const y = yesterday.toISOString().split('T')[0];
   
-    const vendasHoje = await this.sellsBetweenDates(date);
+    const vendasHoje = await this.sellsBetweenDates(y, t);
   
     const vendasPorCliente: Map<number, Venda[]> = new Map();
   
