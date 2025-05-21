@@ -51,13 +51,13 @@ export class SellsService implements ISellsRepository {
     console.log('Última sincronização:', lastSync);
     console.log('Última atualização:', lastUpdate);
   
-    const fetchSells = async (queryParam: string, type: 'created' | 'updated') => {
+    const fetchSells = async (queryParam: string | null) => {
       let currentPage = 1;
       let lastPage = 1;
       const maxPage = 12;
   
       do {
-        const url = `${this.apiUrlSellentt}${this.apiTagSellentt}?${queryParam}&page=${currentPage}`;
+        const url = `${this.apiUrlSellentt}${this.apiTagSellentt}${queryParam ? `?${queryParam}` : ''}&page=${currentPage}`;
         console.log('Fetching URL:', url);
   
         const response = await this.httpService.axiosRef.get<{
@@ -86,14 +86,11 @@ export class SellsService implements ISellsRepository {
     };
   
     try {
-      const defaultStart = new Date('2025-04-28T00:00:00Z');
-
-      const createdParam = `after_created=${this.formatDateWithTime(lastSync ?? defaultStart)}`;
-      await fetchSells(createdParam, 'created');
-      
-      const updatedParam = `after_updated=${this.formatDateWithTime(lastUpdate ?? defaultStart)}`;
-      await fetchSells(updatedParam, 'updated');
-      
+      const createdParam = lastSync ? `after_created=${this.formatDateWithTime(lastSync)}` : null;
+      await fetchSells(createdParam);
+  
+      const updatedParam = lastUpdate ? `after_updated=${this.formatDateWithTime(lastUpdate)}` : null;
+      await fetchSells(updatedParam);
   
       const now = new Date();
       await this.updateLastSyncDate('sells', now);
@@ -108,14 +105,15 @@ export class SellsService implements ISellsRepository {
   
       this.syncroStatusSells();
       this.associatePairedSells();
+  
       console.log(messages.join(' | '));
       return messages.join(' | ');
     } catch (error) {
       console.error('Erro ao sincronizar vendas:', error);
       return 'Erro ao sincronizar vendas.';
     }
-  } 
-
+  }
+  
   async syncroStatusSells(): Promise<void> {
     let currentPage = 1;
     const maxPage = 10;
