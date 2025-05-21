@@ -362,7 +362,7 @@ export class SellsService implements ISellsRepository {
 
     const tipo_pedido = await this.tipoPedidoRepository.findOne({ where: { tipo_pedido_id: sell.order_type_id } });
 
-    if (sell.status.id !== 11468) {
+    if (sell.order_type_id === 10438) {
       cliente.ultima_compra = new Date(sell.order_date);
       cliente.valor_ultima_compra = Number(sell.amount_final);
       await this.clienteService.saveCustomer(cliente);
