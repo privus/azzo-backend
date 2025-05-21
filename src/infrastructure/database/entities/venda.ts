@@ -112,4 +112,6 @@ export class Venda {
   @JoinColumn({ name: 'romaneio_id' })
   romaneio: Romaneio;
 
+  @Column({ type: 'int', nullable: true })
+  associado: number;
 }

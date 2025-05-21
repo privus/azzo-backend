@@ -13,7 +13,7 @@ export class PrintOrderService {
     if (!order) {
       throw new Error(`Pedido ID ${orderId} não encontrado.`);
     }
-    if (order.tipo_pedido.tipo_pedido_id === 11138) {
+    if (order.status_venda.status_venda_id === 11138) {
       await this.sellsSevice.updateStatusSell(order.codigo, 11139);
     }
 

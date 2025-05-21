@@ -19,9 +19,7 @@ export class StockService implements IStockRepository {
   ) {}
 
   async getStock(): Promise<Estoque[]> {
-    return this.stockRepository.find({
-      relations: ['fornecedor', 'produto', 'saidas'],
-    });
+    return this.stockRepository.find({relations: ['fornecedor', 'produto', 'saidas']});
   }
 
   async importStockFromNfeXml(filePath: string, typeId: number): Promise<string> {
@@ -45,7 +43,6 @@ export class StockService implements IStockRepository {
         case 1: // GREEN
         case 8: // W COSMETICOS
           produto = await this.productRepository.findProductByPartialCode(prod.cProd);
-          console.log('produto ===========>', produto);
           break;
   
         case 2: // VIDAL
