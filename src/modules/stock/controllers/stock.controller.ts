@@ -32,10 +32,4 @@ export class StockController {
     return this.stockService.importStockFromNfeXml(file.path, id);
   }
 
-  @ApiOperation({ summary: 'projetar estoque em unidades'})
-  @Get('stock-units')
-  async projectStockInUnits(): Promise<Record<string, number>> {
-    return this.stockService.projectStockInUnits();
-  }
-
 }

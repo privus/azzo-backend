@@ -248,19 +248,15 @@ export class ProductsService implements IProductsRepository {
     return this.produtoRepository.findOne({ where: param });
   }
 
-  async findByEan(ean: number): Promise<Produto | null> { 
+  async findByEan(ean: number): Promise<Produto[] | null> { 
     const produtos = await this.produtoRepository.find({
       where: { ean },
-      relations: ['categoria', 'fornecedor'],
+      relations: ['categoria', 'fornecedor', 'unidade'],
     });
   
-    if (produtos.length === 1) return produtos[0];
-  
-    const produtoComUnidade = produtos.find(p =>
-      !p.descricao_uni.toLowerCase().includes('caixa')
-    );
-  
-    return produtoComUnidade || null;
+    if (!produtos.length) return undefined;
+
+      return produtos
   }  
 
   async updateTinyCodes(id: number, updateTinyDto: { tiny_mg: number; tiny_sp: number }): Promise<string> {
@@ -273,53 +269,15 @@ export class ProductsService implements IProductsRepository {
     return 
   }
   
-  async findProductByPartialCode(partialCode: string): Promise<Produto | undefined> {
+  async findProductByPartialCode(partialCode: string): Promise<Produto[] | undefined> {
     const produtos = await this.produtoRepository.find({
       where: {
         codigo: Like(`${partialCode}%`)
-      },
-      relations: ['categoria', 'fornecedor'],
+      }, relations: ['categoria', 'fornecedor', 'unidade'],
     });
   
     if (!produtos.length) return undefined;
   
-    // Preferência: produto cuja descrição não contenha "caixa"
-    const produtoComUnidade = produtos.find(p => {
-      const desc = p.descricao_uni ? p.descricao_uni.toLowerCase().replace(/<[^>]+>/g, '') : '';
-      return !desc.includes('caixa');
-    });
-  
-    return produtoComUnidade ?? null; // fallback se não encontrar uma clara unidade
-  } 
-
-  async atribuirQtdPorDescricao(): Promise<void> {
-    const produtosCaixa = await this.produtoRepository.find({
-      where: {
-        descricao_uni: Like('%CAIXA%')
-      }
-    });
-    const produtoSemPadrao : string[] = [];
-    
-    const regex = /CAIXA\s*C\/\s*(\d+)\s*UNIDADE/i;
-  
-    for (const produto of produtosCaixa) {
-      const textoLimpo = produto.descricao_uni.replace(/<[^>]+>/g, '').toUpperCase();
-      const match = textoLimpo.match(regex);
-  
-      if (match && match[1]) {
-        const qtd = parseInt(match[1], 10);
-        produto.qt_uni = qtd;
-        await this.produtoRepository.save(produto);
-        console.log(`✅ Produto ${produto.codigo} atualizado com qtd_uni = ${qtd}`);
-      } else {
-        produtoSemPadrao.push(produto.codigo);
-        console.warn(`⚠️ Produto ${produto.codigo} não tem padrão reconhecido na descrição.`);
-      }
-    }
-  
-    console.log('🏷️ Quantidade de unidades atribuída com base nas descrições!');
-    console.log('Produtos sem padrão reconhecido:', produtoSemPadrao);
-  }
-  
-
+    return produtos
+  }  
 }

@@ -25,12 +25,6 @@ export class ProductsController {
     return this.productsService.syncroTinyIds();
   }
 
-  @ApiOperation({ summary: 'Atribui Quant CX' })
-  @Get('assignQuantCX')
-  async assignQuantCX() {
-    return this.productsService.atribuirQtdPorDescricao();
-  }
-
   @ApiOperation({ summary: 'Listar todos os produtos' })
   @Get()
   async findAllProducts() {

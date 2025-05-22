@@ -37,80 +37,68 @@ export class StockService implements IStockRepository {
   
     for (const item of itens) {
       const { prod } = item;
-      let produto;
+      let produtos: Produto[] | undefined;
   
-      // Identificação do produto
       switch (dist_type) {
         case 1: // GREEN
         case 8: // W COSMETICOS
-          produto = await this.productRepository.findProductByPartialCode(prod.cProd);
+          produtos = await this.productRepository.findProductByPartialCode(prod.cProd);
           break;
-  
         case 2: // VIDAL
-        case 3: // VICEROY
+        case 3: // VICEROY / ABSOLUTA
         case 4: // NEW BLACK: busca por EAN se possível, senão usa código parcial
-          const codigoParcial = String(prod.cProd).split(',')[0];
+          const cod = String(prod.cProd).split(',')[0];
           const ean = Number(prod.cBarra || prod.cEAN);
-          produto = isNaN(ean)
-            ? await this.productRepository.findProductByPartialCode(codigoParcial)
+          produtos = isNaN(ean)
+            ? await this.productRepository.findProductByPartialCode(cod)
             : await this.productRepository.findByEan(ean);
           break;
-  
-        case 5: // H2O
-        case 6: // ISPL
-          produto = await this.productRepository.findByEan(prod.cEANTrib);
+        case 5: // H2O // ISPL // IPC
+          produtos = await this.productRepository.findByEan(prod.cEANTrib);
           break;
-  
-        case 7: // ALL BRANDS
-          produto = await this.productRepository.findByEan(prod.cBarraTrib);
+        case 6: // ALL BRANDS
+          produtos = await this.productRepository.findByEan(prod.cBarraTrib);
           break;
-  
         default:
           continue;
       }
   
-      if (!produto) {
+      if (!produtos || produtos.length === 0) {
         produtosNaoEncontrados.push(prod.cProd);
         continue;
       }
   
-      // Cálculo de quantidade
-      let unidade = prod.uCom;
-      let quantidade = parseFloat(prod.qCom);
-      const descricao = prod.xProd;
+      const caixa = produtos.find(p => p.qt_uni !== null);
+      const unidade = produtos.find(p => p.qt_uni === null);
+      const produtoFinal = unidade ?? caixa;
   
-      switch (dist_type) {
-        case 1: // GREEN
-          if (unidade === 'DZ') quantidade *= 12;
-          break;
-  
-        case 2: // VIDAL
-          const matchVidal = descricao.match(/(?:C\s*\/\s*)?(\d+[.,]?\d*)\s*UND/i);
-          if (matchVidal) quantidade *= parseFloat(matchVidal[1].replace(',', '.'));
-          break;
-  
-        case 4: // NEW BLACK
-          if (unidade === 'CX') quantidade *= 12;
-          break;
-  
-        case 5: // H2O
-        case 6: // ISPL
-          quantidade = parseFloat(prod.qTrib);
-          break;
-  
-        case 7: // ALL BRANDS
-          const matchAll = descricao.match(/C\s*\/\s*(\d+)\s*UND/i);
-          if (matchAll) quantidade *= parseInt(matchAll[1], 10);
-          break;
-  
-        // VICEROY e W COSMETICOS mantêm a quantidade direta
+      if (!produtoFinal) {
+        produtosNaoEncontrados.push(prod.cProd);
+        continue;
       }
-      const marca_id = produto.fornecedor.fornecedor_id;
-      const fornecedor = await this.fornecedorRepository.findOne({ where: { fornecedor_id: marca_id }});
-      const distribuidor = await this.distribuidorRepository.findOne({ where: { distribuidor_id: dist_type }});
-      // Registro no estoque
+  
+      let quantidade = 0;
+      const qtdBase = ['5'].includes(dist_type.toString()) ? prod.qTrib : prod.qCom;
+
+      quantidade = parseFloat(qtdBase);
+  
+      // Multiplica pela qt_uni apenas se ambos forem encontrados (caixa + unidade)
+      // e o distribuidor **não for** W COSMETICOS (case 8)
+      if (produtos.length > 1 && caixa && unidade && dist_type !== 8) {
+        quantidade *= caixa.qt_uni;
+      }
+
+  
+      const fornecedor = await this.fornecedorRepository.findOne({
+        where: { fornecedor_id: produtoFinal.fornecedor.fornecedor_id }
+      });
+  
+      const distribuidor = await this.distribuidorRepository.findOne({
+        where: { distribuidor_id: dist_type }
+      });
+  
       const estoque = this.stockRepository.create({
-        produto,
+        produto: produtoFinal,
         quantidade_total: quantidade,
         preco_custo_unitario: parseFloat(prod.vUnCom),
         valor_total: parseFloat(prod.vProd),
@@ -122,47 +110,10 @@ export class StockService implements IStockRepository {
       });
   
       await this.stockRepository.save(estoque);
-      await this.productRepository.incrementStock(produto.produto_id, quantidade);
+      await this.productRepository.incrementStock(produtoFinal.produto_id, quantidade);
       quantidadeImportada++;
     }
   
     return `Importados ${quantidadeImportada} produtos. Não encontrados: ${produtosNaoEncontrados.join(', ')}`;
   }
-
-  async projectStockInUnits(): Promise<Record<string, number>> {
-    const statusVendaIds = [11139, 11138];
-    const vendas = await this.sellRepository.getSellsByStatus(statusVendaIds);
-  
-    const unidadesVendidas: Record<string, number> = {};
-  
-    for (const venda of vendas) {
-      for (const item of venda.itensVenda) {
-        const produto = item.produto;
-        if (!produto || !produto.codigo) continue;
-  
-        const produtoUnidade = await this.productRepository.findProductByPartialCode(produto.codigo);
-        if (!produtoUnidade || !produtoUnidade.codigo) continue;
-  
-        const descricao = produto.descricao_uni || '';
-        const match = descricao.match(/CAIXA\s*C\/\s*(\d+)\s*UNIDADES/i);
-        console.log('match ===========>', match);
-        console.log('produtoUnidade ===========>', produtoUnidade);
-  
-        const codigoUnidade = produtoUnidade.codigo;
-        if (!unidadesVendidas[codigoUnidade]) {
-          unidadesVendidas[codigoUnidade] = 0;
-        }
-  
-        if (match) {
-          const unidadeMultiplicador = parseInt(match[1], 10);
-          unidadesVendidas[codigoUnidade] += Number(item.quantidade) * unidadeMultiplicador;
-        } else {
-          unidadesVendidas[codigoUnidade] += Number(item.quantidade);
-        }
-      }
-    }
-  
-    return unidadesVendidas;
-  } 
-  
 }
