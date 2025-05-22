@@ -277,16 +277,69 @@ export class ProductsService implements IProductsRepository {
     const produtos = await this.produtoRepository.find({
       where: {
         codigo: Like(`${partialCode}%`)
-      }, relations: ['categoria', 'fornecedor'],
+      },
+      relations: ['categoria', 'fornecedor'],
     });
   
     if (!produtos.length) return undefined;
   
-    const produtoComUnidade = produtos.find(p =>
-      !p.descricao_uni?.toLowerCase().includes('caixa')
-    );
+    // Preferência: produto cuja descrição não contenha "caixa"
+    const produtoComUnidade = produtos.find(p => {
+      const desc = p.descricao_uni ? p.descricao_uni.toLowerCase().replace(/<[^>]+>/g, '') : '';
+      return !desc.includes('caixa');
+    });
   
-    return produtoComUnidade ?? produtos[0];
-  }  
-  
+    return produtoComUnidade ?? null; // fallback se não encontrar uma clara unidade
+  } 
+
+  async associateCxtoUni(): Promise<void> {
+    const produtosCx = await this.produtoRepository.find({
+      where: {
+        descricao_uni: Like('%CAIXA%')
+      }
+    });
+
+    const naoAssociados: string[] = [];
+
+    for (const produtoCaixa of produtosCx) {
+      if (!produtoCaixa.ean) {
+        console.warn(`⚠️ Produto ${produtoCaixa.codigo} não possui EAN, pulando...`);
+        naoAssociados.push(produtoCaixa.codigo);
+        continue;
+      }
+
+      const relacionados = await this.produtoRepository.find({
+        where: { ean: produtoCaixa.ean }
+      });
+
+      if (relacionados.length === 2) {
+        const unidade = relacionados.find(p => !p.descricao_uni.toLowerCase().includes('caixa'));
+
+        if (!unidade) {
+          console.warn(`❌ Nenhuma unidade encontrada para o EAN ${produtoCaixa.ean}`);
+          naoAssociados.push(produtoCaixa.codigo);
+          continue;
+        }
+
+        // Verifica se já está associada a outro produto
+        const jaAssociado = await this.produtoRepository.findOne({ where: { unidade: unidade } });
+        if (jaAssociado) {
+          console.warn(`❌ Unidade ${unidade.codigo} já associada a outro produto (${jaAssociado.codigo}). Pulando...`);
+          naoAssociados.push(produtoCaixa.codigo);
+          continue;
+        }
+
+        produtoCaixa.unidade = unidade;
+        await this.produtoRepository.save(produtoCaixa);
+        console.log(`✅ Produto ${produtoCaixa.codigo} associado à unidade ${unidade.codigo}`);
+      } else {
+        console.warn(`⚠️ EAN ${produtoCaixa.ean} retornou ${relacionados.length} resultados. Produto: ${produtoCaixa.codigo}`);
+        naoAssociados.push(produtoCaixa.codigo);
+      }
+    }
+
+    console.log('🧩 Associação por EAN finalizada!');
+    console.log('🔍 Produtos não associados:', naoAssociados);
+  } 
+    
 }

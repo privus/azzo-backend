@@ -30,4 +30,5 @@ export interface ISellsRepository {
   reportSalesByBrandAndProduct(): Promise<Record<string, Record<string, { quantidade: number; valor: number }>>>;
   updateStatusSell(id: number, status_id: number): Promise<void>;
   saveSell(venda: Venda): Promise<void>;
+  getSellsByStatus(statusIds: number[]): Promise<Venda[]> 
 }

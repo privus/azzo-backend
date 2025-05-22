@@ -25,6 +25,12 @@ export class ProductsController {
     return this.productsService.syncroTinyIds();
   }
 
+  @ApiOperation({ summary: 'Associa caixas a unidade' })
+  @Get('syncroCaixa')
+  async syncroCaixa() {
+    return this.productsService.associateCxtoUni();
+  }
+
   @ApiOperation({ summary: 'Listar todos os produtos' })
   @Get()
   async findAllProducts() {

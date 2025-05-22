@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany, OneToOne } from 'typeorm';
 import { CategoriaProduto, Fornecedor, ItensVenda } from './';
 
 @Entity('produto')
@@ -64,4 +64,8 @@ export class Produto {
 
   @OneToMany(() => ItensVenda, (vp) => vp.produto, { cascade: true })
   itens_venda: ItensVenda[];
+
+  @OneToOne(() => Produto, { nullable: true })
+  @JoinColumn({ name: 'unidade_id' })
+  unidade: Produto;  
 }

@@ -1,9 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
-import { Response } from 'express';
+import { Controller, Get, Param, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { StockService } from '../services/stock.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
+import { Produto } from '../../../infrastructure/database/entities';
 
 ApiTags('stock')
 @Controller('stock')
@@ -18,6 +18,7 @@ export class StockController {
     return this.stockService.getStock();
   }
 
+  @ApiOperation({ summary: 'Importar estoque de NFe XML' })
   @Post('upload/:id')
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
@@ -29,6 +30,12 @@ export class StockController {
   }))
   async uploadNfeFile(@Param('id') id: number, @UploadedFile() file: Express.Multer.File): Promise<string> {
     return this.stockService.importStockFromNfeXml(file.path, id);
+  }
+
+  @ApiOperation({ summary: 'projetar estoque em unidades'})
+  @Get('stock-units')
+  async projectStockInUnits(): Promise<Record<string, number>> {
+    return this.stockService.projectStockInUnits();
   }
 
 }

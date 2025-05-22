@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { Distribuidor, Estoque, Fornecedor } from '../../../infrastructure/database/entities';
-import { IProductsRepository, IStockRepository } from '../../../domain/repositories';
+import { Distribuidor, Estoque, Fornecedor, Produto } from '../../../infrastructure/database/entities';
+import { IProductsRepository, ISellsRepository, IStockRepository } from '../../../domain/repositories';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { XMLParser } from 'fast-xml-parser';
@@ -16,6 +16,7 @@ export class StockService implements IStockRepository {
     @InjectRepository(Fornecedor) private readonly fornecedorRepository: Repository<Fornecedor>,
     @InjectRepository(Distribuidor) private readonly distribuidorRepository: Repository<Distribuidor>,
     @Inject('IProductsRepository') private readonly productRepository: IProductsRepository,
+    @Inject('ISellsRepository') private readonly sellRepository: ISellsRepository,
   ) {}
 
   async getStock(): Promise<Estoque[]> {
@@ -128,44 +129,40 @@ export class StockService implements IStockRepository {
     return `Importados ${quantidadeImportada} produtos. Não encontrados: ${produtosNaoEncontrados.join(', ')}`;
   }
 
-  // async projectStockInUnits(): Promise<Record<string, number>> {
-  //   const statusVendaIds = [11139, 11138];
-  //   const vendas = await this.vendaRepository.find({
-  //     where: {
-  //       status_venda: {
-  //         status_venda_id: In(statusVendaIds)
-  //       }
-  //     },
-  //     relations: ['itensVenda', 'itensVenda.produto'],
-  //   });
+  async projectStockInUnits(): Promise<Record<string, number>> {
+    const statusVendaIds = [11139, 11138];
+    const vendas = await this.sellRepository.getSellsByStatus(statusVendaIds);
   
-  //   const unidadesVendidas: Record<string, number> = {};
+    const unidadesVendidas: Record<string, number> = {};
   
-  //   for (const venda of vendas) {
-  //     for (const item of venda.itensVenda) {
-  //       const produto = item.produto;
-  //       if (!produto || !produto.codigo) continue;
+    for (const venda of vendas) {
+      for (const item of venda.itensVenda) {
+        const produto = item.produto;
+        if (!produto || !produto.codigo) continue;
   
-  //       const descricao = produto.descricao_uni || '';
-  //       const match = descricao.match(/CAIXA\s*C\/\s*(\d+)\s*UNIDADES/i);
+        const produtoUnidade = await this.productRepository.findProductByPartialCode(produto.codigo);
+        if (!produtoUnidade || !produtoUnidade.codigo) continue;
   
-  //       let unidadeMultiplicador = 1;
-  //       if (match) {
-  //         unidadeMultiplicador = parseInt(match[1], 10);
+        const descricao = produto.descricao_uni || '';
+        const match = descricao.match(/CAIXA\s*C\/\s*(\d+)\s*UNIDADES/i);
+        console.log('match ===========>', match);
+        console.log('produtoUnidade ===========>', produtoUnidade);
   
-  //         const produtoUnidade = await this.productRepository.findProductByPartialCode(produto.codigo);
-  //         if (produtoUnidade && produtoUnidade.codigo) {
-  //           const codigoUnidade = produtoUnidade.codigo;
-  //           if (!unidadesVendidas[codigoUnidade]) {
-  //             unidadesVendidas[codigoUnidade] = 0;
-  //           }
-  //           unidadesVendidas[codigoUnidade] += Number(item.quantidade) * unidadeMultiplicador;
-  //         }
-  //       }
-  //     }
-  //   }
+        const codigoUnidade = produtoUnidade.codigo;
+        if (!unidadesVendidas[codigoUnidade]) {
+          unidadesVendidas[codigoUnidade] = 0;
+        }
   
-  //   return unidadesVendidas;
-  // } 
+        if (match) {
+          const unidadeMultiplicador = parseInt(match[1], 10);
+          unidadesVendidas[codigoUnidade] += Number(item.quantidade) * unidadeMultiplicador;
+        } else {
+          unidadesVendidas[codigoUnidade] += Number(item.quantidade);
+        }
+      }
+    }
+  
+    return unidadesVendidas;
+  } 
   
 }

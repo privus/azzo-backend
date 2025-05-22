@@ -1384,4 +1384,15 @@ export class SellsService implements ISellsRepository {
     await this.vendaRepository.save(venda);
     return
   }
+
+  async getSellsByStatus(statusIds: number[]): Promise<Venda[]> {
+    return this.vendaRepository.find({
+      where: {
+        status_venda: {
+          status_venda_id: In(statusIds)
+        }
+      },
+      relations: ['itensVenda.produto']
+    });
+  }
 }
