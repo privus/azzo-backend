@@ -25,10 +25,10 @@ export class ProductsController {
     return this.productsService.syncroTinyIds();
   }
 
-  @ApiOperation({ summary: 'Associa caixas a unidade' })
-  @Get('syncroCaixa')
-  async syncroCaixa() {
-    return this.productsService.associateCxtoUni();
+  @ApiOperation({ summary: 'Atribui Quant CX' })
+  @Get('assignQuantCX')
+  async assignQuantCX() {
+    return this.productsService.atribuirQtdPorDescricao();
   }
 
   @ApiOperation({ summary: 'Listar todos os produtos' })

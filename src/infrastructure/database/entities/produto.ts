@@ -54,6 +54,9 @@ export class Produto {
   @Column({ type: 'int', nullable: true })
   tiny_mg: number;
 
+  @Column({ type: 'int', nullable: true })
+  qt_uni: number;
+
   @ManyToOne(() => CategoriaProduto)
   @JoinColumn({ name: 'categoria_id' })
   categoria: CategoriaProduto;
