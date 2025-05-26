@@ -1,11 +1,11 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
+import { BadRequestException, HttpException, Inject, Injectable, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, MoreThanOrEqual, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda } from '../../../infrastructure/database/entities';
 import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto, ProjectStockDto } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository } from '../../../domain/repositories';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { HttpService } from '@nestjs/axios';
 
 @Injectable()
 export class SellsService implements ISellsRepository {
@@ -57,7 +57,8 @@ export class SellsService implements ISellsRepository {
       const maxPage = 12;
   
       do {
-        const url = `${this.apiUrlSellentt}${this.apiTagSellentt}?${queryParam}&page=${currentPage}`;
+        const s = lastSync ? '&' : '?';
+        const url = `${this.apiUrlSellentt}${this.apiTagSellentt}${queryParam}${s}page=${currentPage}`;
         console.log('Fetching URL:', url);
   
         const response = await this.httpService.axiosRef.get<{
@@ -86,14 +87,14 @@ export class SellsService implements ISellsRepository {
     };
   
     try {
-      const defaultStart = new Date('2025-05-01T00:00:00Z');
 
-      const createdParam = `after_created=${this.formatDateWithTime(lastSync ?? defaultStart)}`;
+      const createdParam = lastSync ? `?after_created=${this.formatDateWithTime(lastSync)}` : ''
       await fetchSells(createdParam, 'created');
       
-      const updatedParam = `after_updated=${this.formatDateWithTime(lastUpdate ?? defaultStart)}`;
-      await fetchSells(updatedParam, 'updated');
-      
+      if (lastUpdate) {
+        const updatedParam = `?after_updated=${this.formatDateWithTime(lastUpdate)}`
+        await fetchSells(updatedParam, 'updated');
+      }
   
       const now = new Date();
       await this.updateLastSyncDate('sells', now);
@@ -229,6 +230,7 @@ export class SellsService implements ISellsRepository {
       existingSell.status_venda = status_venda;
       existingSell.observacao = sell.obs;
       existingSell.comisao = Number(sell.commission) || 0;
+      existingSell.fora_politica = sell.politics_out;
         if (existingSell.nfe_id && !existingSell.nfe_link) {
           const link = await this.getNflink(existingSell.nfe_id, cliente.cidade.estado.sigla);
           existingSell.nfe_link = link;
@@ -390,6 +392,7 @@ export class SellsService implements ISellsRepository {
       status_pagamento,
       tipo_pedido,
       comisao: Number(sell.commission) || 0,
+      fora_politica: sell.politics_out,
     });
 
     await this.vendaRepository.save(novaVenda);
@@ -493,31 +496,40 @@ export class SellsService implements ISellsRepository {
   }
 
   async updateSellStatus(UpdateSellStatusDto: UpdateSellStatusDto): Promise<string> {
-    const { venda_id, status_venda_id, numero_nfe } = UpdateSellStatusDto;
-
-    const venda = await this.vendaRepository.findOne({
-      where: { venda_id },
-      relations: ['status_venda'],
-    });
-
-    if (!venda) {
-      throw new Error(`Venda com ID ${venda_id} não encontrada.`);
+    try {
+      const { venda_id, status_venda_id, numero_nfe } = UpdateSellStatusDto;
+  
+      const venda = await this.vendaRepository.findOne({
+        where: { venda_id },
+        relations: ['status_venda'],
+      });
+  
+      if (!venda) {
+        throw new HttpException(`Venda com ID ${venda_id} não encontrada.`, HttpStatus.NOT_FOUND);
+      }
+  
+      if (venda.fora_politica) {
+        throw new HttpException(`Pedido ${venda.codigo} está fora da política. Deve ser aprovado no Sellett pelo administrador.`, HttpStatus.FORBIDDEN);
+      }
+  
+      const novoStatus = await this.statusVendaRepository.findOne({ where: { status_venda_id } });
+  
+      if (!novoStatus) {
+        throw new HttpException(`Status de venda com ID ${status_venda_id} não encontrado.`, HttpStatus.NOT_FOUND);
+      }
+  
+      venda.status_venda = novoStatus;
+      venda.numero_nfe = numero_nfe;
+      await this.vendaRepository.save(venda);
+      await this.updateStatusSell(venda.codigo, status_venda_id);
+  
+      return `Status da venda ${venda.codigo} atualizado para ${novoStatus.nome}, Nf-e nº ${numero_nfe}.`;
+    } catch (error) {
+      console.error('Erro ao atualizar status da venda:', error.message);
+      throw new HttpException(`Falha ao atualizar status: ${error.message}`, error.status || HttpStatus.INTERNAL_SERVER_ERROR);
     }
-
-    const novoStatus = await this.statusVendaRepository.findOne({ where: { status_venda_id } });
-
-    if (!novoStatus) {
-      throw new Error(`Status de venda com ID ${status_venda_id} não encontrado.`);
-    }
-
-    venda.status_venda = novoStatus;
-    venda.numero_nfe = numero_nfe;
-    await this.vendaRepository.save(venda);
-    await this.updateStatusSell(venda.codigo, status_venda_id);
-
-
-    return `Status da venda ${venda.codigo} atualizado para ${novoStatus.nome}, Nf-e nº ${numero_nfe}.`;
   }
+  
 
   async exportTiny(id: number): Promise<string> {
     try {
@@ -1392,7 +1404,7 @@ export class SellsService implements ISellsRepository {
           status_venda_id: In(statusIds)
         }
       },
-      relations: ['itensVenda.produto']
+      relations: ['itensVenda.produto.unidade']
     });
   }
 }

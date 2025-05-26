@@ -1,1 +1,1 @@
-export * from './nfe-supplier.dto';
+export * from './stock.dto';

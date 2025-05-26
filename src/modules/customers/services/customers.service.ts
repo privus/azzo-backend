@@ -445,7 +445,7 @@ export class CustomersService implements ICustomersRepository{
   async putPaymentTerms() {
     const clientes = await this.clienteRepository.find();
 
-    const prazos = "1,2,3,4,5,6,8,10,11,15,17,20,21,22";
+    const prazos = "1,2,3,4,5,6,8,10,11,15,17,20,21,22,23";
 
     // Função para dividir array em chunks de 50
     const chunkArray = <T>(arr: T[], chunkSize: number): T[][] =>

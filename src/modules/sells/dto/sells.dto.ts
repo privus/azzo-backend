@@ -42,5 +42,6 @@ export interface SellsApiResponse {
   };
   order_type_id: number;
   updated_at: string;
+  politics_out: number;
 }
 

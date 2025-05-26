@@ -35,4 +35,12 @@ export class RomaneioDto {
   @Length(3, 90, { message: 'O data criação deve ter entre 3 e 180 caracteres.' })
   data_criacao: string;
 
+  /**
+   * Código de rastreio
+   * Exemplo: 'ABC123456'
+   */
+  @IsOptional()
+  @IsString({ message: 'O código de rastreio deve ser uma string.' })
+  @Length(3, 90, { message: 'O código de rastreio deve ter entre 3 e 90 caracteres.' })
+  cod_rastreio?: string;
 }

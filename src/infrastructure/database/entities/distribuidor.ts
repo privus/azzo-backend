@@ -5,7 +5,7 @@ export class Distribuidor {
   @PrimaryGeneratedColumn('increment')
   distribuidor_id: number;
 
-  @Column({ type: 'varchar', length: 45 })
+  @Column({ type: 'varchar', length: 45, nullable: true })
   cnpj: string;
 
   @Column({ type: 'varchar', length: 45 })

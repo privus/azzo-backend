@@ -66,6 +66,9 @@ export class Venda {
   @Column({ type: 'tinyint', nullable: true })
   anexo: number;
 
+  @Column({ type: 'tinyint', nullable: true })
+  fora_politica: number;
+
   @Column({ type: 'int', nullable: true })
   numero_nfe: number;
 

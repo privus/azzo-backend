@@ -14,7 +14,7 @@ export class RomaneioService {
   ) {}
    
   async generateRomaneio(romaneioDto: RomaneioDto): Promise<string> {
-    const { codigos, transportadora_id, transportadora_nome, data_criacao } = romaneioDto;
+    const { codigos, transportadora_id, transportadora_nome, data_criacao, cod_rastreio } = romaneioDto;
     let transportadora = await this.transportadoraRepository.findOne({ where: { transportadora_id }});
   
     if (!transportadora) {
@@ -30,6 +30,7 @@ export class RomaneioService {
       vendas,
       transportadora,
       data_criacao,
+      cod_rastreio,
     });
   
     await this.romaneioRepository.save(novoRomaneio);

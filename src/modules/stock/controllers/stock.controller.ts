@@ -3,7 +3,8 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { StockService } from '../services/stock.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { Produto } from '../../../infrastructure/database/entities';
+import { Distribuidor, Produto } from '../../../infrastructure/database/entities';
+import { StockImportResponse, StockLiquid } from '../dto';
 
 ApiTags('stock')
 @Controller('stock')
@@ -28,8 +29,20 @@ export class StockController {
       },
     }),
   }))
-  async uploadNfeFile(@Param('id') id: number, @UploadedFile() file: Express.Multer.File): Promise<string> {
+  async uploadNfeFile(@Param('id') id: number, @UploadedFile() file: Express.Multer.File): Promise<StockImportResponse> {
     return this.stockService.importStockFromNfeXml(file.path, id);
+  }
+
+  @ApiOperation({ summary: 'Obter estoque liquído' })
+  @Get('liquid')
+  async getEstoqueLiquido(): Promise<StockLiquid[]> {
+    return this.stockService.getStockLiquid()
+  }
+
+  @ApiOperation({ summary: 'Obter distribuidores' })
+  @Get('dist')
+  async getDistribuidores(): Promise<Distribuidor[]> {
+    return this.stockService.findAllDistributors();
   }
 
 }
