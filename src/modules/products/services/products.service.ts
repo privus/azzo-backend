@@ -268,6 +268,11 @@ export class ProductsService implements IProductsRepository {
     await this.produtoRepository.increment({ produto_id }, 'saldo_estoque', quantidade);
     return 
   }
+
+  async decrementStock(produto_id: number, quantidade: number): Promise<void> {
+    await this.produtoRepository.decrement({ produto_id }, 'saldo_estoque', quantidade);
+    return 
+  }
   
   async findProductByPartialCode(partialCode: string): Promise<Produto[] | undefined> {
     const produtos = await this.produtoRepository.find({
@@ -279,5 +284,5 @@ export class ProductsService implements IProductsRepository {
     if (!produtos.length) return undefined;
   
     return produtos
-  }  
+  } 
 }

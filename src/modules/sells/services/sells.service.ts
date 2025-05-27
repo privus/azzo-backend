@@ -439,11 +439,11 @@ export class SellsService implements ISellsRepository {
         where: {
           data_criacao: MoreThanOrEqual(new Date(fromDate)),
         },
-        relations: ['cliente.cidade.estado', 'vendedor', 'status_pagamento', 'status_venda', 'itensVenda.produto', 'itensVenda.produto.fornecedor', 'tipo_pedido'],
+        relations: ['cliente.cidade.estado', 'vendedor', 'status_pagamento', 'status_venda', 'itensVenda.produto.unidade', 'itensVenda.produto.fornecedor', 'tipo_pedido'],
       });
     }
     return this.vendaRepository.find({
-      relations: ['cliente.cidade.estado', 'vendedor', 'status_pagamento', 'status_venda', 'itensVenda.produto', 'itensVenda.produto.fornecedor', 'tipo_pedido'],
+      relations: ['cliente.cidade.estado', 'vendedor', 'status_pagamento', 'status_venda', 'itensVenda.produto.unidade', 'itensVenda.produto.fornecedor', 'tipo_pedido'],
     });
   }
 
@@ -497,38 +497,29 @@ export class SellsService implements ISellsRepository {
   }
 
   async updateSellStatus(UpdateSellStatusDto: UpdateSellStatusDto): Promise<string> {
-    try {
-      const { venda_id, status_venda_id, numero_nfe } = UpdateSellStatusDto;
-  
-      const venda = await this.vendaRepository.findOne({
-        where: { venda_id },
-        relations: ['status_venda'],
-      });
-  
-      if (!venda) {
-        throw new HttpException(`Venda com ID ${venda_id} não encontrada.`, HttpStatus.NOT_FOUND);
-      }
-  
-      if (venda.fora_politica) {
-        throw new HttpException(`Pedido ${venda.codigo} está fora da política. Deve ser aprovado no Sellett pelo administrador.`, HttpStatus.FORBIDDEN);
-      }
-  
-      const novoStatus = await this.statusVendaRepository.findOne({ where: { status_venda_id } });
-  
-      if (!novoStatus) {
-        throw new HttpException(`Status de venda com ID ${status_venda_id} não encontrado.`, HttpStatus.NOT_FOUND);
-      }
-  
-      venda.status_venda = novoStatus;
-      venda.numero_nfe = numero_nfe;
-      await this.vendaRepository.save(venda);
-      await this.updateStatusSell(venda.codigo, status_venda_id);
-  
-      return `Status da venda ${venda.codigo} atualizado para ${novoStatus.nome}, Nf-e nº ${numero_nfe}.`;
-    } catch (error) {
-      console.error('Erro ao atualizar status da venda:', error.message);
-      throw new HttpException(`Falha ao atualizar status: ${error.message}`, error.status || HttpStatus.INTERNAL_SERVER_ERROR);
+    const { venda_id, status_venda_id, numero_nfe } = UpdateSellStatusDto;
+
+    const venda = await this.vendaRepository.findOne({
+      where: { venda_id },
+      relations: ['status_venda'],
+    });
+
+    if (!venda) {
+      throw new Error(`Venda com ID ${venda_id} não encontrada.`);
     }
+
+    const novoStatus = await this.statusVendaRepository.findOne({ where: { status_venda_id } });
+
+    if (!novoStatus) {
+      throw new Error(`Status de venda com ID ${status_venda_id} não encontrado.`);
+    }
+
+    venda.status_venda = novoStatus;
+    venda.numero_nfe = numero_nfe;
+    await this.vendaRepository.save(venda);
+    await this.updateStatusSell(venda.codigo, status_venda_id);
+
+    return `Status da venda ${venda.codigo} atualizado para ${novoStatus.nome}, Nf-e nº ${numero_nfe}.`;
   }
   
 
@@ -1408,4 +1399,46 @@ export class SellsService implements ISellsRepository {
       relations: ['itensVenda.produto.unidade']
     });
   }
+
+  async debtStock(): Promise<string> {
+    const statusValidos = [11541, 13477, 11491];
+    const vendas = await this.sellsByDate('2025-05-26')
+      .then(vs => vs.filter(v => statusValidos.includes(v.status_venda?.status_venda_id)));
+  
+    console.log(`🔍 Encontradas ${vendas.length} vendas com status válidos para abatimento de estoque.`);
+  
+    for (const venda of vendas) {
+      const mapaEstoque: Map<number, { codigo: string, unidades: number }> = new Map();
+  
+      for (const item of venda.itensVenda) {
+        const produto = item.produto;
+        if (!produto) continue;
+  
+        let unidades = Number(item.quantidade);
+        let produtoAlvo = produto;
+  
+        if (produto.unidade && produto.qt_uni) {
+          unidades *= produto.qt_uni
+          produtoAlvo = produto.unidade;
+        }
+  
+        const atual = mapaEstoque.get(produtoAlvo.produto_id) || { codigo: produtoAlvo.codigo, unidades: 0 };
+        atual.unidades += unidades;
+        mapaEstoque.set(produtoAlvo.produto_id, atual);
+      }
+  
+      for (const [produto_id, { codigo, unidades }] of mapaEstoque) {
+        await this.produtoRepository.decrement(
+          { produto_id },
+          'saldo_estoque',
+          unidades
+        );
+        console.log(`🔻 Produto ${codigo} - Estoque abatido em ${unidades} unidade(s).`);
+      }
+    }
+  
+    console.log(`✅ Estoque atualizado com sucesso para pedidos aprovados.`);
+    return 'Estoque abatido com sucesso para pedidos aprovados.';
+  }  
+  
 }

@@ -11,4 +11,5 @@ export interface IProductsRepository {
   incrementStock(produto_id: number, quantidade: number): Promise<void>;
   findProductByPartialCode(partialCode: string): Promise<Produto[] | undefined>;
   findByEan(ean: number): Promise<Produto[] | null>;
+  decrementStock(produto_id: number, quantidade: number): Promise<void>;
 }
