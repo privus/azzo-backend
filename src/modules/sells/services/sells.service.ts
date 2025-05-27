@@ -412,7 +412,7 @@ export class SellsService implements ISellsRepository {
   
     for (const venda of vendasHoje) {
       const clienteId = venda.cliente?.cliente_id;
-      if (!clienteId) continue;
+      if (!clienteId || clienteId === 558) continue;
       if (!vendasPorCliente.has(clienteId)) {
         vendasPorCliente.set(clienteId, []);
       }
