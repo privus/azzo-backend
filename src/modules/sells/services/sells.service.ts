@@ -491,6 +491,7 @@ export class SellsService implements ISellsRepository {
         'cliente.cidade.estado',
         'cliente.categoria_cliente',
         'cliente.regiao',
+        'itensVenda.produto.unidade',
       ],
     });
   }

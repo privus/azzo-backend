@@ -3,6 +3,7 @@ import { ISellsRepository } from '../../../domain/repositories';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as PdfPrinter from 'pdfmake';
+import { Venda } from 'src/infrastructure/database/entities';
 
 @Injectable()
 export class PrintOrderService {
@@ -14,7 +15,7 @@ export class PrintOrderService {
       throw new Error(`Pedido ID ${orderId} não encontrado.`);
     }
 
-    if (order.status_venda.status_venda_id === 11138) {
+    if (order.status_venda.status_venda_id === 11138 && responsible !== 'Resumo') {
       await this.sellsSevice.updateStatusSell(order.codigo, 11139);
     }
 
@@ -36,7 +37,7 @@ export class PrintOrderService {
     }
   }
 
-  private async createPdf(order: any, logoBase64: string, responsible: string): Promise<Buffer> {
+  private async createPdf(order: Venda, logoBase64: string, responsible: string): Promise<Buffer> {
     const fonts = {
       Helvetica: {
         normal: 'Helvetica',
@@ -108,17 +109,17 @@ export class PrintOrderService {
     return this.generatePdfBuffer(printer, docDefinition);
   }
   
-  private createProductsTable(order: any) {
+  private createProductsTable(order: Venda) {
     const header = [
       { text: 'Código / EAN', style: 'tableHeader' },
       { text: 'Produto', style: 'tableHeader' },
       { text: 'Qtd.', style: 'tableHeader', alignment: 'center' },
-      { text: 'V. Uni ', style: 'tableHeader', alignment: 'right' },
+      { text: 'Qtd. Uni', style: 'tableHeader', alignment: 'right' },
       { text: 'Total', style: 'tableHeader', alignment: 'right' },
     ];
 
     const sortedItens = order.itensVenda.slice().sort((a, b) => {
-      return (a.fornecedor_id ?? 0) - (b.fornecedor_id ?? 0);
+      return (a.produto?.fornecedor?.fornecedor_id ?? 0) - (b.produto?.fornecedor?.fornecedor_id ?? 0);
     });
 
     const rows: any[] = [];
@@ -128,6 +129,7 @@ export class PrintOrderService {
       const produto = item.produto;
       const isCaixa = produto?.descricao_uni?.toUpperCase()?.includes('CAIXA');
       const obs = item.observacao ? `obs: ${item.observacao}` : '';
+      const qtdUni = item.produto.unidade ? item.quantidade * item.produto.qt_uni : item.quantidade;
 
       const row = [
         {
@@ -143,7 +145,7 @@ export class PrintOrderService {
           ]
         },
         { text: item.quantidade?.toString() ?? '0', alignment: 'center', fontSize: 10 },
-        { text: `${Number(item.valor_unitario).toFixed(2)}`, alignment: 'right', fontSize: 10 },
+        { text: `${qtdUni}`, alignment: 'right', fontSize: 10 },
         { text: `${Number(item.valor_total).toFixed(2)}`, alignment: 'right', fontSize: 10 },
       ];
 
@@ -191,7 +193,7 @@ export class PrintOrderService {
     const length = order.forma_pagamento
     const forma_pagamento = order.forma_pagamento.slice(0, length.length - 24 )
     const doc = order.cliente.tipo_doc === 'cnpj' ? `CNPJ: ${order.cliente.numero_doc}` : `CPF: ${order.cliente.numero_doc}`
-    const categoria = order.cliente.categoria_cliente.nome;
+    const categoria = order.cliente.categoria_cliente ? order.cliente.categoria_cliente.nome : 'Teste';
     const associado = order.associado ? `/ Associado: #${order.associado}` : '';
     return {
       columns: [

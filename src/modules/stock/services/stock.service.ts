@@ -63,7 +63,7 @@ export class StockService implements IStockRepository {
   
       switch (dist_type) {
         case 1: // GREEN
-        case 8: // W COSMETICOS
+        case 7: // W COSMETICOS
           produtos = await this.productRepository.findProductByPartialCode(prod.cProd);
           break;
         case 2: // VIDAL
@@ -107,8 +107,8 @@ export class StockService implements IStockRepository {
 
   
       // Multiplica pela qt_uni apenas se ambos forem encontrados (caixa + unidade)
-      // e o distribuidor **não for** W COSMETICOS (case 8)
-      if (produtos.length > 1 && caixa && unidade && dist_type !== 8) {
+      // e o distribuidor **não for** W COSMETICOS (case 7)
+      if (produtos.length > 1 && caixa && unidade && dist_type !== 7) {
         quantidade *= caixa.qt_uni;
       }
 

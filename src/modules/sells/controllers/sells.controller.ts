@@ -138,12 +138,20 @@ export class SellsController {
     @Body('ids') ids: number[],
     @Res() res: Response,
   ) {
-    const { fileName, pdfBuffer } = await this.printOrderResumeService.printOrderResume(ids);
+    let fileName: string;
+    let pdfBuffer: Buffer;
+  
+    if (ids.length === 1) {
+      ({ fileName, pdfBuffer } = await this.printOrderService.printOrder(ids[0], 'Resumo'));
+    } else {
+      ({ fileName, pdfBuffer } = await this.printOrderResumeService.printOrderResume(ids));
+    }
   
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'inline; filename=' + fileName); // 👈 inline, não attachment
+    res.setHeader('Content-Disposition', 'inline; filename=' + fileName);
     return res.send(pdfBuffer);
-  }   
+  }
+  
 
   @ApiOperation({ summary: 'Excluir venda e suas parcelas' })
   @Delete(':id')
