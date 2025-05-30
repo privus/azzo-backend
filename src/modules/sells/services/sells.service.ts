@@ -531,7 +531,7 @@ export class SellsService implements ISellsRepository {
   }
 
   async updateSellStatus(UpdateSellStatusDto: UpdateSellStatusDto): Promise<string> {
-    const { venda_id, status_venda_id, numero_nfe } = UpdateSellStatusDto;
+    const { venda_id, status_venda_id, numero_nfe, valor_frete } = UpdateSellStatusDto;
 
     const venda = await this.vendaRepository.findOne({
       where: { venda_id },
@@ -550,6 +550,8 @@ export class SellsService implements ISellsRepository {
 
     venda.status_venda = novoStatus;
     venda.numero_nfe = numero_nfe;
+    venda.valor_frete = valor_frete;
+
     await this.vendaRepository.save(venda);
     await this.updateStatusSellentt(venda.codigo, status_venda_id);
 

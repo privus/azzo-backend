@@ -40,6 +40,9 @@ export class Venda {
   valor_final: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  valor_frete: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   flex_gerado: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })

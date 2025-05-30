@@ -1,4 +1,4 @@
-import { IsNumber } from 'class-validator';
+import { IsNumber, IsOptional } from 'class-validator';
 
 export class UpdateSellStatusDto {
   /**
@@ -21,4 +21,13 @@ export class UpdateSellStatusDto {
    */
   @IsNumber({}, { message: 'O número da nota fiscal deve ser um número.' })
   numero_nfe: number;
+
+  /**
+   * Valor Frete.
+   * Exemplo: 37.50
+   */
+  @IsOptional()
+  @IsNumber({}, { message: 'O valor do frete deve ser um número.' })
+  valor_frete?: number;
+
 }
