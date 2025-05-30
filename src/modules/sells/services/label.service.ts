@@ -18,7 +18,7 @@ export class LabelService {
     const logoPath = path.resolve('src/utils/azzo.png');
     const logoBase64 = await this.getBase64Image(logoPath);
     if (order.status_venda.status_venda_id !== 11491) {
-      await this.sellsSevice.updateStatusSell(order.codigo, 11541);
+      await this.sellsSevice.updateStatusSellentt(order.codigo, 11541);
     }
 
     // Criar PDF

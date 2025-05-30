@@ -133,13 +133,6 @@ export class SellsController {
     return { message: resultMessage };
   }
 
-  @ApiOperation({ summary: 'Abate saldo estoque por unidade'})
-  @Get('decrementStock')
-  async decrementStock() {
-    const resultMessage = await this.sellsService.debtStock()
-    return { message: resultMessage };
-  }
-
   @Post('printResume')
   async printOrderResume(
     @Body('ids') ids: number[],

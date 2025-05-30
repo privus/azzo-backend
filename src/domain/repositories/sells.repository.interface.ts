@@ -28,7 +28,7 @@ export interface ISellsRepository {
   syncroTinyInvoiceNf(): Promise<string>;
   reportUniqueEanBySegment(): Promise<Record<string, { totalVendas: number, faturamento: number, fornecedores: Record<string, { uniqueEansCount: number, margem: number, participacao: number }> }>>;
   reportSalesByBrandAndProduct(): Promise<Record<string, Record<string, { quantidade: number; valor: number }>>>;
-  updateStatusSell(id: number, status_id: number): Promise<void>;
+  updateStatusSellentt(id: number, status_id: number): Promise<void>;
   saveSell(venda: Venda): Promise<void>;
   getSellsByStatus(statusIds: number[]): Promise<Venda[]> 
 }

@@ -333,39 +333,39 @@ export class CustomersService implements ICustomersRepository{
 
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
   async updateTags(): Promise<void> {
-    const clientes = await this.clienteRepository.find({ relations: ['status_cliente'] });
     const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
   
-    // Preload status IDs to avoid multiple DB queries
-    const status60 = await this.statusClienteRepository.findOne({ where: { status_cliente_id: 104 } });
-    const status90 = await this.statusClienteRepository.findOne({ where: { status_cliente_id: 102 } });
-    const status180 = await this.statusClienteRepository.findOne({ where: { status_cliente_id: 103 } });
-    const statusAtivo = await this.statusClienteRepository.findOne({ where: { status_cliente_id: 101 } });
+    const [statusAtivo, status60, status90, status180] = await Promise.all([
+      this.statusClienteRepository.findOne({ where: { status_cliente_id: 101 } }),
+      this.statusClienteRepository.findOne({ where: { status_cliente_id: 104 } }),
+      this.statusClienteRepository.findOne({ where: { status_cliente_id: 102 } }),
+      this.statusClienteRepository.findOne({ where: { status_cliente_id: 103 } }),
+    ]);
   
     if (!status60 || !status90 || !status180 || !statusAtivo) {
-      console.error("❌ ERRO: Um ou mais status de cliente não foram encontrados no banco.");
+      console.error("❌ ERRO: Status de cliente não encontrados.");
       return;
     }
   
-    for (const cliente of clientes) {
+    const clientes = await this.clienteRepository.find({ relations: ['status_cliente'] });
   
+    const clientesParaAtualizar = [];
+  
+    for (const cliente of clientes) {
       let dataRef = cliente.ultima_compra || cliente.data_criacao;
-      const isUsingDataCriacao = !cliente.ultima_compra;
-      
-      if (isUsingDataCriacao) {
-        console.log(`🔹 Cliente ${cliente.codigo} sem data última compra. Mantendo status.`);
+  
+      if (!dataRef) {
+        console.warn(`⚠️ Cliente ${cliente.codigo} sem data válida para análise.`);
         continue;
       }
-
+  
       const dataRefDate = new Date(dataRef);
       dataRefDate.setHours(0, 0, 0, 0);
-      const hojeSemHora = new Date();
-      hojeSemHora.setHours(0, 0, 0, 0);
   
-      const diferencaEmDias = Math.floor((hojeSemHora.getTime() - dataRefDate.getTime()) / (1000 * 60 * 60 * 24));  
- 
+      const diferencaEmDias = Math.floor((hoje.getTime() - dataRefDate.getTime()) / (1000 * 60 * 60 * 24));
       let novoStatus = statusAtivo;
-      let proxStatusDias = null;
+      let proxStatusDias = 60 - diferencaEmDias;
   
       if (diferencaEmDias > 180) {
         novoStatus = status180;
@@ -376,18 +376,17 @@ export class CustomersService implements ICustomersRepository{
       } else if (diferencaEmDias > 60) {
         novoStatus = status60;
         proxStatusDias = 90 - diferencaEmDias;
-      } else {
-        novoStatus = statusAtivo;
-        proxStatusDias = 60 - diferencaEmDias;
       }
   
       cliente.status_cliente = novoStatus;
       cliente.prox_status = proxStatusDias;
-      await this.clienteRepository.save(cliente);
-      console.log(`✅ Cliente ${cliente.codigo} atualizado para status ${cliente.status_cliente.status_cliente_id}, próxima mudança em ${proxStatusDias ?? 'n/a'} dias`);
+      clientesParaAtualizar.push(cliente);
+  
+      console.log(`✅ Cliente ${cliente.codigo} -> Status ${novoStatus.status_cliente_id} (Próximo em ${proxStatusDias ?? 'n/a'} dias)`);
     }
   
-    console.log("✅ Atualização de tags concluída.");
+    await this.clienteRepository.save(clientesParaAtualizar);
+    console.log("✅ Atualização de status de clientes concluída.");
   }
   
 

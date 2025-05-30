@@ -35,7 +35,4 @@ export class Estoque {
   @ManyToOne(() => Distribuidor)
   @JoinColumn({ name: 'distribuidor_id' })
   distribuidor: Distribuidor;
-  
-  @OneToMany(() => SaidaEstoque, saida => saida.estoque)
-  saidas: SaidaEstoque[];
 }

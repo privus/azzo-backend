@@ -15,6 +15,7 @@ import {
   TinyTokens,
   Romaneio,
   Transportadora,
+  SaidaEstoque,
 } from '../../infrastructure/database/entities';
 import { SellsController } from './controllers/sells.controller';
 import { HttpModule } from '@nestjs/axios';
@@ -42,7 +43,8 @@ import { PrintOrderResumeService } from './services/print-order-resume.service';
       TipoPedido,
       TinyTokens,
       Romaneio,
-      Transportadora
+      Transportadora,
+      SaidaEstoque,
     ]),
     HttpModule,
     CustomersModule,

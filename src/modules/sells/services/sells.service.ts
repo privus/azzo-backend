@@ -1,7 +1,7 @@
 import { BadRequestException, HttpException, Inject, Injectable, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, MoreThanOrEqual, Repository } from 'typeorm';
-import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda } from '../../../infrastructure/database/entities';
+import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda, SaidaEstoque } from '../../../infrastructure/database/entities';
 import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto, ProjectStockDto } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository } from '../../../domain/repositories';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -31,6 +31,7 @@ export class SellsService implements ISellsRepository {
     @InjectRepository(Venda) private readonly vendaRepository: Repository<Venda>,
     @InjectRepository(TipoPedido) private readonly tipoPedidoRepository: Repository<TipoPedido>,
     @Inject('ITinyAuthRepository') private readonly tinyAuthService: ITinyAuthRepository,
+    @InjectRepository(SaidaEstoque) private readonly saidaRepository: Repository<SaidaEstoque>,
     private readonly httpService: HttpService,
   ) {
     this.tokenSellentt = process.env.SELLENTT_API_TOKEN;
@@ -211,7 +212,7 @@ export class SellsService implements ISellsRepository {
   }
 
   private async processSell(sell: SellsApiResponse): Promise<string> {
-    const existingSell = await this.vendaRepository.findOne({ where: { codigo: Number(sell.code) } });
+    const existingSell = await this.getSellByCode(Number(sell.code));
     const cliente = await this.clienteService.findCustomerByCode(sell.store ? Number(sell.store.erp_id) : 0);
 
     const status_venda = await this.statusVendaRepository.findOne({
@@ -225,8 +226,8 @@ export class SellsService implements ISellsRepository {
     });
 
     let itensVenda = [];
-    
-    if(existingSell) {    
+
+    if(existingSell) {
       existingSell.status_venda = status_venda;
       existingSell.observacao = sell.obs;
       existingSell.comisao = Number(sell.commission) || 0;
@@ -234,9 +235,9 @@ export class SellsService implements ISellsRepository {
         if (existingSell.nfe_id && !existingSell.nfe_link) {
           const link = await this.getNflink(existingSell.nfe_id, cliente.cidade.estado.sigla);
           existingSell.nfe_link = link;
-          console.log('Link NFE ==========>', link);
         }
           if (existingSell.valor_final != sell.amount_final || sell.installment_qty != existingSell.numero_parcelas) {
+            // await this.revertSaleStock(existingSell);
             console.log('Venda já existente e atualizando carrinho =>', sell.code);
             const productCodes = sell.products.map((item) => item.code);
             const produtosEncontrados = await this.produtoRepository.find({
@@ -289,6 +290,7 @@ export class SellsService implements ISellsRepository {
                   data_criacao: sell.order_date,
                   data_vencimento: data,
                   status_pagamento,
+                  descricao: `Venda código ${sell.code}`
               });
             });
             
@@ -297,6 +299,7 @@ export class SellsService implements ISellsRepository {
 
             await this.vendaRepository.save(existingSell);
             await this.clienteService.saveCustomer(cliente);
+            // await this.decrementStockSell(existingSell.codigo);
           
             return `Venda ${sell.code} Atualizada`;
           } else {
@@ -340,6 +343,7 @@ export class SellsService implements ISellsRepository {
                 data_criacao: sell.order_date,
                 data_vencimento: data,
                 status_pagamento,
+                descricao: `Venda código ${sell.code}`
           });
       });
     }
@@ -396,7 +400,37 @@ export class SellsService implements ISellsRepository {
     });
 
     await this.vendaRepository.save(novaVenda);
+    // await this.decrementStockSell(novaVenda.codigo);
     return `Venda código ${sell.code} foi Recebida`;
+  }
+
+  private async decrementStockSell(code:number): Promise<void> {
+    const venda = await this.getSellByCode(code);
+
+    for (const item of venda.itensVenda) {
+      const produtoVenda = item.produto;
+      if (!produtoVenda) continue;
+  
+      // Determina o produto base de controle de estoque
+      const produtoEstoque = produtoVenda.unidade || produtoVenda;
+  
+      // Quantidade convertida para unidades base
+      let quantidadeEmUnidadesBase = Number(item.quantidade);
+      if (produtoVenda.qt_uni && produtoVenda.unidade) {
+        quantidadeEmUnidadesBase *= produtoVenda.qt_uni;
+      }    
+  
+      const saida = this.saidaRepository.create({
+        produto: produtoEstoque,
+        quantidade: quantidadeEmUnidadesBase,
+        data_saida: new Date(),
+        venda: venda,
+        observacao: `Saída por ${venda.tipo_pedido.nome} - ${venda.codigo}`,
+      });
+      await this.produtoRepository.decrement({ produto_id: produtoEstoque.produto_id }, 'saldo_estoque', quantidadeEmUnidadesBase);
+  
+      await this.saidaRepository.save(saida);
+    }
   }
 
   async associatePairedSells(): Promise<void> {
@@ -517,7 +551,7 @@ export class SellsService implements ISellsRepository {
     venda.status_venda = novoStatus;
     venda.numero_nfe = numero_nfe;
     await this.vendaRepository.save(venda);
-    await this.updateStatusSell(venda.codigo, status_venda_id);
+    await this.updateStatusSellentt(venda.codigo, status_venda_id);
 
     return `Status da venda ${venda.codigo} atualizado para ${novoStatus.nome}, Nf-e nº ${numero_nfe}.`;
   }
@@ -612,17 +646,39 @@ export class SellsService implements ISellsRepository {
 
   async deleteSell(code: number): Promise<string> {
     // Verifica se a venda existe
-    const venda = await this.vendaRepository.findOne({ where: { codigo: code } });
+    const venda = await this.getSellByCode(code);
 
     if (!venda) {
         throw new Error(`Venda com ID ${code} não encontrada.`);
     }
+
+    // await this.revertSaleStock(venda);
 
     // Exclui a venda diretamente (parcelas serão excluídas automaticamente pelo cascade)
     await this.vendaRepository.remove(venda);
 
     return `Venda com ID ${code} e suas parcelas foram excluídas com sucesso.`;
   }
+
+  private async revertSaleStock(venda: Venda): Promise<void> {
+    for (const item of venda.itensVenda) {
+      const produtoVenda = item.produto;
+      if (!produtoVenda) continue;
+  
+      const produtoEstoque = produtoVenda.unidade || produtoVenda;
+  
+      let quantidadeEmUnidadesBase = Number(item.quantidade);
+      if (produtoVenda.qt_uni && produtoVenda.unidade) {
+        quantidadeEmUnidadesBase *= produtoVenda.qt_uni;
+      }
+  
+      await this.produtoRepository.increment({ produto_id: produtoEstoque.produto_id }, 'saldo_estoque', quantidadeEmUnidadesBase);
+    }
+  
+    // Também apaga os registros de saída de estoque dessa venda
+    await this.saidaRepository.delete({ venda });
+  }
+  
   
   async getDailyRakingSells(): Promise<RakingSellsResponse> {
     const today = new Date();
@@ -1318,7 +1374,7 @@ export class SellsService implements ISellsRepository {
     return relatorio;
   }
 
-  updateStatusSell(id: number, status_id: number): Promise<void> {
+  updateStatusSellentt(id: number, status_id: number): Promise<void> {
     const url = `${this.apiUrlSellentt}${this.apiTagSellentt}/${id}`;
     console.log('url ======', url)    
     try {
@@ -1399,46 +1455,5 @@ export class SellsService implements ISellsRepository {
       relations: ['itensVenda.produto.unidade']
     });
   }
-
-  async debtStock(): Promise<string> {
-    const statusValidos = [11541, 13477, 11491];
-    const vendas = await this.sellsByDate('2025-05-26')
-      .then(vs => vs.filter(v => statusValidos.includes(v.status_venda?.status_venda_id)));
-  
-    console.log(`🔍 Encontradas ${vendas.length} vendas com status válidos para abatimento de estoque.`);
-  
-    for (const venda of vendas) {
-      const mapaEstoque: Map<number, { codigo: string, unidades: number }> = new Map();
-  
-      for (const item of venda.itensVenda) {
-        const produto = item.produto;
-        if (!produto) continue;
-  
-        let unidades = Number(item.quantidade);
-        let produtoAlvo = produto;
-  
-        if (produto.unidade && produto.qt_uni) {
-          unidades *= produto.qt_uni
-          produtoAlvo = produto.unidade;
-        }
-  
-        const atual = mapaEstoque.get(produtoAlvo.produto_id) || { codigo: produtoAlvo.codigo, unidades: 0 };
-        atual.unidades += unidades;
-        mapaEstoque.set(produtoAlvo.produto_id, atual);
-      }
-  
-      for (const [produto_id, { codigo, unidades }] of mapaEstoque) {
-        await this.produtoRepository.decrement(
-          { produto_id },
-          'saldo_estoque',
-          unidades
-        );
-        console.log(`🔻 Produto ${codigo} - Estoque abatido em ${unidades} unidade(s).`);
-      }
-    }
-  
-    console.log(`✅ Estoque atualizado com sucesso para pedidos aprovados.`);
-    return 'Estoque abatido com sucesso para pedidos aprovados.';
-  }  
   
 }

@@ -16,7 +16,7 @@ export class PrintOrderService {
     }
 
     if (order.status_venda.status_venda_id === 11138 && responsible !== 'Resumo') {
-      await this.sellsSevice.updateStatusSell(order.codigo, 11139);
+      await this.sellsSevice.updateStatusSellentt(order.codigo, 11139);
     }
 
     const logoPath = path.resolve('src/utils/azzo.png');
@@ -127,7 +127,7 @@ export class PrintOrderService {
 
     sortedItens.forEach((item, idx) => {
       const produto = item.produto;
-      const isCaixa = produto?.descricao_uni?.toUpperCase()?.includes('CAIXA');
+      const isCaixa = produto?.descricao_uni?.toUpperCase()?.includes('CAIXA') || item.quantidade > 11;
       const obs = item.observacao ? `obs: ${item.observacao}` : '';
       const qtdUni = item.produto.unidade ? item.quantidade * item.produto.qt_uni : item.quantidade;
 
