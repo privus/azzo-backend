@@ -656,7 +656,7 @@ export class SellsService implements ISellsRepository {
         throw new Error(`Venda com ID ${code} não encontrada.`);
     }
 
-    // await this.revertSaleStock(venda);
+    await this.revertSaleStock(venda);
 
     // Exclui a venda diretamente (parcelas serão excluídas automaticamente pelo cascade)
     await this.vendaRepository.remove(venda);
@@ -1098,7 +1098,7 @@ export class SellsService implements ISellsRepository {
 
     while (true) {
       try {
-        const url = `${apiUrl}${this.contasReceberTag}?dataInicialEmissao=2025-03-11&offset=${offset}&limit=${limit}`;
+        const url = `${apiUrl}${this.contasReceberTag}?dataInicialEmissao=2025-04-11&offset=${offset}&limit=${limit}`;
         const response = await this.httpService.axiosRef.get<{ itens: InvoiceTinyDto[] }>(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
