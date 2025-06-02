@@ -237,7 +237,7 @@ export class SellsService implements ISellsRepository {
           existingSell.nfe_link = link;
         }
           if (existingSell.valor_final != sell.amount_final || sell.installment_qty != existingSell.numero_parcelas) {
-            // await this.revertSaleStock(existingSell);
+            await this.revertSaleStock(existingSell);
             console.log('Venda já existente e atualizando carrinho =>', sell.code);
             const productCodes = sell.products.map((item) => item.code);
             const produtosEncontrados = await this.produtoRepository.find({
@@ -299,7 +299,7 @@ export class SellsService implements ISellsRepository {
 
             await this.vendaRepository.save(existingSell);
             await this.clienteService.saveCustomer(cliente);
-            // await this.decrementStockSell(existingSell.codigo);
+            await this.decrementStockSell(existingSell.codigo);
           
             return `Venda ${sell.code} Atualizada`;
           } else {
@@ -400,7 +400,7 @@ export class SellsService implements ISellsRepository {
     });
 
     await this.vendaRepository.save(novaVenda);
-    // await this.decrementStockSell(novaVenda.codigo);
+    await this.decrementStockSell(novaVenda.codigo);
     return `Venda código ${sell.code} foi Recebida`;
   }
 
@@ -654,7 +654,7 @@ export class SellsService implements ISellsRepository {
         throw new Error(`Venda com ID ${code} não encontrada.`);
     }
 
-    // await this.revertSaleStock(venda);
+    await this.revertSaleStock(venda);
 
     // Exclui a venda diretamente (parcelas serão excluídas automaticamente pelo cascade)
     await this.vendaRepository.remove(venda);
