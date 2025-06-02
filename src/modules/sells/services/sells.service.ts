@@ -596,7 +596,9 @@ export class SellsService implements ISellsRepository {
         if (!order.cliente.cidade?.estado?.sigla) {
             throw new BadRequestException({ message: `🚨 Estado não definido para o cliente ${order.cliente.codigo}.` });
         }
-        const uf = order.cliente.cidade.estado.sigla;
+        const uf = order.cliente.cidade.estado.sigla === 'MG' || order.cliente.cidade.estado.sigla === 'SP' 
+          ? order.cliente.cidade.estado.sigla 
+          : 'MG';
         const accessToken = await this.tinyAuthService.getAccessToken(uf);
 
         if (!accessToken) {
