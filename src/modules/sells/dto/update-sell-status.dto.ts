@@ -6,7 +6,7 @@ export class UpdateSellStatusDto {
    * Exemplo: 123
    */
   @IsNumber({}, { message: 'O ID da venda deve ser um número.' })
-  venda_id: number;
+  codigo: number;
 
   /**
    * ID do status da venda.

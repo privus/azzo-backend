@@ -15,8 +15,7 @@ export class SellsService implements ISellsRepository {
   private readonly apiTagSellentt = 'orders';
   private readonly orderTag = 'pedidos';
   private readonly nfeTag = 'notas';
-  private readonly contasReceberTag = 'contas-receber';
-  
+  private readonly contasReceberTag = 'contas-receber';  
 
   constructor(
     @Inject('ICustomersRepository') private readonly clienteService: ICustomersRepository,
@@ -531,15 +530,15 @@ export class SellsService implements ISellsRepository {
   }
 
   async updateSellStatus(UpdateSellStatusDto: UpdateSellStatusDto): Promise<string> {
-    const { venda_id, status_venda_id, numero_nfe, valor_frete } = UpdateSellStatusDto;
+    const { codigo, status_venda_id, numero_nfe, valor_frete } = UpdateSellStatusDto;
 
     const venda = await this.vendaRepository.findOne({
-      where: { venda_id },
+      where: { codigo },
       relations: ['status_venda'],
     });
 
     if (!venda) {
-      throw new Error(`Venda com ID ${venda_id} não encontrada.`);
+      throw new Error(`Venda com ID ${codigo} não encontrada.`);
     }
 
     const novoStatus = await this.statusVendaRepository.findOne({ where: { status_venda_id } });
@@ -548,16 +547,23 @@ export class SellsService implements ISellsRepository {
       throw new Error(`Status de venda com ID ${status_venda_id} não encontrado.`);
     }
 
-    venda.status_venda = novoStatus;
+    await this.updateStatus(codigo, status_venda_id);
     venda.numero_nfe = numero_nfe;
     venda.valor_frete = valor_frete;
-
     await this.vendaRepository.save(venda);
-    await this.updateStatusSellentt(venda.codigo, status_venda_id);
 
     return `Status da venda ${venda.codigo} atualizado para ${novoStatus.nome}, Nf-e nº ${numero_nfe}.`;
   }
-  
+
+  async updateStatus(codigo: number, status_venda_id: number): Promise<void> {
+    const venda = await this.vendaRepository.findOne({
+      where: { codigo },
+      relations: ['status_venda'],
+    });
+    venda.status_venda = await this.statusVendaRepository.findOne({ where: { status_venda_id } });
+    await this.updateStatusSellentt(codigo, status_venda_id);
+    await this.vendaRepository.save(venda);
+  }  
 
   async exportTiny(id: number): Promise<string> {
     try {

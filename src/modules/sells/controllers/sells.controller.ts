@@ -105,6 +105,13 @@ export class SellsController {
     return this.romaneioService.getTransportadoras();
   }
 
+  @ApiOperation({ summary: 'Obter quantidade de pedidos em montagem' })
+  @Get('prod')
+  async getProd() {
+    const sells = await this.sellsService.getSellsByStatus([11139]);
+    return sells.length;
+  }
+
   @ApiOperation({ summary: 'Exportar pedido para o Tiny'})
   @Get('export/:id')
   async exportToTiny(@Param('id') id: number) {

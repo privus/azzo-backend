@@ -31,4 +31,5 @@ export interface ISellsRepository {
   updateStatusSellentt(id: number, status_id: number): Promise<void>;
   saveSell(venda: Venda): Promise<void>;
   getSellsByStatus(statusIds: number[]): Promise<Venda[]> 
+  updateStatus(code: number, status_id: number): Promise<void>;
 }

@@ -14,18 +14,26 @@ export class PrintOrderService {
     if (!order) {
       throw new Error(`Pedido ID ${orderId} não encontrado.`);
     }
-
+  
+    // Regra de trava para status 11139
     if (order.status_venda.status_venda_id === 11138 && responsible !== 'Resumo') {
-      await this.sellsSevice.updateStatusSellentt(order.codigo, 11139);
+      const emMontagem = await this.sellsSevice.getSellsByStatus([11139]);
+  
+      if (emMontagem.length >= 6) {
+        throw new Error(`⚠️ Limite atingido: existem 6 pedidos em montagem. Finalize algum antes de liberar outro.`);
+      }
+  
+      await this.sellsSevice.updateStatus(order.codigo, 11139);
     }
-
+  
     const logoPath = path.resolve('src/utils/azzo.png');
     const logoBase64 = await this.getBase64Image(logoPath);
-
+  
     const pdfBuffer = await this.createPdf(order, logoBase64, responsible);
     const fileName = `pedido_${order.codigo}.pdf`;
     return { fileName, pdfBuffer };
   }
+  
 
   private async getBase64Image(imagePath: string): Promise<string> {
     try {
