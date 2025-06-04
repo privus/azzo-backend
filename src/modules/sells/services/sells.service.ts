@@ -299,7 +299,7 @@ export class SellsService implements ISellsRepository {
 
             await this.vendaRepository.save(existingSell);
             await this.clienteService.saveCustomer(cliente);
-            // await this.decrementStockSell(existingSell.codigo);
+            await this.decrementStockSell(existingSell.codigo);
           
             return `Venda ${sell.code} Atualizada`;
           } else {
@@ -400,7 +400,7 @@ export class SellsService implements ISellsRepository {
     });
 
     await this.vendaRepository.save(novaVenda);
-    // await this.decrementStockSell(novaVenda.codigo);
+    await this.decrementStockSell(novaVenda.codigo);
     return `Venda código ${sell.code} foi Recebida`;
   }
 
