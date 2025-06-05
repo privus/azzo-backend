@@ -18,8 +18,6 @@ export class CustomersService implements ICustomersRepository{
   private readonly contactTag = 'contatos';
   private readonly sellerTag = 'seller';
 
-
-
   constructor(
     @InjectRepository(Cliente) private readonly clienteRepository: Repository<Cliente>,
     @InjectRepository(Cidade) private readonly cidadeRepository: Repository<Cidade>,

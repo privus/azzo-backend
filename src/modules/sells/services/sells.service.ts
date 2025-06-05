@@ -662,7 +662,7 @@ export class SellsService implements ISellsRepository {
         throw new Error(`Venda com ID ${code} não encontrada.`);
     }
 
-    await this.revertSaleStock(venda);
+    // await this.revertSaleStock(venda);
 
     // Exclui a venda diretamente (parcelas serão excluídas automaticamente pelo cascade)
     await this.vendaRepository.remove(venda);
