@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { Response } from 'express';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SellsService } from '../services/sells.service';
@@ -7,6 +7,7 @@ import { LabelService } from '../services/label.service';
 import { PrintOrderService } from '../services/print-order.service';
 import { RomaneioService } from '../services/romaneio.service';
 import { PrintOrderResumeService } from '../services/print-order-resume.service';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('sells')
 @Controller('sells')
@@ -97,6 +98,13 @@ export class SellsController {
   @Get('romaneio')
   async getRomaneios() {
     return this.romaneioService.getRomaneios();
+  }
+
+  @ApiOperation({ summary: 'Importa fretes por xlsx' })
+  @Post('import-fretes/:id')
+  @UseInterceptors(FileInterceptor('file'))
+  async importFretes(@Param('id') id: number, @UploadedFile() file: Express.Multer.File): Promise<string> {
+    return this.romaneioService.importFretesFromExcel(file.buffer, id);
   }
 
   @ApiOperation({ summary: 'Abter transportadoras' })

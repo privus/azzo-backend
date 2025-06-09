@@ -32,4 +32,5 @@ export interface ISellsRepository {
   saveSell(venda: Venda): Promise<void>;
   getSellsByStatus(statusIds: number[]): Promise<Venda[]> 
   updateStatus(code: number, status_id: number): Promise<void>;
+  findSellsByRomaneio(romaneio_id: number): Promise<Venda[]>;
 }

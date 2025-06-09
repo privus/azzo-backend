@@ -33,3 +33,5 @@ export * from './romaneio';
 export * from './estoque';
 export * from './saidaEstoque';
 export * from './distribuidor';
+export * from './account';
+export * from './company';

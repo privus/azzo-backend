@@ -560,7 +560,8 @@ export class SellsService implements ISellsRepository {
       where: { codigo },
       relations: ['status_venda'],
     });
-    venda.status_venda = await this.statusVendaRepository.findOne({ where: { status_venda_id } });
+    const novoStatus = await this.statusVendaRepository.findOne({ where: { status_venda_id } });
+    venda.status_venda = novoStatus;
     await this.updateStatusSellentt(codigo, status_venda_id);
     await this.vendaRepository.save(venda);
   }  
@@ -662,7 +663,7 @@ export class SellsService implements ISellsRepository {
         throw new Error(`Venda com ID ${code} não encontrada.`);
     }
 
-    // await this.revertSaleStock(venda);
+    await this.revertSaleStock(venda);
 
     // Exclui a venda diretamente (parcelas serão excluídas automaticamente pelo cascade)
     await this.vendaRepository.remove(venda);
@@ -1347,12 +1348,11 @@ export class SellsService implements ISellsRepository {
     async reportSalesByBrandAndProduct(): Promise<
     Record<string, Record<string, { quantidade: number; valor: number }>>
   > {
-    const todasAsVendas = await this.sellsBetweenDates('2025-04-01', '2025-04-30')
-    const vendas = todasAsVendas.filter(venda => venda.vendedor && venda.vendedor.vendedor_id === 14);
+    const todasAsVendas = await this.sellsBetweenDates('2025-06-02', '2025-06-06')
 
     const relatorio: Record<string, Record<string, { quantidade: number; valor: number }>> = {};
 
-    for (const venda of vendas) {
+    for (const venda of todasAsVendas) {
       for (const item of venda.itensVenda) {
         const produto = item?.produto;
         const marca = produto?.fornecedor?.nome || 'Desconhecida';
@@ -1466,4 +1466,13 @@ export class SellsService implements ISellsRepository {
     });
   }
   
+  findSellsByRomaneio(romaneio_id: number): Promise<Venda[]> {
+    return this.vendaRepository.find({
+        where: {
+            romaneio: {
+                romaneio_id
+            }
+        },
+    });
+  }
 }

@@ -18,4 +18,7 @@ export class Romaneio {
 
   @OneToMany(() => Venda, (venda) => venda.romaneio)
   vendas: Venda[];
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  valor_frete: number;
 }

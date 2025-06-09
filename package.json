@@ -52,7 +52,8 @@
     "rxjs": "^7.8.1",
     "swagger-ui-express": "^5.0.1",
     "typeorm": "^0.3.20",
-    "typeorm-extension": "^3.6.2"
+    "typeorm-extension": "^3.6.2",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
@@ -66,6 +67,7 @@
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.0",
     "@types/swagger-ui-express": "^4.1.6",
+    "@types/xlsx": "^0.0.35",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "eslint": "^8.42.0",

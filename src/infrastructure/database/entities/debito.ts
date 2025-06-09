@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
-import { CategoriaDebito, ParcelaDebito, StatusPagamento, Departamento } from './';
+import { CategoriaDebito, ParcelaDebito, StatusPagamento, Departamento, Company, Account } from './';
 
 @Entity('debito')
 export class Debito {
@@ -65,4 +65,12 @@ export class Debito {
   @ManyToOne(() => Departamento)
   @JoinColumn({ name: 'departamento_id' })
   departamento: Departamento;
+
+  @ManyToOne(() => Account)
+  @JoinColumn({ name: 'account_id' })
+  account: Account
+
+  @ManyToOne(() => Company)
+  @JoinColumn({ name: 'company_id' })
+  company: Company;
 }
