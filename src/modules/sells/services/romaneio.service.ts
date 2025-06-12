@@ -57,15 +57,15 @@ export class RomaneioService {
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
   
-    const header = rows[0];
     const dataRows = rows.slice(1);
   
     const mappedRows = dataRows
-      .filter(row => row.length >= 5)
+      .filter(row => row.length >= 2)
       .map(row => ({
         nota: row[0]?.toString().trim(),
-        frete: Number(row[4])
+        frete: Number(row[1])
       }));
+    
   
     const vendas = await this.sellsService.findSellsByRomaneio(romaneio_id);
     const romaneio = await this.romaneioRepository.findOne({ where: { romaneio_id } });
@@ -90,5 +90,5 @@ export class RomaneioService {
     await this.romaneioRepository.save(romaneio);
   
     return `Fretes importados: ${aplicadas} vendas atualizadas. Total R$ ${totalFrete.toFixed(2)}.`;
-  }  
+  }
 }
