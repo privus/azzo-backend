@@ -286,7 +286,7 @@ export class SellsService implements ISellsRepository {
               return this.parcelaRepository.create({
                   numero: index + 1,
                   valor: Number(sell.installment_value),
-                  data_criacao: sell.order_date,
+                  data_criacao: new Date(),
                   data_vencimento: data,
                   status_pagamento,
                   descricao: `Venda código ${sell.code}`

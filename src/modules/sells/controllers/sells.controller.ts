@@ -100,12 +100,15 @@ export class SellsController {
     return this.romaneioService.getRomaneios();
   }
 
-  @ApiOperation({ summary: 'Importa fretes por xlsx' })
-  @Post('import-fretes/:id')
+  @Post('import-fretes/:romaneioId')
   @UseInterceptors(FileInterceptor('file'))
-  async importFretes(@Param('id') id: number, @UploadedFile() file: Express.Multer.File): Promise<string> {
-    return this.romaneioService.importFretesFromExcel(file.buffer, id);
-  }
+  async importFretes(
+    @UploadedFile() file: Express.Multer.File,
+    @Param('romaneioId') romaneioId: number,
+  ) {
+    const message = await this.romaneioService.importFretesFromExcel(file.buffer, +romaneioId);
+    return { message };
+  } 
 
   @ApiOperation({ summary: 'Abter transportadoras' })
   @Get('trans')

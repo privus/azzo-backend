@@ -13,6 +13,12 @@ export class CustomersController {
     return this.customersService.syncroCustomers();
   }
 
+  @ApiOperation({ summary: 'Atualizar CLientes Inativos' })
+  @Get('updateInactive')
+  async updateInactiveCustomers() {
+    return this.customersService.updateCustomersFromJsonFile();
+  }
+
   @ApiOperation({ summary: 'Sincronizar todos tiny ids' })
   @Get('syncroTiny')
   async syncroTinyIds() {
@@ -36,5 +42,4 @@ export class CustomersController {
   async findCostumerByStatus(@Param('id') id: number) {
     return this.customersService.findCustomersByStatus(id);
   }
-
 }

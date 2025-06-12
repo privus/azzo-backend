@@ -139,7 +139,25 @@ export class DebtsDto {
   @IsInt({ message: 'O despesa grupo deve ser um inteiro.' })
   despesa_grupo?: number;
 
+  /**
+   * Usuário que criou o débito.
+   * Exemplo: andre@azzo.com
+  */
   @IsString({ message: 'O userEmail deve ser uma string.' })
   @Length(3, 90, { message: 'O banco deve ter entre 3 e 90 caracteres.' })
   criado_por: string;
+
+  /**
+   * Conta ID do débito.
+   * Exemplo: '1', '2', '3'
+   */
+  @IsNumber({}, { message: 'A conta ID deve ser um número.' })
+  account_id: number;
+
+  /**
+   * Empresa ID do débito.
+   * Exemplo: '1', '2', '3'
+   */
+  @IsNumber({}, { message: 'A empresa ID deve ser um número.' })
+  company_id: number;
 }

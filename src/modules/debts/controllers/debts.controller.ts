@@ -47,6 +47,12 @@ export class DebtsController {
     return { message: resultMessage };
   }
 
+  @ApiOperation({ summary: 'Obter todas contas por Empresa' })
+  @Get('accounts:id')
+  async getAccoutsAzzo(@Param('id') id: number) {
+    return this.debtsService.findAccountByCompanyId(id);
+  }
+
   @ApiOperation({ summary: 'Excluir debito e suas parcelas' })
   @Delete(':id')
   async deleteSell(@Param('id') id: number) {

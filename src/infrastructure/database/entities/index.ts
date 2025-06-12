@@ -35,3 +35,4 @@ export * from './saidaEstoque';
 export * from './distribuidor';
 export * from './account';
 export * from './company';
+export * from './rateioDebito';

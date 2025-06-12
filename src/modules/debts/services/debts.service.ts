@@ -1,10 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan, MoreThanOrEqual, Between, Raw } from 'typeorm';
-import { CategoriaDebito, Debito, Departamento, ParcelaDebito, StatusPagamento } from '../../../infrastructure/database/entities';
-import { DebtsDto } from '../dto/debts.dto';
-import { UpdateInstalmentDto } from '../dto/update-instalment.dto';
-import { DebtsComparisonReport, UpdateDebtStatusDto } from '../dto';
+import { Account, CategoriaDebito, Company, Debito, Departamento, ParcelaDebito, StatusPagamento } from '../../../infrastructure/database/entities';
+import { DebtsDto, UpdateInstalmentDto, DebtsComparisonReport, UpdateDebtStatusDto } from '../dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
@@ -15,11 +13,15 @@ export class DebtsService {
     @InjectRepository(StatusPagamento) private readonly statusPagamentoRepository: Repository<StatusPagamento>,
     @InjectRepository(Departamento) private readonly departamentoRepository: Repository<Departamento>,
     @InjectRepository(CategoriaDebito) private readonly categoriaDebitoRepository: Repository<CategoriaDebito>,
+    @InjectRepository(Account) private readonly accountRepository: Repository<Account>,
+    @InjectRepository(Company) private readonly companyRepository: Repository<Company>,
   ) {}
 
   async createDebt(debtDto: DebtsDto): Promise<Debito> {
     const statusPagamentoPendente = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 1 } });
     const statusPagamentoPago = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 2 } });
+    const account = await this.accountRepository.findOne({ where: { account_id: debtDto.account_id } });
+    const company = await this.companyRepository.findOne({ where: { company_id: debtDto.company_id } });
 
     if (!statusPagamentoPendente || !statusPagamentoPago) {
       throw new Error('Status de pagamento padrão ou pago não encontrado.');
@@ -57,6 +59,8 @@ export class DebtsService {
       despesa_grupo: debtDto.despesa_grupo,
       datas_vencimento: datasVencimento,
       criado_por: debtDto.criado_por,
+      account,
+      company,
     });
 
     const savedDebt = await this.debtRepository.save(debitoEntity);
@@ -140,7 +144,6 @@ export class DebtsService {
       await this.debtRepository.update(debitoId, { status_pagamento: novoStatus });
     }    
   }
-
 
   getAllDepartments(): Promise<Departamento[]> {
     return this.departamentoRepository.find();
@@ -362,5 +365,10 @@ export class DebtsService {
     };
   }
   
-   
+  findAccountByCompanyId(company_id: number) : Promise<Account[]> {
+    return this.accountRepository.find({
+      where: { company: { company_id } },
+      relations: ['company'],
+    });
+  }
 }
