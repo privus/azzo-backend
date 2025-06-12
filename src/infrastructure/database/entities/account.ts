@@ -13,3 +13,4 @@ export class Account {
   @JoinColumn({ name: 'company_id' })
   company: Company;
 }
+

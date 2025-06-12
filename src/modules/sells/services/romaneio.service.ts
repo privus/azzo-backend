@@ -63,8 +63,8 @@ export class RomaneioService {
     const mappedRows = dataRows
       .filter(row => row.length >= 5)
       .map(row => ({
-        numero_nfe: row[0]?.toString().trim(),
-        valor_frete: Number(row[4])
+        nota: row[0]?.toString().trim(),
+        frete: Number(row[4])
       }));
   
     const vendas = await this.sellsService.findSellsByRomaneio(romaneio_id);
@@ -74,14 +74,14 @@ export class RomaneioService {
     let totalFrete = 0;
     let aplicadas = 0;
   
-    for (const { numero_nfe, valor_frete } of mappedRows) {
-      if (!numero_nfe) continue;
+    for (const { nota, frete } of mappedRows) {
+      if (!nota) continue;
   
-      const venda = vendas.find(v => v.numero_nfe?.toString() === numero_nfe);
+      const venda = vendas.find(v => v.numero_nfe?.toString() === nota);
       if (venda) {
-        venda.valor_frete = valor_frete;
+        venda.valor_frete = frete;
         await this.sellsService.saveSell(venda);
-        totalFrete += valor_frete;
+        totalFrete += frete;
         aplicadas++;
       }
     }
@@ -90,6 +90,5 @@ export class RomaneioService {
     await this.romaneioRepository.save(romaneio);
   
     return `Fretes importados: ${aplicadas} vendas atualizadas. Total R$ ${totalFrete.toFixed(2)}.`;
-  }
-  
+  }  
 }
