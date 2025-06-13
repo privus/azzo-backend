@@ -1,30 +1,37 @@
 import { Injectable } from '@nestjs/common';
-import * as AWS from 'aws-sdk';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 @Injectable()
 export class AwsS3Service {
-  private s3: AWS.S3;
+  private s3Client: S3Client;
   private bucketName = 'user-photo-aws';
 
   constructor() {
-    this.s3 = new AWS.S3({
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    this.s3Client = new S3Client({
       region: process.env.AWS_REGION,
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      },
     });
   }
 
   async uploadFile(file: Express.Multer.File, userId: number): Promise<string> {
-    const params = {
+    const key = `users/${userId}/${Date.now()}_${file.originalname}`;
+    
+    const command = new PutObjectCommand({
       Bucket: this.bucketName,
-      Key: `users/${userId}/${Date.now()}_${file.originalname}`,
+      Key: key,
       Body: file.buffer,
       ContentType: file.mimetype,
-      ACL: 'public-read', // Defina conforme necessário
-    };
+      ACL: 'public-read',
+    });
 
-    const data = await this.s3.upload(params).promise();
-    console.log('aws data.location ===>>>', data.Location);
-    return data.Location; // URL público da imagem
+    await this.s3Client.send(command);
+    
+    // Construir a URL pública do arquivo
+    const fileUrl = `https://${this.bucketName}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+    console.log('aws fileUrl ===>>>', fileUrl);
+    return fileUrl;
   }
 }

@@ -47,6 +47,18 @@ export class DebtsController {
     return { message: resultMessage };
   }
 
+  @ApiOperation({ summary: 'Obter parcelas de um débito' })
+  @Get('associedCompany')  
+  async updateDebts() {
+    return this.debtsService.alignDebitCompany();
+  }
+
+  @ApiOperation({ summary: 'Obter todas contas por Empresa' })
+  @Get('accounts/:id')
+  async getAccoutsAzzo(@Param('id') id: number) {
+    return this.debtsService.findAccountByCompanyId(id);
+  }
+
   @ApiOperation({ summary: 'Excluir debito e suas parcelas' })
   @Delete(':id')
   async deleteSell(@Param('id') id: number) {
@@ -72,4 +84,5 @@ export class DebtsController {
     const resultMessage = await this.debtsService.updateDebtStatus(updateStatusDto);
     return { message: resultMessage };
   }
+
 }

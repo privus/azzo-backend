@@ -529,5 +529,54 @@ export class CustomersService implements ICustomersRepository{
     console.log('🏁 Sincronização de carteiras concluída com sucesso!');
   }
   
+  async updateCustomersFromJsonFile(): Promise<void> {
+    const jsonFilePath = 'src/utils/lista-inativos.json';
   
+    if (!fs.existsSync(jsonFilePath)) {
+        console.error(`Erro: Arquivo '${jsonFilePath}' não encontrado.`);
+        return;
+    }
+    const jsonContent = fs.readFileSync(jsonFilePath, 'utf-8');
+    let clientesInput: { codigo: number }[];
+  
+    try {
+      clientesInput = JSON.parse(jsonContent);
+    } catch (e) {
+      console.error('❌ Erro ao fazer parse do JSON:', e.message);
+      return;
+    }
+  
+    // Força is_active = 0 para todos os clientes
+    const clientesComIsActive = clientesInput.map(cliente => ({
+      code: cliente.codigo,
+      is_active: 0
+    }));
+  
+    const chunkArray = <T>(arr: T[], size: number): T[][] =>
+      Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
+        arr.slice(i * size, i * size + size)
+      );
+  
+    const batches = chunkArray(clientesComIsActive, 20);
+    const apiUrl = `${this.apiUrlSellentt}mass_stores`;
+  
+    for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i];
+      console.log(`📦 Enviando lote ${i + 1}/${batches.length} com ${batch.length} clientes.`);
+  
+      try {
+        await this.httpService.axiosRef.put(apiUrl, batch, {
+          headers: {
+            Authorization: `Bearer ${this.tokenSellentt}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        console.log(`✅ Lote ${i + 1} enviado com sucesso.`);
+      } catch (err: any) {
+        console.error(`❌ Erro ao enviar lote ${i + 1}:`, err.message);
+      }
+    }
+  
+    console.log('🏁 Atualização em massa finalizada.');
+  }
 }
