@@ -90,5 +90,5 @@ export class RomaneioService {
     await this.romaneioRepository.save(romaneio);
   
     return `Fretes importados: ${aplicadas} vendas atualizadas. Total R$ ${totalFrete.toFixed(2)}.`;
-  }
+  }  
 }

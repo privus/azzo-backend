@@ -108,7 +108,7 @@ export class SellsController {
   ) {
     const message = await this.romaneioService.importFretesFromExcel(file.buffer, +romaneioId);
     return { message };
-  } 
+  }
 
   @ApiOperation({ summary: 'Abter transportadoras' })
   @Get('trans')
