@@ -11,8 +11,8 @@ export class RateioDebito {
   debito: Debito;
 
   @ManyToOne(() => Company)
-  @JoinColumn({ name: 'company_id' })
-  company: Company;
+  @JoinColumn({ name: 'company_id' })  
+  paying_company: Company;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   valor: number;

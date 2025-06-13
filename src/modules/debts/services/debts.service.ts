@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan, MoreThanOrEqual, Between, Raw } from 'typeorm';
-import { Account, CategoriaDebito, Company, Debito, Departamento, ParcelaDebito, StatusPagamento } from '../../../infrastructure/database/entities';
+import { Account, CategoriaDebito, Company, Debito, Departamento, ParcelaDebito, RateioDebito, StatusPagamento } from '../../../infrastructure/database/entities';
 import { DebtsDto, UpdateInstalmentDto, DebtsComparisonReport, UpdateDebtStatusDto } from '../dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
@@ -15,13 +15,14 @@ export class DebtsService {
     @InjectRepository(CategoriaDebito) private readonly categoriaDebitoRepository: Repository<CategoriaDebito>,
     @InjectRepository(Account) private readonly accountRepository: Repository<Account>,
     @InjectRepository(Company) private readonly companyRepository: Repository<Company>,
+    @InjectRepository(RateioDebito) private readonly rateioDebitoRepository: Repository<RateioDebito>,
   ) {}
 
   async createDebt(debtDto: DebtsDto): Promise<Debito> {
     const statusPagamentoPendente = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 1 } });
     const statusPagamentoPago = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 2 } });
-    const account = await this.accountRepository.findOne({ where: { account_id: debtDto.account_id } });
     const company = await this.companyRepository.findOne({ where: { company_id: debtDto.company_id } });
+    const userCompany = await this.companyRepository.findOne({ where: { company_id: debtDto.user_company_id } });
 
     if (!statusPagamentoPendente || !statusPagamentoPago) {
       throw new Error('Status de pagamento padrão ou pago não encontrado.');
@@ -39,6 +40,13 @@ export class DebtsService {
       await this.categoriaDebitoRepository.save(categoria);
     }
 
+    let account = await this.accountRepository.findOne({ where: { account_id: debtDto.account_id } });
+    if (!account) {
+      account = this.accountRepository.create({ nome: debtDto.account_name });
+      account.company = userCompany;
+      await this.accountRepository.save(account);
+    }
+
     const datasVencimento = this.generateInstallmentDates(new Date(debtDto.data_vencimento), debtDto.numero_parcelas, debtDto.periodicidade || 31);
 
     const debitoEntity = this.debtRepository.create({
@@ -54,9 +62,7 @@ export class DebtsService {
       status_pagamento: debtDto.data_pagamento && debtDto.numero_parcelas <= 1 ? statusPagamentoPago : statusPagamentoPendente,
       departamento,
       categoria,
-      conta: debtDto.conta,
-      empresa: debtDto.empresa_grupo,
-      despesa_grupo: debtDto.despesa_grupo,
+      despesa_grupo: debtDto.company_id === 4 ? 1 : 0,
       datas_vencimento: datasVencimento,
       criado_por: debtDto.criado_por,
       account,
@@ -80,6 +86,15 @@ export class DebtsService {
     });
 
     await this.parcelaRepository.save(parcelas);
+
+    if (debtDto.company_id === 4) {
+      const rateioDebito = this.rateioDebitoRepository.create({
+        debito: savedDebt,        
+        paying_company: userCompany,
+        valor: debtDto.valor_total,
+      });
+      await this.rateioDebitoRepository.save(rateioDebito);
+    }
     return savedDebt;
   }
 
@@ -276,11 +291,11 @@ export class DebtsService {
         where: {
           data_competencia: MoreThanOrEqual(new Date(fromDate)),
         },
-        relations: ['parcela_debito', 'status_pagamento', 'categoria', 'departamento', 'parcela_debito.status_pagamento'],
+        relations: ['parcela_debito', 'status_pagamento', 'categoria', 'departamento', 'parcela_debito.status_pagamento', 'company', 'account'],
       });
     }
     return this.debtRepository.find({
-      relations: ['parcela_debito', 'status_pagamento', 'categoria', 'departamento', 'parcela_debito.status_pagamento'],
+      relations: ['parcela_debito', 'status_pagamento', 'categoria', 'departamento', 'parcela_debito.status_pagamento', 'company', 'account'],
     });
   }
 
@@ -371,4 +386,68 @@ export class DebtsService {
       relations: ['company'],
     });
   }
+
+
+  async alignDebitCompany(): Promise<void> {
+    const debts = await this.debtRepository.find({relations: ['company']});
+    const company = await this.companyRepository.findOne({ where: { company_id: 2 } });
+
+    for (const debt of debts) {
+      if (debt.empresa === 'Azzo Distribuidora') {
+        debt.company = company;
+        await this.debtRepository.save(debt);
+      }
+    }
+  }
+
+
+  async seedAccounts(): Promise<void> {
+    const contas = [
+      { id: 1, nome: 'Bradesco' },
+      { id: 2, nome: 'Gold' },
+      { id: 3, nome: 'Sicredi' },
+      { id: 4, nome: 'Sicoob Serrania' },
+      { id: 5, nome: 'Broker Green' },
+      { id: 6, nome: 'Broker Viceroy' },
+      { id: 7, nome: 'Sicoob Alfenas' },
+      { id: 8, nome: 'Itau' },
+      { id: 9, nome: 'Sicredi Cartão' },
+      { id: 10, nome: 'Bradesco Cartão' },
+      { id: 11, nome: 'Sicoob Serrania Cartão' },
+      { id: 12, nome: 'Sicoob Alfenas Cartão' },
+    ];
+  
+    const company = await this.companyRepository.findOne({ where: { company_id: 2 } }); // ajuste se precisar
+  
+    for (const conta of contas) {
+      const exists = await this.accountRepository.findOne({ where: { account_id: conta.id } });
+      if (!exists) {
+        const novaConta = this.accountRepository.create({
+          account_id: conta.id,
+          nome: conta.nome,
+          company,
+        });
+        await this.accountRepository.save(novaConta);
+      }
+    }
+  }
+
+  async associateDebtsToAccounts(): Promise<void> {
+    const debts = await this.debtRepository.find({ relations: ['account'], where: { account: null } });
+  
+    for (const debito of debts) {
+      if (!debito.conta) continue;
+  
+      const conta = await this.accountRepository.findOne({ where: { nome: debito.conta } });
+  
+      if (conta) {
+        debito.account = conta;
+        await this.debtRepository.save(debito);
+      } else {
+        console.warn(`Conta '${debito.conta}' não encontrada para o débito ${debito.debito_id}`);
+      }
+    }
+  }
+  
+  
 }

@@ -10,12 +10,6 @@ import { UpdateDebtStatusDto } from '../dto';
 export class DebtsController {
   constructor(private readonly debtsService: DebtsService) {}
 
-  @ApiOperation({ summary: 'Obter todas contas por Empresa' })
-  @Get('accounts:id')
-  async getAccoutsAzzo(@Param('id') id: number) {
-    return this.debtsService.findAccountByCompanyId(id);
-  }
-
   @ApiOperation({ summary: 'Obter todos os débitos' })
   @Get()
   async getAllDebts(@Query('fromDate') fromDate?: string) {
@@ -51,6 +45,18 @@ export class DebtsController {
   async updateInstalmentStatus(@Body() updateInstalmentDto: UpdateInstalmentDto) {
     const resultMessage = await this.debtsService.updateInstalmentStatus(updateInstalmentDto);
     return { message: resultMessage };
+  }
+
+  @ApiOperation({ summary: 'Obter parcelas de um débito' })
+  @Get('associedCompany')  
+  async updateDebts() {
+    return this.debtsService.alignDebitCompany();
+  }
+
+  @ApiOperation({ summary: 'Obter todas contas por Empresa' })
+  @Get('accounts/:id')
+  async getAccoutsAzzo(@Param('id') id: number) {
+    return this.debtsService.findAccountByCompanyId(id);
   }
 
   @ApiOperation({ summary: 'Excluir debito e suas parcelas' })

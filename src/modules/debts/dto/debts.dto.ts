@@ -50,13 +50,6 @@ export class DebtsDto {
   @Min(0, { message: 'O valor total não pode ser negativo.' })
   valor_total: number;
 
-  /**
-   * Banco.
-   * Exemplo: Santander, Itaú, Bradesco
-   */
-  @IsString({ message: 'O banco deve ser uma string.' })
-  @Length(3, 90, { message: 'O banco deve ter entre 3 e 90 caracteres.' })
-  conta: string;
 
   /**
    * Data de vencimento.
@@ -124,27 +117,11 @@ export class DebtsDto {
   periodicidade?: number;
 
   /**
-   * Empresa Grupo.
-   * Exemplo: 'Azzo Distribuidora'
-   */
-  @IsString({ message: 'O nome do grupo deve ser uma string.' })
-  @Length(3, 90, { message: 'O nome do grupo deve ter entre 3 e 90 caracteres.' })
-  empresa_grupo: string;
-
-  /**
-   * Despesa Grupo.
-   * Exemplo: 1
-   */
-  @IsOptional()
-  @IsInt({ message: 'O despesa grupo deve ser um inteiro.' })
-  despesa_grupo?: number;
-
-  /**
    * Usuário que criou o débito.
    * Exemplo: andre@azzo.com
   */
   @IsString({ message: 'O userEmail deve ser uma string.' })
-  @Length(3, 90, { message: 'O banco deve ter entre 3 e 90 caracteres.' })
+  @Length(3, 90, { message: 'O usuario deve ter entre 3 e 90 caracteres.' })
   criado_por: string;
 
   /**
@@ -160,4 +137,22 @@ export class DebtsDto {
    */
   @IsNumber({}, { message: 'A empresa ID deve ser um número.' })
   company_id: number;
+
+  /**
+   * Nome da Conta
+   * Exemplo: 'Itaú'
+   */
+  @IsOptional()
+  @IsString({ message: 'O nome da conta deve ser uma string.' })
+  @Length(3, 90, { message: 'O nome da conta deve ter entre 3 e 90 caracteres.' })
+  account_name?: string;
+
+
+  /**
+   * ID da empresa usuária do débito.
+   * Exemplo: 1
+   */
+  @IsNumber({}, { message: 'O user_company_id deve ser um número.' })
+  @IsInt({ message: 'O user_company_id deve ser um inteiro.' })
+  user_company_id: number;
 }
