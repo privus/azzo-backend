@@ -285,11 +285,11 @@ export class DebtsService {
     return `Debito com ID ${code} e suas parcelas foram excluídas com sucesso.`;
   }
 
-  async getDebtsByAccountCompany(companyId: number, fromDate?: string): Promise<Debito[]> {
+  async getDebtsByDate(companyId: number, fromDate?: string): Promise<Debito[]> {
     const query = this.debtRepository.createQueryBuilder('debito')
       .leftJoinAndSelect('debito.parcela_debito', 'parcela')
       .leftJoinAndSelect('parcela.status_pagamento', 'parcelaStatus')
-      .leftJoinAndSelect('debito.status_pagamento', 'status_pagamento')
+      .leftJoinAndSelect('debito.status_pagamento', 'statusPagamento')
       .leftJoinAndSelect('debito.categoria', 'categoria')
       .leftJoinAndSelect('debito.departamento', 'departamento')
       .leftJoinAndSelect('debito.company', 'company')
@@ -306,39 +306,29 @@ export class DebtsService {
   
   
   async getDebtsBetweenDates(companyId: number, fromDate: string, toDate?: string): Promise<Debito[]> {
-    if (toDate) {
+    const query = this.debtRepository.createQueryBuilder('debito')
+      .leftJoinAndSelect('debito.parcela_debito', 'parcela')
+      .leftJoinAndSelect('parcela.status_pagamento', 'parcelaStatus')
+      .leftJoinAndSelect('debito.status_pagamento', 'status_pagamento')
+      .leftJoinAndSelect('debito.categoria', 'categoria')
+      .leftJoinAndSelect('debito.departamento', 'departamento')
+      .leftJoinAndSelect('debito.company', 'company')
+      .leftJoinAndSelect('debito.account', 'account')
+      .leftJoinAndSelect('account.company', 'accountCompany')
+      .where('accountCompany.company_id = :companyId', { companyId });
+  
+    // Filtrar pelas datas de competência
+    if (fromDate && toDate) {
       const start = new Date(fromDate);
       const end = new Date(toDate);
       end.setHours(23, 59, 59, 999);
   
-      return this.debtRepository.find({
-        where: {
-          company: { company_id: companyId },
-          data_competencia: Between(start, end)
-        },
-        relations: [
-          'parcela_debito',
-          'status_pagamento',
-          'categoria',
-          'departamento',
-          'parcela_debito.status_pagamento'
-        ],
-      });
-  
-    } else {
-      return this.debtRepository.find({
-        where: {
-          data_competencia: Raw((alias) => `DATE(${alias}) = :date`, { date: fromDate })
-        },
-        relations: [
-          'parcela_debito',
-          'status_pagamento',
-          'categoria',
-          'departamento',
-          'parcela_debito.status_pagamento'
-        ],
-      });
+      query.andWhere('debito.data_competencia BETWEEN :start AND :end', { start, end });
+    } else if (fromDate) {
+      query.andWhere('DATE(debito.data_competencia) = :fromDate', { fromDate });
     }
+  
+    return await query.getMany();
   }   
   
   async performanceDebtsPeriods(
