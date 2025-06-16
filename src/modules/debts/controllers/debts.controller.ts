@@ -54,7 +54,7 @@ export class DebtsController {
   }
 
   @ApiOperation({ summary: 'Obter todos os débitos' })
-  @Get(':id')
+  @Get('company/:id')
   async getAllDebts(@Param('id') id: number, @Query('fromDate') fromDate?: string) {
     return this.debtsService.getDebtsByDate(id, fromDate);
   }
