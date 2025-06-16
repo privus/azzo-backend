@@ -286,20 +286,29 @@ export class DebtsService {
   }
 
   async getDebtsByDate(companyId: number, fromDate?: string): Promise<Debito[]> {
-    if (fromDate) {
-      return this.debtRepository.find({
-        where: {          
+    const whereCondition = fromDate
+      ? {
           company: { company_id: companyId },
           data_competencia: MoreThanOrEqual(new Date(fromDate)),
-        },
-        relations: ['parcela_debito', 'status_pagamento', 'categoria', 'departamento', 'parcela_debito.status_pagamento', 'company', 'account'],
-      });
-    }
+        }
+      : {
+          company: { company_id: companyId },
+        };
+  
     return this.debtRepository.find({
-      relations: ['parcela_debito', 'status_pagamento', 'categoria', 'departamento', 'parcela_debito.status_pagamento', 'company', 'account'],
+      where: whereCondition,
+      relations: [
+        'parcela_debito',
+        'status_pagamento',
+        'categoria',
+        'departamento',
+        'parcela_debito.status_pagamento',
+        'company',
+        'account',
+      ],
     });
   }
-
+  
   async getDebtsBetweenDates(companyId: number, fromDate: string, toDate?: string): Promise<Debito[]> {
     if (toDate) {
       const start = new Date(fromDate);
