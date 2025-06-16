@@ -62,7 +62,7 @@ export class DebtsService {
       status_pagamento: debtDto.data_pagamento && debtDto.numero_parcelas <= 1 ? statusPagamentoPago : statusPagamentoPendente,
       departamento,
       categoria,
-      despesa_grupo: debtDto.company_id === 4 ? 1 : 0,
+      despesa_grupo: debtDto.company_id === 1 ? 1 : 0,
       datas_vencimento: datasVencimento,
       criado_por: debtDto.criado_por,
       account,
@@ -87,7 +87,7 @@ export class DebtsService {
 
     await this.parcelaRepository.save(parcelas);
 
-    if (debtDto.company_id === 4) {
+    if (debtDto.company_id === 1) {
       const rateioDebito = this.rateioDebitoRepository.create({
         debito: savedDebt,        
         paying_company: userCompany,
@@ -285,29 +285,25 @@ export class DebtsService {
     return `Debito com ID ${code} e suas parcelas foram excluídas com sucesso.`;
   }
 
-  async getDebtsByDate(companyId: number, fromDate?: string): Promise<Debito[]> {
-    const whereCondition = fromDate
-      ? {
-          company: { company_id: companyId },
-          data_competencia: MoreThanOrEqual(new Date(fromDate)),
-        }
-      : {
-          company: { company_id: companyId },
-        };
+  async getDebtsByAccountCompany(companyId: number, fromDate?: string): Promise<Debito[]> {
+    const query = this.debtRepository.createQueryBuilder('debito')
+      .leftJoinAndSelect('debito.parcela_debito', 'parcela')
+      .leftJoinAndSelect('parcela.status_pagamento', 'parcelaStatus')
+      .leftJoinAndSelect('debito.status_pagamento', 'status_pagamento')
+      .leftJoinAndSelect('debito.categoria', 'categoria')
+      .leftJoinAndSelect('debito.departamento', 'departamento')
+      .leftJoinAndSelect('debito.company', 'company')
+      .leftJoinAndSelect('debito.account', 'account')
+      .leftJoinAndSelect('account.company', 'accountCompany')
+      .where('accountCompany.company_id = :companyId', { companyId });
   
-    return this.debtRepository.find({
-      where: whereCondition,
-      relations: [
-        'parcela_debito',
-        'status_pagamento',
-        'categoria',
-        'departamento',
-        'parcela_debito.status_pagamento',
-        'company',
-        'account',
-      ],
-    });
+    if (fromDate) {
+      query.andWhere('debito.data_competencia >= :fromDate', { fromDate: new Date(fromDate) });
+    }
+  
+    return await query.getMany();
   }
+  
   
   async getDebtsBetweenDates(companyId: number, fromDate: string, toDate?: string): Promise<Debito[]> {
     if (toDate) {
