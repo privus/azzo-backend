@@ -50,7 +50,7 @@ export class DebtsController {
   @ApiOperation({ summary: 'Obter parcelas de um débito' })
   @Get('associedCompany')  
   async updateDebts() {
-    return this.debtsService.alignDebitCompany();
+    return this.debtsService.seedAccounts();
   }
 
   @ApiOperation({ summary: 'Obter todas contas por Empresa' })
