@@ -390,10 +390,10 @@ export class DebtsService {
 
   async alignDebitCompany(): Promise<void> {
     const debts = await this.debtRepository.find({relations: ['company']});
-    const company = await this.companyRepository.findOne({ where: { company_id: 2 } });
+    const company = await this.companyRepository.findOne({ where: { company_id: 4 } });
 
     for (const debt of debts) {
-      if (debt.empresa === 'Azzo Distribuidora') {
+      if (debt.empresa === 'Personizi') {
         debt.company = company;
         await this.debtRepository.save(debt);
       }
