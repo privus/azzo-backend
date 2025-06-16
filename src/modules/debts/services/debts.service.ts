@@ -300,7 +300,7 @@ export class DebtsService {
     });
   }
 
-  async getDebtsBetweenDates(fromDate: string, toDate?: string): Promise<Debito[]> {
+  async getDebtsBetweenDates(companyId: number, fromDate: string, toDate?: string): Promise<Debito[]> {
     if (toDate) {
       const start = new Date(fromDate);
       const end = new Date(toDate);
@@ -308,6 +308,7 @@ export class DebtsService {
   
       return this.debtRepository.find({
         where: {
+          company: { company_id: companyId },
           data_competencia: Between(start, end)
         },
         relations: [
@@ -341,8 +342,8 @@ export class DebtsService {
     fromDate2: string,
     toDate2: string
   ): Promise<DebtsComparisonReport> {
-    const debitosPeriodo1 = await this.getDebtsBetweenDates(fromDate1, toDate1);
-    const debitosPeriodo2 = await this.getDebtsBetweenDates(fromDate2, toDate2);
+    const debitosPeriodo1 = await this.getDebtsBetweenDates(2, fromDate1, toDate1);
+    const debitosPeriodo2 = await this.getDebtsBetweenDates(2, fromDate2, toDate2);
   
     const totalPeriodo1 = debitosPeriodo1.reduce((acc, d) => acc + Number(d.valor_total || 0), 0);
     const totalPeriodo2 = debitosPeriodo2.reduce((acc, d) => acc + Number(d.valor_total || 0), 0);

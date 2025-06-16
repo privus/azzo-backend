@@ -10,10 +10,16 @@ import { UpdateDebtStatusDto } from '../dto';
 export class DebtsController {
   constructor(private readonly debtsService: DebtsService) {}
 
+  @ApiOperation({ summary: 'Obter todos os débitos' })
+  @Get()
+  async getAllDebts(@Query('company') companyId: number, @Query('fromDate') fromDate?: string) {
+    return this.debtsService.getDebtsByDate(companyId, fromDate);
+  }
+
   @ApiOperation({ summary: 'Obter débitos entre datas' })
   @Get('between')
-  async getDebtsBetweenDates(@Query('fromDate') fromDate: string, @Query('toDate') toDate?: string) {
-    return this.debtsService.getDebtsBetweenDates(fromDate, toDate);
+  async getDebtsBetweenDates(@Query('company') companyId: number, @Query('fromDate') fromDate: string, @Query('toDate') toDate?: string) {
+    return this.debtsService.getDebtsBetweenDates(companyId, fromDate, toDate);
   }
   DebtsComparisonReport
   @ApiOperation({ summary: 'Obter todos os departamentos' })
@@ -44,19 +50,13 @@ export class DebtsController {
   @ApiOperation({ summary: 'Obter parcelas de um débito' })
   @Get('associedCompany')  
   async updateDebts() {
-    return this.debtsService.associateDebtsToAccounts();
+    return this.debtsService.alignDebitCompany();
   }
 
   @ApiOperation({ summary: 'Obter todas contas por Empresa' })
   @Get('accounts/:id')
   async getAccoutsAzzo(@Param('id') id: number) {
     return this.debtsService.findAccountByCompanyId(id);
-  }
-
-  @ApiOperation({ summary: 'Obter todos os débitos' })
-  @Get('company/:id')
-  async getAllDebts(@Param('id') id: number, @Query('fromDate') fromDate?: string) {
-    return this.debtsService.getDebtsByDate(id, fromDate);
   }
 
   @ApiOperation({ summary: 'Excluir debito e suas parcelas' })
