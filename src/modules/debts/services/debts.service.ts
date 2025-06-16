@@ -285,10 +285,11 @@ export class DebtsService {
     return `Debito com ID ${code} e suas parcelas foram excluídas com sucesso.`;
   }
 
-  async getDebtsByDate(fromDate?: string): Promise<Debito[]> {
+  async getDebtsByDate(companyId: number, fromDate?: string): Promise<Debito[]> {
     if (fromDate) {
       return this.debtRepository.find({
-        where: {
+        where: {          
+          company: { company_id: companyId },
           data_competencia: MoreThanOrEqual(new Date(fromDate)),
         },
         relations: ['parcela_debito', 'status_pagamento', 'categoria', 'departamento', 'parcela_debito.status_pagamento', 'company', 'account'],
@@ -447,7 +448,6 @@ export class DebtsService {
         console.warn(`Conta '${debito.conta}' não encontrada para o débito ${debito.debito_id}`);
       }
     }
-  }
-  
+  }  
   
 }

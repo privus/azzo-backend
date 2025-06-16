@@ -10,12 +10,6 @@ import { UpdateDebtStatusDto } from '../dto';
 export class DebtsController {
   constructor(private readonly debtsService: DebtsService) {}
 
-  @ApiOperation({ summary: 'Obter todos os débitos' })
-  @Get()
-  async getAllDebts(@Query('fromDate') fromDate?: string) {
-    return this.debtsService.getDebtsByDate(fromDate);
-  }
-
   @ApiOperation({ summary: 'Obter débitos entre datas' })
   @Get('between')
   async getDebtsBetweenDates(@Query('fromDate') fromDate: string, @Query('toDate') toDate?: string) {
@@ -57,6 +51,12 @@ export class DebtsController {
   @Get('accounts/:id')
   async getAccoutsAzzo(@Param('id') id: number) {
     return this.debtsService.findAccountByCompanyId(id);
+  }
+
+  @ApiOperation({ summary: 'Obter todos os débitos' })
+  @Get(':id')
+  async getAllDebts(@Param('id') id: number, @Query('fromDate') fromDate?: string) {
+    return this.debtsService.getDebtsByDate(id, fromDate);
   }
 
   @ApiOperation({ summary: 'Excluir debito e suas parcelas' })
