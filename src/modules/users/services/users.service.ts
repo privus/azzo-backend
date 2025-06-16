@@ -11,7 +11,7 @@ export class UsersService implements IUserRepository {
   constructor(@InjectRepository(Usuario) private readonly userRepository: Repository<Usuario>) {}
 
   async findBy(param: Partial<Usuario>): Promise<Usuario | null> {
-    return this.userRepository.findOne({ where: param, relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'] });
+    return this.userRepository.findOne({ where: param, relations: ['cargo', 'cidade', 'cidade.estado', 'regiao', 'company'] });
   }
 
   async findAll(): Promise<Usuario[]> {
