@@ -237,7 +237,7 @@ export class ProductsService implements IProductsRepository {
   
 
   findAllProducts(): Promise<Produto[]> {
-    return this.produtoRepository.find({ relations: ['categoria', 'fornecedor'] });
+    return this.produtoRepository.find({ where: { ativo: 1 }, relations: ['categoria', 'fornecedor'] });
   }
 
   findProductById(id: number): Promise<Produto> {
@@ -285,4 +285,48 @@ export class ProductsService implements IProductsRepository {
   
     return produtos
   } 
+
+  async updateStockMinimumFromJson(): Promise<void> {
+    const jsonFilePath = 'src/utils/estoque-minimo.json';
+  
+    // Verifica se o arquivo JSON existe
+    if (!fs.existsSync(jsonFilePath)) {
+      console.error(`❌ Arquivo '${jsonFilePath}' não encontrado.`);
+      return;
+    }
+  
+    // Lê e parseia o arquivo JSON
+    const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
+    const estoqueData = JSON.parse(jsonData);
+  
+    console.log(`🔄 Processando ${estoqueData.length} registros de estoque mínimo...`);
+  
+    for (const item of estoqueData) {
+      if (!item.produto_id) {
+        console.warn(`⚠️ Registro inválido: ${JSON.stringify(item)}`);
+        continue;
+      }
+  
+      const produto = await this.produtoRepository.findOne({
+        where: { produto_id: item.produto_id },
+      });
+  
+      if (!produto) {
+        console.warn(`⚠️ Produto com ID ${item.produto_id} não encontrado.`);
+        continue;
+      }
+  
+      const novoEstoqueMinimo = !item.estoque_minimo || item.estoque_minimo === 0
+        ? 288
+        : Number(item.estoque_minimo);
+  
+      produto.estoque_minimo = novoEstoqueMinimo;
+      await this.produtoRepository.save(produto);
+  
+      console.log(`✅ Produto ${produto.produto_id} atualizado com estoque_minimo: ${produto.estoque_minimo}`);
+    }
+  
+    console.log('🚀 Atualização de estoque_minimo concluída com sucesso!');
+  }
+  
 }
