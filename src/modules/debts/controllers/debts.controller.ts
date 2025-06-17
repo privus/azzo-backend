@@ -21,7 +21,7 @@ export class DebtsController {
   async getDebtsBetweenDates(@Query('company') companyId: number, @Query('fromDate') fromDate: string, @Query('toDate') toDate?: string) {
     return this.debtsService.getDebtsBetweenDates(companyId, fromDate, toDate);
   }
-  DebtsComparisonReport
+
   @ApiOperation({ summary: 'Obter todos os departamentos' })
   @Get('departments')
   async getAllDepartments() {
@@ -50,7 +50,7 @@ export class DebtsController {
   @ApiOperation({ summary: 'Obter parcelas de um débito' })
   @Get('associedCompany')  
   async updateDebts() {
-    return this.debtsService.alignDebitCompany();
+    return this.debtsService.associateParcelsToAccounts();
   }
 
   @ApiOperation({ summary: 'Obter todas contas por Empresa' })

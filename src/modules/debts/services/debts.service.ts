@@ -429,19 +429,24 @@ export class DebtsService {
     }
   }
 
-  async associateDebtsToAccounts(): Promise<void> {
-    const debts = await this.debtRepository.find({ relations: ['account'], where: { account: null } });
+  async associateParcelsToAccounts(): Promise<void> {
+    const parcelas = await this.parcelaRepository.find({
+      relations: ['account'],
+      where: { account: null },
+    });
   
-    for (const debito of debts) {
-      if (!debito.conta) continue;
+    for (const parcela of parcelas) {
+      if (!parcela.conta) continue;
   
-      const conta = await this.accountRepository.findOne({ where: { nome: debito.conta } });
+      const conta = await this.accountRepository.findOne({
+        where: { nome: parcela.conta },
+      });
   
       if (conta) {
-        debito.account = conta;
-        await this.debtRepository.save(debito);
+        parcela.account = conta;
+        await this.parcelaRepository.save(parcela);
       } else {
-        console.warn(`Conta '${debito.conta}' não encontrada para o débito ${debito.debito_id}`);
+        console.warn(`Conta '${parcela.conta}' não encontrada para a parcela ${parcela.parcela_id}`);
       }
     }
   }  
