@@ -429,26 +429,25 @@ export class DebtsService {
     }
   }
 
-  async associateParcelsToAccounts(): Promise<void> {
+  async associateParcelsToDebitAccount(): Promise<void> {
     const parcelas = await this.parcelaRepository.find({
-      relations: ['account'],
+      relations: ['debito', 'debito.account', 'account'],
       where: { account: null },
     });
   
     for (const parcela of parcelas) {
-      if (!parcela.conta) continue;
+      const contaDoDebito = parcela.debito?.account;
   
-      const conta = await this.accountRepository.findOne({
-        where: { nome: parcela.conta },
-      });
-  
-      if (conta) {
-        parcela.account = conta;
+      if (contaDoDebito) {
+        parcela.account = contaDoDebito;
         await this.parcelaRepository.save(parcela);
+        console.log(`Parcela ${parcela.parcela_id} associada à conta ${contaDoDebito.nome}`);
       } else {
-        console.warn(`Conta '${parcela.conta}' não encontrada para a parcela ${parcela.parcela_id}`);
+        console.warn(
+          `Conta do débito ${parcela.debito?.debito_id} não encontrada para a parcela ${parcela.parcela_id}`
+        );
       }
     }
-  }  
+  } 
   
 }
