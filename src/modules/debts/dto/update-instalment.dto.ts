@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsInt, IsNumber, IsOptional, IsString, Length } from 'class-validator';
 
 export class UpdateInstalmentDto {
   /**
@@ -53,4 +53,28 @@ export class UpdateInstalmentDto {
   @IsOptional()
   @IsNumber({}, { message: 'O valor da parcela deve ser um número.' })
   valor_total: number;
+
+  /**
+   * Conta ID do débito.
+   * Exemplo: '1', '2', '3'
+   */
+  @IsNumber({}, { message: 'A conta ID deve ser um número.' })
+  account_id: number;
+
+  /**
+   * Nome da Conta
+   * Exemplo: 'Itaú'
+   */
+  @IsOptional()
+  @IsString({ message: 'O nome da conta deve ser uma string.' })
+  @Length(3, 90, { message: 'O nome da conta deve ter entre 3 e 90 caracteres.' })
+  account_name?: string;
+
+  /**
+   * ID da empresa usuária do débito.
+   * Exemplo: 1
+   */
+  @IsNumber({}, { message: 'O user_company_id deve ser um número.' })
+  @IsInt({ message: 'O user_company_id deve ser um inteiro.' })
+  user_company_id: number;
 }

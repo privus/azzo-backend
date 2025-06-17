@@ -108,10 +108,9 @@ export class StockService implements IStockRepository {
   
       // Multiplica pela qt_uni apenas se ambos forem encontrados (caixa + unidade)
       // e o distribuidor **não for** W COSMETICOS (case 7)
-      if (produtos.length > 1 && caixa && unidade && dist_type !== 7) {
+      if (produtos.length > 1 && caixa && unidade && dist_type !== 7 && dist_type !== 5) {
         quantidade *= caixa.qt_uni;
-      }
-
+      }      
   
       const fornecedor = await this.fornecedorRepository.findOne({
         where: { fornecedor_id: produtoFinal.fornecedor.fornecedor_id }

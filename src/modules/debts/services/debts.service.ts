@@ -176,9 +176,17 @@ export class DebtsService {
   }
 
   async updateInstalmentStatus(UpdateInstalmentDto: UpdateInstalmentDto): Promise<string> {
-    const { parcela_id, status_pagamento_id, data_pagamento, valor_total, atualizado_por, data_vencimento } = UpdateInstalmentDto;
+    const { parcela_id, status_pagamento_id, data_pagamento, valor_total, atualizado_por, data_vencimento, user_company_id, account_id, account_name } = UpdateInstalmentDto;
 
-    // Buscar a parcela
+    const userCompany = await this.companyRepository.findOne({ where: { company_id: user_company_id } });
+
+    let account = await this.accountRepository.findOne({ where: { account_id: account_id } });
+    if (!account) {
+      account = this.accountRepository.create({ nome: account_name });
+      account.company = userCompany;
+      await this.accountRepository.save(account);
+    }
+
     const parcela = await this.parcelaRepository.findOne({
       where: { parcela_id },
       relations: ['status_pagamento', 'debito'],
@@ -204,6 +212,7 @@ export class DebtsService {
     // Atualizar a parcela
     parcela.status_pagamento = novoStatus;
     parcela.atualizado_por = atualizado_por;
+    parcela.account = account;
     if (valor_total) {
         parcela.valor = valor_total;
         diferenca = valor_total - parcelaValor;
@@ -216,7 +225,7 @@ export class DebtsService {
         novaData.setDate(novaData.getDate() + 1);
         parcela.data_vencimento = novaData;
     }
-    // Atualizar o valor total da venda, se existir
+
     if (parcela.debito && valor_total) {
         const debito = await this.debtRepository.findOne({
             where: { debito_id: parcela.debito.debito_id },
