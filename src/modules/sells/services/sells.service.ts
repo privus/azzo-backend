@@ -708,7 +708,7 @@ export class SellsService implements ISellsRepository {
     const yesterdaySales = await this.sellsBetweenDates(yesterday.toISOString());
   
     const allSellers = (await this.sellersSevice.findAllSellers())
-      .filter(v => v.ativo);
+      .filter(v => v.ativo && v.vendedor_id !== 12);
   
     const buildRanking = (sells: Venda[], date: Date) => {
       const rankingMap: Record<number, RankingItem> = {};
@@ -729,7 +729,7 @@ export class SellsService implements ISellsRepository {
   
       for (const sell of sells) {
         const { vendedor, tipo_pedido, itensVenda } = sell;
-        if (!vendedor.ativo || vendedor.vendedor_id === 12 || vendedor.vendedor_id === 13) continue;
+        if (!vendedor.ativo || vendedor.vendedor_id === 12) continue;
         if (tipo_pedido?.tipo_pedido_id !== 10438) continue;
   
         const id = vendedor.vendedor_id;
