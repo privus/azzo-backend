@@ -696,47 +696,60 @@ export class SellsService implements ISellsRepository {
     today.setHours(0, 0, 0, 0);
   
     const yesterday = new Date(today);
-  
-    // Se ontem (today - 1) foi domingo, buscar dados de sexta-feira (today - 3)
     const tempYesterday = new Date(today);
     tempYesterday.setDate(today.getDate() - 1);
     if (tempYesterday.getDay() === 0) {
-      // Domingo
-      yesterday.setDate(today.getDate() - 4); // sexta-feira
+      yesterday.setDate(today.getDate() - 4);
     } else {
-      // Caso contrário, considera ontem normalmente
       yesterday.setDate(today.getDate() - 2);
     }
   
     const todaySales = await this.sellsByDate(today.toISOString());
     const yesterdaySales = await this.sellsBetweenDates(yesterday.toISOString());
-
+  
+    const allSellers = (await this.sellersSevice.findAllSellers())
+      .filter(v => v.ativo);
+  
     const buildRanking = (sells: Venda[], date: Date) => {
       const rankingMap: Record<number, RankingItem> = {};
   
-      for (const sell of sells) {
-        const { vendedor, tipo_pedido } = sell;
-        const isValidSeller = vendedor && vendedor.vendedor_id !== 12 && vendedor.vendedor_id !== 13;
-        const isValidOrderType = tipo_pedido.tipo_pedido_id === 10438;
-        if (!isValidSeller || !isValidOrderType) continue;
-  
-        const id = vendedor.vendedor_id;
-        if (!rankingMap[id]) {
-          rankingMap[id] = {
-            nome: vendedor.nome,
-            total: 0,
-            numero_vendas: 0,
-            codigos_vendas: []
-          };
-        }
-  
-        rankingMap[id].total += Number(sell.valor_final);
-        rankingMap[id].numero_vendas += 1;
-        rankingMap[id].codigos_vendas.push(Number(sell.codigo));
+      // Inicializa todos os vendedores ativos
+      for (const seller of allSellers) {
+        rankingMap[seller.vendedor_id] = {
+          id: seller.vendedor_id,
+          nome: seller.nome,
+          total: 0,
+          numero_vendas: 0,
+          codigos_vendas: [],
+          pureli: 0,
+        };
       }
   
-      return Object.entries(rankingMap)
-        .map(([id, data]) => ({ id: Number(id), ...data }))
+      const pedidosContabilizadosFornecedor7 = new Set<number>();
+  
+      for (const sell of sells) {
+        const { vendedor, tipo_pedido, itensVenda } = sell;
+        if (!vendedor.ativo || vendedor.vendedor_id === 12 || vendedor.vendedor_id === 13) continue;
+        if (tipo_pedido?.tipo_pedido_id !== 10438) continue;
+  
+        const id = vendedor.vendedor_id;
+        const entry = rankingMap[id];
+  
+        entry.total += Number(sell.valor_final);
+        entry.numero_vendas += 1;
+        entry.codigos_vendas.push(Number(sell.codigo));
+  
+        const temFornecedor7 = itensVenda.some(
+          item => item.produto?.fornecedor?.fornecedor_id === 7
+        );
+  
+        if (temFornecedor7 && !pedidosContabilizadosFornecedor7.has(sell.codigo)) {
+          entry.pureli += 1;
+          pedidosContabilizadosFornecedor7.add(sell.codigo);
+        }
+      }
+  
+      return Object.values(rankingMap)
         .sort((a, b) => b.total - a.total);
     };
   
@@ -744,7 +757,8 @@ export class SellsService implements ISellsRepository {
       today: buildRanking(todaySales, today),
       yesterday: buildRanking(yesterdaySales, yesterday),
     };
-  } 
+  }
+  
   
   async reportBrandSalesBySeller(fromDate: string, toDate?: string): Promise<BrandSales> {
     const vendas = await this.sellsBetweenDates(fromDate, toDate);
