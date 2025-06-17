@@ -171,7 +171,7 @@ export class DebtsService {
   getDebtById(id: number): Promise<Debito> {
     return this.debtRepository.findOne({
       where: { debito_id: id },
-      relations: ['parcela_debito.status_pagamento', 'status_pagamento', 'categoria', 'departamento', 'company', 'account'],
+      relations: ['parcela_debito.status_pagamento', 'status_pagamento', 'categoria', 'departamento', 'company', 'account', 'parcela_debito.account'],
     });
   }
 
