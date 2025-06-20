@@ -26,7 +26,7 @@ export class PVenda {
   @Column({ name: 'prioridade', type: 'int' })
   prioridade: number;
 
-  @Column({ type: 'int' })
+  @Column({ type: 'varchar', length: 90 })
   numero_tiny: string;
 
   @Column({ type: 'varchar', length: 50 })
