@@ -36,3 +36,4 @@ export * from './distribuidor';
 export * from './account';
 export * from './company';
 export * from './rateioDebito';
+export * from './pVenda';

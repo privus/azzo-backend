@@ -3,7 +3,7 @@ import { Entity, PrimaryColumn, Column } from 'typeorm';
 @Entity('p_venda')
 export class PVenda {
   @PrimaryColumn({type: 'int' })
-  id_p: number;
+  p_venda_id: number;
 
   @Column({ type: 'varchar', nullable: true })
   data_pedido: Date;
@@ -15,7 +15,7 @@ export class PVenda {
   total_pedido: string;
 
   @Column({ type: 'varchar', length: 90 })
-  status_painel: string;
+  situacao: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   custo_produtos: string;
@@ -40,4 +40,7 @@ export class PVenda {
 
   @Column({ type: 'varchar', length: 45, nullable: true })
   cliente_tipo: string;
+
+  @Column({ type: 'varchar', length: 90 })
+  nome_ecommerce: string;
 }
