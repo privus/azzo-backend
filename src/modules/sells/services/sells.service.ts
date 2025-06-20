@@ -697,7 +697,7 @@ export class SellsService implements ISellsRepository {
   
     const yesterday = new Date(today);
     const tempYesterday = new Date(today);
-    tempYesterday.setDate(today.getDate() - 2);
+    tempYesterday.setDate(today.getDate() - 1);
     if (tempYesterday.getDay() === 0) {
       yesterday.setDate(today.getDate() - 4);
     } else {
