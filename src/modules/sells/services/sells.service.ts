@@ -1,4 +1,4 @@
-import { BadRequestException, HttpException, Inject, Injectable, HttpStatus } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, MoreThanOrEqual, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda, SaidaEstoque } from '../../../infrastructure/database/entities';

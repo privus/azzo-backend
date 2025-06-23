@@ -48,9 +48,6 @@ export class Debito {
   @Column({ type: 'tinyint', nullable: true })
   despesa_grupo: number;
 
-  @Column({ type: 'enum', enum: ['CUSTO', 'DESPESA'], default: 'DESPESA', nullable: true })
-  tipo: 'CUSTO' | 'DESPESA';
-
   @Column('json', { nullable: true })
   datas_vencimento?: string[];
 
