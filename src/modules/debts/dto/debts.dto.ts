@@ -155,4 +155,12 @@ export class DebtsDto {
   @IsNumber({}, { message: 'O user_company_id deve ser um número.' })
   @IsInt({ message: 'O user_company_id deve ser um inteiro.' })
   user_company_id: number;
+
+  /**
+   * Tipo do débito (CUSTO ou DESPESA).
+   * Exemplo: 'CUSTO'
+   */
+  @IsString({ message: 'O tipo deve ser uma string.' })
+  @Length(3, 20, { message: 'O tipo deve ter entre 3 e 20 caracteres.' })
+  tipo?: 'CUSTO' | 'DESPESA';
 }

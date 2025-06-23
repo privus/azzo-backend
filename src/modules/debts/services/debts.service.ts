@@ -181,7 +181,7 @@ export class DebtsService {
     const userCompany = await this.companyRepository.findOne({ where: { company_id: user_company_id } });
 
     let account = await this.accountRepository.findOne({ where: { account_id: account_id } });
-    if (!account) {
+    if (!account && account_name) {
       account = this.accountRepository.create({ nome: account_name });
       account.company = userCompany;
       await this.accountRepository.save(account);
