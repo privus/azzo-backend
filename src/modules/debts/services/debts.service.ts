@@ -67,6 +67,7 @@ export class DebtsService {
       criado_por: debtDto.criado_por,
       account,
       company,
+      tipo: debtDto.tipo,
     });
 
     const savedDebt = await this.debtRepository.save(debitoEntity);
