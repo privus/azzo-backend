@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-// import { PVenda } from './pVenda';
+import { PVenda } from './pVenda';
 
 @Entity('p_forma_pagamento')
 export class PFormaPagamento {
@@ -12,6 +12,6 @@ export class PFormaPagamento {
   @Column({ type: 'decimal', nullable: true })
   taxa: number;
 
-  // @OneToMany(() => PVenda, (pVenda) => pVenda.forma_pagamento)
-  // vendas: PVenda[];
+  @OneToMany(() => PVenda, (pVenda) => pVenda.forma_pagamento)
+  vendas: PVenda[];
 }

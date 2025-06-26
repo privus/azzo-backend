@@ -76,8 +76,15 @@ export class RomaneioService {
   
     for (const { nota, frete } of mappedRows) {
       if (!nota) continue;
-  
-      const venda = vendas.find(v => v.numero_nfe?.toString() === nota);
+    
+      let venda = vendas.find(v => v.numero_nfe?.toString() === nota);
+    
+      // Se não encontrou por nota, tenta buscar por padrão alternativo
+      if (!venda && nota.startsWith('*')) {
+        const pedidoId = nota.substring(1); // remove o caractere especial
+        venda = vendas.find(v => v.codigo.toString() === pedidoId);
+      }
+    
       if (venda) {
         venda.valor_frete = frete;
         await this.sellsService.saveSell(venda);
@@ -85,6 +92,7 @@ export class RomaneioService {
         aplicadas++;
       }
     }
+    
   
     romaneio.valor_frete = totalFrete;
     await this.romaneioRepository.save(romaneio);

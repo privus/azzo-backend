@@ -228,15 +228,22 @@ export class DebtsService {
     }
 
     if (parcela.debito && valor_total) {
-        const debito = await this.debtRepository.findOne({
-            where: { debito_id: parcela.debito.debito_id },
+      const debito = await this.debtRepository.findOne({
+        where: { debito_id: parcela.debito.debito_id },
       });
+    
       const debitoValorAtual = +(debito.valor_total ?? 0);
-  
-      debito.valor_total = +(debitoValorAtual + diferenca).toFixed(2);
-  
-      await this.debtRepository.save(debito);      
-    }
+      const debitoJurosAtual = +(debito.juros ?? 0);
+    
+      // Considera o valor de juros da parcela se existir
+      const jurosParcela = +(parcela.juros ?? 0);
+    
+      // Atualiza o total com a diferença + juros
+      debito.valor_total = +(debitoValorAtual + diferenca + jurosParcela).toFixed(2);
+      debito.juros = +(debitoJurosAtual + jurosParcela).toFixed(2);
+    
+      await this.debtRepository.save(debito);
+    }    
 
     await this.parcelaRepository.save(parcela);
 

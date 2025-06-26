@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, JoinColumn, ManyToOne, Unique } from 'typeorm';
-import { Cliente, Usuario, Estado, Regiao } from './';
+import { Cliente, Usuario, Estado, Regiao, PCliente } from './';
 
 @Entity('cidade')
 @Unique(['nome', 'estado'])
@@ -12,6 +12,9 @@ export class Cidade {
 
   @OneToMany(() => Cliente, (cliente) => cliente.cidade)
   clientes: Cliente[];
+
+  @OneToMany(() => PCliente, (cliente) => cliente.cidade)
+  pclientes: PCliente[];
 
   @OneToMany(() => Usuario, (usuario) => usuario.cidade)
   usuarios: Usuario[];

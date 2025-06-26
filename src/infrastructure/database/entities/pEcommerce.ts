@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-// import { PVenda } from './pVenda';
+import { PVenda } from './pVenda';
 
 @Entity('p_ecommerce')
 export class PEcommerce {
@@ -9,6 +9,6 @@ export class PEcommerce {
   @Column({ type: 'varchar', length: 45 })
   nome: string;
 
-  // @OneToMany(() => PVenda, (pVenda) => pVenda.forma_pagamento)
-  // vendas: PVenda[];
+  @OneToMany(() => PVenda, (pVenda) => pVenda.ecommerce)
+  vendas: PVenda[];
 }

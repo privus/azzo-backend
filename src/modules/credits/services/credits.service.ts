@@ -205,7 +205,6 @@ export class CreditsService implements ICreditsRepository {
       data_vencimento: new Date(creditDto.data_vencimento),
       data_pagamento: creditDto.data_pagamento ? new Date(creditDto.data_pagamento) : null,
       status_pagamento: creditDto.data_pagamento ? statusPagamentoPago : statusPagamentoNormal,
-      categoria,
       atualizado_por: creditDto.atualizado_por,
       conta: creditDto.conta,
     });
