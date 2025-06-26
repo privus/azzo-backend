@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { Account, CategoriaCredito, StatusPagamento, Venda } from './';
+import { Account, StatusPagamento, Venda } from '.';
 
 @Entity('parcela_credito')
 export class ParcelaCredito {
@@ -46,10 +46,6 @@ export class ParcelaCredito {
   @ManyToOne(() => Venda, (venda) => venda.parcela_credito, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'venda_id' })
   venda: Venda;
-
-  @ManyToOne(() => CategoriaCredito, (categoria) => categoria.parcelacredito)
-  @JoinColumn({ name: 'categoria_id' })
-  categoria: CategoriaCredito;
 
   @ManyToOne(() => Account)
   @JoinColumn({ name: 'account_id' })
