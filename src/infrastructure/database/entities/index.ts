@@ -36,7 +36,7 @@ export * from './company';
 export * from './rateioDebito';
 export * from './pFormaPagamento';
 export * from './pEcommerce';
-export * from './pSells';
+export * from './pSell';
 export * from './pParcelaCredito';
 export * from './pVenda';
 export * from './pCliente';

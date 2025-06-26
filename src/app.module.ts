@@ -21,6 +21,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { EmailMarketingModule } from './modules/email-marketing/email-marketing.module';
 import { StockModule } from './modules/stock/stock.module';
+import { PSellsModule } from './modules/p-sells/p-sells.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { StockModule } from './modules/stock/stock.module';
     }),
     EmailMarketingModule,
     StockModule,
+    PSellsModule
   ],
   controllers: [AppController],
   providers: [AppService],

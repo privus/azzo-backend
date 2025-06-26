@@ -50,8 +50,8 @@ export class PSell {
   @Column({ type: 'varchar', length: 100, nullable: true })
   nome_ecommerce: string;
 
-  @Column({ type: 'varchar', length: 2000, nullable: true })
-  produtos: string;
+  @Column({ type: 'json', nullable: true })
+  produtos: any;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   adicionais: string;

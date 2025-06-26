@@ -30,14 +30,13 @@ export class PSellsService {
     @InjectRepository(PItensVenda) private readonly itensVendaRepository: Repository<PItensVenda>,
   ) {}
 
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async createSells() {
     const orders = await this.pSellsRepository.find();
     const statusPago = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 2 } });
     const statusPendente = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 1 } });
 
     for (const order of orders) {
-      const produtosPedido = order.produtos ? JSON.parse(`[${order.produtos}]`) : [];
+      const produtosPedido = order.produtos ? JSON.parse(order.produtos) : [];
       const produtosMap = new Map<number, PProduto>();
       
       for (const prod of produtosPedido) {
