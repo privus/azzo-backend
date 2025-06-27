@@ -18,6 +18,9 @@ export class PSell {
   total_pedido: number;
 
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  total_produtos: number;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
   valor_desconto: number;
 
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
