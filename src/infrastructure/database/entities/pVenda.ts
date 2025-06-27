@@ -20,7 +20,7 @@ export class PVenda {
   @Column({ type: 'int', nullable: true })
   numero_parcelas: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   valor_parcela: number;
 
   @Column('json', { nullable: true })
