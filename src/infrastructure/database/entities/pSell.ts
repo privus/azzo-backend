@@ -53,7 +53,7 @@ export class PSell {
   @Column({ type: 'text', nullable: true })
   produtos: string; 
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 450, nullable: true })
   adicionais: string;
 
   @Column({ type: 'varchar', length: 100, nullable: true })

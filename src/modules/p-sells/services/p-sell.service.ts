@@ -33,6 +33,7 @@ export class PSellsService {
     const orders = await this.pSellsRepository.find();
     const statusPago = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 2 } });
     const statusPendente = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 1 } });
+    console.log('Orders found:', orders);
 
     for (const order of orders) {
       const produtosPedido = Array.isArray(order.produtos)
