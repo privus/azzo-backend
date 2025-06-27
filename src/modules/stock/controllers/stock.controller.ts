@@ -45,4 +45,10 @@ export class StockController {
     return this.stockService.findAllDistributors();
   }
 
+  @ApiOperation({ summary: 'update estoque'})
+  @Post('update-stock')
+  async updateStock(): Promise<string> {
+    return this.stockService.updateStockFromJson();
+  }
+
 }
