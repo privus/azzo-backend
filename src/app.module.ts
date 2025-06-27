@@ -43,7 +43,7 @@ import { PSellsModule } from './modules/p-sells/p-sells.module';
         database: configService.get<string>('DB_NAME'),
         entities: Object.values(entities), // Importa todas as entidades
         migrations: [__dirname + '/infrastructure/database/migrations/*.{ts,js}'],
-        synchronize: configService.get<boolean>('DB_SYNC', false),
+        synchronize: false,
         logging: configService.get<string>('DB_LOGGING', 'false') === 'true',
       }),
     }),
