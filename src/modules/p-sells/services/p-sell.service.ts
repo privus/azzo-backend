@@ -176,11 +176,27 @@ export class PSellsService {
         where: {
           data_criacao: MoreThanOrEqual(new Date(fromDate)),
         },
-        relations: ['cliente', 'forma_pagamento', 'ecommerce', 'status_venda', 'status_pagamento', 'itens_venda.produto', 'forma_pagamento', ],
+        relations: [
+          'cliente',
+          'forma_pagamento',
+          'ecommerce',
+          'status_venda',
+          'status_pagamento',
+          'itensVenda',
+          'itensVenda.produto',
+        ]
       });
     }
     return this.vendaRepository.find({
-      relations: ['cliente', 'forma_pagamento', 'ecommerce', 'status_venda', 'status_pagamento', 'itens_venda.produto', 'forma_pagamento'],
+      relations: [
+        'cliente',
+        'forma_pagamento',
+        'ecommerce',
+        'status_venda',
+        'status_pagamento',
+        'itensVenda',
+        'itensVenda.produto',
+      ],      
     });
   }
 }
