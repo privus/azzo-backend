@@ -26,7 +26,7 @@ export class PVenda {
   @Column('json', { nullable: true })
   datas_vencimento: string[];
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   valor_pedido: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
