@@ -109,7 +109,7 @@ export class PSellsService {
       if (vendaExistente) {
         vendaExistente.data_criacao = order.data_pedido;
         vendaExistente.valor_frete = order.valor_frete;
-        vendaExistente.valor_pedido = order.total_pedido;
+        vendaExistente.valor_pedido = order.total_produtos;
         vendaExistente.valor_final = order.total_pedido;
         vendaExistente.desconto = order.valor_desconto || 0;
         vendaExistente.cliente = cliente;
@@ -128,7 +128,7 @@ export class PSellsService {
           venda_id: order.p_venda_id,
           data_criacao: order.data_pedido,
           valor_frete: order.valor_frete,
-          valor_pedido: order.total_pedido,
+          valor_pedido: order.total_produtos,
           valor_final: order.total_pedido,
           desconto: order.valor_desconto || 0,
           cliente,
