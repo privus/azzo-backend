@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Cron, CronExpression } from '@nestjs/schedule';
 import {
   PSell,
   PVenda,
@@ -34,19 +33,18 @@ export class PSellsService {
     const orders = await this.pSellsRepository.find();
     const statusPago = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 2 } });
     const statusPendente = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 1 } });
-    console.log('orders', orders);
 
     for (const order of orders) {
       const produtosPedido = Array.isArray(order.produtos)
-      ? order.produtos
-      : (typeof order.produtos === 'string'
-          ? JSON.parse(order.produtos)
-          : []);    
+        ? order.produtos
+        : (typeof order.produtos === 'string'
+            ? JSON.parse(order.produtos)
+            : []);
       const produtosMap = new Map<number, PProduto>();
-      
+
       for (const prod of produtosPedido) {
         let produto = await this.produtoRepository.findOne({ where: { codigo: prod.cod_produto } });
-      
+
         if (!produto) {
           produto = this.produtoRepository.create({
             id: prod.produto_id,
@@ -57,17 +55,16 @@ export class PSellsService {
           });
           await this.produtoRepository.save(produto);
         }
-      
-        produtosMap.set(prod.produto_id, produto);
-      }     
 
-      // Cliente
+        produtosMap.set(prod.produto_id, produto);
+      }
+
       let cliente = await this.clienteRepository.findOne({ where: { nome: order.cliente_nome } });
       if (!cliente) {
         const cidade = await this.cidadeRepository.findOne({ where: { nome: order.cidade_string } });
-        cliente = this.clienteRepository.create({ 
-          nome: order.cliente_nome, 
-          tipo_doc: order.cliente_tipo, 
+        cliente = this.clienteRepository.create({
+          nome: order.cliente_nome,
+          tipo_doc: order.cliente_tipo,
           numero_doc: order.numero_doc,
           cidade: cidade || null,
           cidade_string: order.cidade_string,
@@ -78,14 +75,12 @@ export class PSellsService {
         await this.clienteRepository.save(cliente);
       }
 
-      // Forma de pagamento
       let formaPagamento = await this.formaPagamentoRepository.findOne({ where: { nome: order.forma_pagamento } });
       if (!formaPagamento) {
         formaPagamento = this.formaPagamentoRepository.create({ nome: order.forma_pagamento });
         await this.formaPagamentoRepository.save(formaPagamento);
       }
 
-      // Ecommerce (nome_ecommerce no PSell)
       let ecommerce = null;
       if (order.nome_ecommerce) {
         ecommerce = await this.ecommerceRepository.findOne({ where: { nome: order.nome_ecommerce } });
@@ -95,7 +90,6 @@ export class PSellsService {
         }
       }
 
-      // Status da venda (situacao no PSell)
       let statusVenda = null;
       if (order.situacao) {
         statusVenda = await this.statusVendaRepository.findOne({ where: { nome: order.situacao } });
@@ -106,44 +100,64 @@ export class PSellsService {
       }
 
       const status_pagamento = order.forma_pagamento === 'Outro' ? statusPendente : statusPago;
-      // Agora criamos a venda
-      const novaVenda = this.vendaRepository.create({
-        venda_id: order.p_venda_id,
-        data_criacao: order.data_pedido,
-        valor_frete: order.valor_frete,
-        valor_pedido: order.total_pedido,
-        valor_final: order.total_pedido,
-        desconto: order.valor_desconto || 0,
-        cliente,
-        forma_pagamento: formaPagamento,
-        ecommerce,
-        status_venda: statusVenda,
-        status_pagamento
-      } as Partial<PVenda>); // Casting se necessário
+
+      let vendaExistente = await this.vendaRepository.findOne({
+        where: { venda_id: order.p_venda_id },
+      });
+
+      if (vendaExistente) {
+        vendaExistente.data_criacao = order.data_pedido;
+        vendaExistente.valor_frete = order.valor_frete;
+        vendaExistente.valor_pedido = order.total_pedido;
+        vendaExistente.valor_final = order.total_pedido;
+        vendaExistente.desconto = order.valor_desconto || 0;
+        vendaExistente.cliente = cliente;
+        vendaExistente.forma_pagamento = formaPagamento;
+        vendaExistente.ecommerce = ecommerce;
+        vendaExistente.status_venda = statusVenda;
+        vendaExistente.status_pagamento = status_pagamento;
+        vendaExistente.fonte_lead = order.fonte_lead || null;
+
+        await this.vendaRepository.save(vendaExistente);
+        await this.itensVendaRepository.delete({ venda: { venda_id: order.p_venda_id } });
+      } else {
+        vendaExistente = this.vendaRepository.create({
+          venda_id: order.p_venda_id,
+          data_criacao: order.data_pedido,
+          valor_frete: order.valor_frete,
+          valor_pedido: order.total_pedido,
+          valor_final: order.total_pedido,
+          desconto: order.valor_desconto || 0,
+          cliente,
+          forma_pagamento: formaPagamento,
+          ecommerce,
+          status_venda: statusVenda,
+          status_pagamento,
+          fonte_lead: order.fonte_lead || null,
+        });
+        await this.vendaRepository.save(vendaExistente);
+      }
 
       cliente.ultima_compra = order.data_pedido;
       cliente.valor_ultima_compra = order.total_pedido;
       await this.clienteRepository.save(cliente);
-      await this.vendaRepository.save(novaVenda);
 
-      await this.vendaRepository.save(novaVenda);
+      for (const prod of produtosPedido) {
+        const produto = produtosMap.get(prod.produto_id);
+        if (!produto) continue;
 
-    for (const prod of produtosPedido) {
-      const produto = produtosMap.get(prod.produto_id);
-      if (!produto) continue;
+        const itemVenda = this.itensVendaRepository.create({
+          quantidade: prod.quantidade,
+          valor_unitario: prod.preco_unitario,
+          valor_total: prod.valor_total,
+          lucro_bruto: prod.lucro_produto,
+          observacao: '',
+          venda: vendaExistente,
+          produto: produto,
+        });
 
-      const itemVenda = this.itensVendaRepository.create({
-        quantidade: prod.quantidade,
-        valor_unitario: prod.preco_unitario,
-        valor_total: prod.valor_total,
-        lucro_bruto: prod.lucro_produto,
-        observacao: '',
-        venda: novaVenda,
-        produto: produto,
-      });
-
-      await this.itensVendaRepository.save(itemVenda);
-    }
+        await this.itensVendaRepository.save(itemVenda);
+      }
     }
   }
 }
