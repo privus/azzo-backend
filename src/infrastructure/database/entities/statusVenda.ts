@@ -1,9 +1,9 @@
-import { Entity, Column, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, OneToMany, PrimaryColumn } from 'typeorm';
 import { Venda } from './';
 
 @Entity('status_venda')
 export class StatusVenda {
-  @PrimaryGeneratedColumn('increment')
+  @PrimaryColumn()
   status_venda_id: number;
 
   @Column({ type: 'varchar', length: 45 })
