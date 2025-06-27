@@ -118,6 +118,7 @@ export class PSellsService {
         vendaExistente.status_venda = statusVenda;
         vendaExistente.status_pagamento = status_pagamento;
         vendaExistente.fonte_lead = order.fonte_lead || null;
+        vendaExistente.observacao = order.adicionais || null;
 
         await this.vendaRepository.save(vendaExistente);
         await this.itensVendaRepository.delete({ venda: { venda_id: order.p_venda_id } });
@@ -135,6 +136,7 @@ export class PSellsService {
           status_venda: statusVenda,
           status_pagamento,
           fonte_lead: order.fonte_lead || null,
+          observacao: order.adicionais || null,
         });
         await this.vendaRepository.save(vendaExistente);
       }
@@ -152,7 +154,7 @@ export class PSellsService {
           valor_unitario: prod.preco_unitario,
           valor_total: prod.valor_total,
           lucro_bruto: prod.lucro_produto,
-          observacao: '',
+          observacao: prod.observacao || '',
           venda: vendaExistente,
           produto: produto,
         });
