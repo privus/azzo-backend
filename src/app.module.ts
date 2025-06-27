@@ -19,8 +19,8 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { FilesModule } from './modules/files/files.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
-import { EmailMarketingModule } from './modules/email-marketing/email-marketing.module';
 import { StockModule } from './modules/stock/stock.module';
+import { PSellsModule } from './modules/p-sells/p-sells.module';
 
 @Module({
   imports: [
@@ -42,7 +42,7 @@ import { StockModule } from './modules/stock/stock.module';
         database: configService.get<string>('DB_NAME'),
         entities: Object.values(entities), // Importa todas as entidades
         migrations: [__dirname + '/infrastructure/database/migrations/*.{ts,js}'],
-        synchronize: true,
+        synchronize: configService.get<boolean>('DB_SYNC', false),
         logging: configService.get<string>('DB_LOGGING', 'false') === 'true',
       }),
     }),
@@ -65,8 +65,8 @@ import { StockModule } from './modules/stock/stock.module';
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/static', 
     }),
-    EmailMarketingModule,
     StockModule,
+    PSellsModule
   ],
   controllers: [AppController],
   providers: [AppService],
