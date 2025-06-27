@@ -12,6 +12,7 @@ import {
   Cidade,
   PProduto,
   PItensVenda,
+  PStatusCliente,
 } from '../../../infrastructure/database/entities';
 
 @Injectable()
@@ -27,13 +28,15 @@ export class PSellsService {
     @InjectRepository(Cidade) private readonly cidadeRepository: Repository<Cidade>,
     @InjectRepository(PProduto) private readonly produtoRepository: Repository<PProduto>,
     @InjectRepository(PItensVenda) private readonly itensVendaRepository: Repository<PItensVenda>,
+    @InjectRepository(PStatusCliente) private readonly statusClienteRepository: Repository<PStatusCliente>,
   ) {}
 
   async createSells() {
     const orders = await this.pSellsRepository.find();
     const statusPago = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 2 } });
     const statusPendente = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 1 } });
-    console.log('Orders found:', orders);
+    const statusAtivo = await this.statusClienteRepository.findOne({ where: { status_cliente_id: 1 } });
+
 
     for (const order of orders) {
       const produtosPedido = Array.isArray(order.produtos)
@@ -72,6 +75,7 @@ export class PSellsService {
           data_criacao: order.data_criacao_c,
           ultima_compra: order.data_pedido,
           valor_ultima_compra: order.total_pedido,
+          status_cliente: statusAtivo,
         });
         await this.clienteRepository.save(cliente);
       }
