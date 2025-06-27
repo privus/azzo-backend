@@ -2,8 +2,8 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Controller, Get, Query, Patch, Body } from '@nestjs/common';
 import { PSellsService } from '../services/p-sell.service';
 
-@ApiTags('p-sells')
-@Controller('p-sells')
+@ApiTags('pSells')
+@Controller('pSells')
 export class PSellsController {
   constructor(private readonly pSellsService: PSellsService) {}
 
