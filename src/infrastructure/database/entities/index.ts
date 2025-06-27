@@ -45,3 +45,4 @@ export * from './pEcommerce';
 export * from './pProduto';
 export * from './pStatusCliente';
 export * from './pStatusVenda';
+
