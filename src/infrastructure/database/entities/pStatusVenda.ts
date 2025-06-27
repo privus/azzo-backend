@@ -1,8 +1,8 @@
 import { Entity, Column, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { PVenda, Venda } from './';
+import { PVenda } from './';
 
 @Entity('p_status_venda')
-export class StatusVenda {
+export class PStatusVenda {
   @PrimaryGeneratedColumn('increment')
   status_venda_id: number;
 
