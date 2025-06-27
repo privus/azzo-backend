@@ -227,7 +227,7 @@ export class SellsService implements ISellsRepository {
     let itensVenda = [];
 
     if(existingSell) {
-      existingSell.status_venda = status_venda;
+      // existingSell.status_venda = status_venda;
       existingSell.observacao = sell.obs;
       existingSell.comisao = Number(sell.commission) || 0;
       existingSell.fora_politica = sell.politics_out;
