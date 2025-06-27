@@ -12,4 +12,5 @@ export interface IProductsRepository {
   findProductByPartialCode(partialCode: string): Promise<Produto[] | undefined>;
   findByEan(ean: number): Promise<Produto[] | null>;
   decrementStock(produto_id: number, quantidade: number): Promise<void>;
+  saveProduct(product: Produto): Promise<Produto>;
 }

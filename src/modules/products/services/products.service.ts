@@ -328,5 +328,9 @@ export class ProductsService implements IProductsRepository {
   
     console.log('🚀 Atualização de estoque_minimo concluída com sucesso!');
   }
+
+  saveProduct(produto: Produto): Promise<Produto> {
+    return this.produtoRepository.save(produto);
+  }
   
 }

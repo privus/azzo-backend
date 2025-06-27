@@ -6,7 +6,6 @@ import { Repository } from 'typeorm';
 import { XMLParser } from 'fast-xml-parser';
 import * as fs from 'fs';
 import { StockImportResponse, StockLiquid } from '../dto';
-import e from 'express';
 
 @Injectable()
 export class StockService implements IStockRepository {
@@ -205,6 +204,30 @@ export class StockService implements IStockRepository {
 
   findAllDistributors(): Promise<Distribuidor[]> {
     return this.distribuidorRepository.find();
+  }
+  
+  async updateStockFromJson(): Promise<string> {
+    const jsonFilePath = 'src/utils/tabela_final.json';
+    if (!fs.existsSync(jsonFilePath)) {
+      console.error(`❌ Arquivo '${jsonFilePath}' não encontrado.`);
+      return;
+    }
+  
+    const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
+    const estoqueData: { produto_id: number; saldo_estoque: number }[] = JSON.parse(jsonData);
+  
+    for (const item of estoqueData) {
+      const produto = await this.productRepository.findProductById(item.produto_id);
+      if (!produto) {
+        console.warn(`Produto com ID ${item.produto_id} não encontrado.`);
+        continue;
+      }
+  
+      produto.saldo_estoque = item.saldo_estoque;
+      await this.productRepository.saveProduct(produto);
+    }
+  
+    return '✅ Estoque atualizado com sucesso.';
   }
   
 }
