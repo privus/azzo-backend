@@ -9,7 +9,7 @@ export class PSellsController {
 
   @ApiOperation({ summary: 'Vendas por data' })
   @Get('syncro')
-  async sellsByDate() {
+  async relatationsSells() {
     return this.pSellsService.createSells();
   }
 }

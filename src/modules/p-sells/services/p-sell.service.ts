@@ -139,7 +139,6 @@ export class PSellsService {
 
       await this.itensVendaRepository.save(itemVenda);
     }
-
     }
   }
 }
