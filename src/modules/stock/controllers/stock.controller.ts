@@ -19,6 +19,12 @@ export class StockController {
     return this.stockService.getStock();
   }
 
+  @ApiOperation({ summary: 'update estoque'})
+  @Get('update-stock')
+  async updateStock(): Promise<string> {
+    return this.stockService.updateStockFromJson();
+  }
+
   @ApiOperation({ summary: 'Importar estoque de NFe XML' })
   @Post('upload/:id')
   @UseInterceptors(FileInterceptor('file', {
@@ -44,11 +50,4 @@ export class StockController {
   async getDistribuidores(): Promise<Distribuidor[]> {
     return this.stockService.findAllDistributors();
   }
-
-  @ApiOperation({ summary: 'update estoque'})
-  @Post('update-stock')
-  async updateStock(): Promise<string> {
-    return this.stockService.updateStockFromJson();
-  }
-
 }
