@@ -37,7 +37,11 @@ export class PSellsService {
     console.log('orders', orders);
 
     for (const order of orders) {
-      const produtosPedido = order.produtos ? JSON.parse(order.produtos) : [];
+      const produtosPedido = Array.isArray(order.produtos)
+      ? order.produtos
+      : (typeof order.produtos === 'string'
+          ? JSON.parse(order.produtos)
+          : []);    
       const produtosMap = new Map<number, PProduto>();
       
       for (const prod of produtosPedido) {
