@@ -119,6 +119,7 @@ export class PSellsService {
         vendaExistente.status_pagamento = status_pagamento;
         vendaExistente.fonte_lead = order.fonte_lead || null;
         vendaExistente.observacao = order.adicionais || null;
+        vendaExistente.numero_tiny = Number(order.numero_tiny) || null;
 
         await this.vendaRepository.save(vendaExistente);
         await this.itensVendaRepository.delete({ venda: { venda_id: order.p_venda_id } });
@@ -137,6 +138,7 @@ export class PSellsService {
           status_pagamento,
           fonte_lead: order.fonte_lead || null,
           observacao: order.adicionais || null,
+          numero_tiny: Number(order.numero_tiny)
         });
         await this.vendaRepository.save(vendaExistente);
       }

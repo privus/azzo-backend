@@ -54,6 +54,9 @@ export class PVenda {
   numero_nfe: number;
 
   @Column({ type: 'int', nullable: true })
+  numero_tiny: number;
+
+  @Column({ type: 'int', nullable: true })
   nfe_id: number;
 
   @Column({ type: 'varchar', nullable: true })
