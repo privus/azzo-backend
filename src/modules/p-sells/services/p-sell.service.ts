@@ -142,7 +142,7 @@ export class PSellsService {
           status_pagamento,
           fonte_lead: order.fonte_lead || null,
           observacao: order.adicionais || null,
-          numero_tiny: Number(order.numero_tiny)
+          numero_tiny: Number(order.numero_tiny),
         });
         await this.vendaRepository.save(vendaExistente);
       }
@@ -176,11 +176,11 @@ export class PSellsService {
         where: {
           data_criacao: MoreThanOrEqual(new Date(fromDate)),
         },
-        relations: ['p_cliente', 'p_forma_pagamento', 'p_ecommerce', 'p_status_venda', 'p_status_pagamento', 'p_itens_venda.produto', 'p_forma_pagamento', ],
+        relations: ['cliente', 'forma_pagamento', 'ecommerce', 'status_venda', 'status_pagamento', 'itens_venda.produto', 'forma_pagamento', ],
       });
     }
     return this.vendaRepository.find({
-      relations: ['p_cliente', 'p_forma_pagamento', 'p_ecommerce', 'p_status_venda', 'p_status_pagamento', 'p_itens_venda.produto', 'p_forma_pagamento'],
+      relations: ['cliente', 'forma_pagamento', 'ecommerce', 'status_venda', 'status_pagamento', 'itens_venda.produto', 'forma_pagamento'],
     });
   }
 }
