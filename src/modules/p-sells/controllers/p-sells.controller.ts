@@ -8,6 +8,12 @@ export class PSellsController {
   constructor(private readonly pSellsService: PSellsService) {}
 
   @ApiOperation({ summary: 'Vendas por data' })
+  @Get()
+  async sellsByDate(@Query('fromDate') fromDate?: string) {
+    return this.pSellsService.sellsByDate(fromDate);
+  }
+
+  @ApiOperation({ summary: 'Vendas por data' })
   @Get('syncro')
   async relatationsSells() {
     return this.pSellsService.createSells();

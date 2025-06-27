@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThanOrEqual, Repository } from 'typeorm';
 import {
   PSell,
   PVenda,
@@ -168,5 +168,19 @@ export class PSellsService {
         await this.itensVendaRepository.save(itemVenda);
       }
     }
+  }
+
+  sellsByDate(fromDate?: string) {
+    if (fromDate) {
+      return this.vendaRepository.find({
+        where: {
+          data_criacao: MoreThanOrEqual(new Date(fromDate)),
+        },
+        relations: ['p_cliente', 'p_forma_pagamento', 'p_ecommerce', 'p_status_venda', 'p_status_pagamento', 'p_itens_venda.produto', 'p_forma_pagamento', ],
+      });
+    }
+    return this.vendaRepository.find({
+      relations: ['p_cliente', 'p_forma_pagamento', 'p_ecommerce', 'p_status_venda', 'p_status_pagamento', 'p_itens_venda.produto', 'p_forma_pagamento'],
+    });
   }
 }
