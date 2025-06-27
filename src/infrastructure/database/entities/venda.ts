@@ -99,9 +99,9 @@ export class Venda {
   @OneToMany(() => ParcelaCredito, (parcela) => parcela.venda, { cascade: true, onDelete: 'CASCADE' })
   parcela_credito: ParcelaCredito[];  
 
-  // @ManyToOne(() => StatusVenda)
-  // @JoinColumn({ name: 'status_venda_id' })
-  // status_venda: StatusVenda;
+  @ManyToOne(() => StatusVenda)
+  @JoinColumn({ name: 'status_venda_id' })
+  status_venda: StatusVenda;
 
   @ManyToOne(() => StatusPagamento)
   @JoinColumn({ name: 'status_pagamento_id' })
