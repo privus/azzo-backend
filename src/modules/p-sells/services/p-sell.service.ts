@@ -89,8 +89,9 @@ export class PSellsService {
         await this.clienteRepository.save(cliente);
       }
 
-      const vendedorId = order.atendente ? order.atendente : 2
+      const vendedorId = order.atendente == null ? 2 : order.atendente;
       const vendedor = await this.vendedorRepository.findOne({ where: { vendedor_id: vendedorId } });
+
 
       let formaPagamento = await this.formaPagamentoRepository.findOne({ where: { nome: order.forma_pagamento } });
       if (!formaPagamento) {
