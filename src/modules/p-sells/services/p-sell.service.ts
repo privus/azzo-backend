@@ -13,6 +13,7 @@ import {
   PProduto,
   PItensVenda,
   PStatusCliente,
+  PVendedor,
 } from '../../../infrastructure/database/entities';
 
 @Injectable()
@@ -29,6 +30,7 @@ export class PSellsService {
     @InjectRepository(PProduto) private readonly produtoRepository: Repository<PProduto>,
     @InjectRepository(PItensVenda) private readonly itensVendaRepository: Repository<PItensVenda>,
     @InjectRepository(PStatusCliente) private readonly statusClienteRepository: Repository<PStatusCliente>,
+    @InjectRepository(PVendedor) private readonly vendedorRepository: Repository<PVendedor>,
   ) {}
 
   async createSells() {
@@ -39,11 +41,19 @@ export class PSellsService {
 
 
     for (const order of orders) {
-      const produtosPedido = Array.isArray(order.produtos)
-        ? order.produtos
-        : (typeof order.produtos === 'string'
-            ? JSON.parse(order.produtos)
-            : []);
+      let produtosPedido: any[] = [];
+
+      if (Array.isArray(order.produtos)) {
+        produtosPedido = order.produtos;
+      } else if (typeof order.produtos === 'string') {
+        try {
+          produtosPedido = JSON.parse(order.produtos || '[]');
+        } catch (e) {
+          console.warn(`Erro ao fazer parse de produtos para o pedido ${order.p_venda_id}:`, e);
+          produtosPedido = [];
+        }
+      }
+      
       const produtosMap = new Map<number, PProduto>();
 
       for (const prod of produtosPedido) {
@@ -53,7 +63,6 @@ export class PSellsService {
           produto = this.produtoRepository.create({
             id: prod.produto_id,
             nome: prod.nome_produto,
-            descricao: '',
             preco: prod.preco_unitario,
             codigo: prod.cod_produto,
           });
@@ -79,6 +88,9 @@ export class PSellsService {
         });
         await this.clienteRepository.save(cliente);
       }
+
+      const vendedorId = order.atendente ? order.atendente : 2
+      const vendedor = await this.vendedorRepository.findOne({ where: { vendedor_id: vendedorId } });
 
       let formaPagamento = await this.formaPagamentoRepository.findOne({ where: { nome: order.forma_pagamento } });
       if (!formaPagamento) {
@@ -124,6 +136,7 @@ export class PSellsService {
         vendaExistente.fonte_lead = order.fonte_lead || null;
         vendaExistente.observacao = order.adicionais || null;
         vendaExistente.numero_tiny = Number(order.numero_tiny) || null;
+        vendaExistente.vendedor = vendedor || null;
 
         await this.vendaRepository.save(vendaExistente);
         await this.itensVendaRepository.delete({ venda: { venda_id: order.p_venda_id } });
@@ -133,7 +146,7 @@ export class PSellsService {
           data_criacao: order.data_pedido,
           valor_frete: order.valor_frete,
           valor_pedido: order.total_produtos,
-          valor_final: order.total_pedido,
+          valor_final: order.total_pedido || 0,
           desconto: order.valor_desconto || 0,
           cliente,
           forma_pagamento: formaPagamento,
@@ -142,7 +155,8 @@ export class PSellsService {
           status_pagamento,
           fonte_lead: order.fonte_lead || null,
           observacao: order.adicionais || null,
-          numero_tiny: Number(order.numero_tiny),
+          numero_tiny: Number(order.numero_tiny) || null,
+          vendedor,
         });
         await this.vendaRepository.save(vendaExistente);
       }

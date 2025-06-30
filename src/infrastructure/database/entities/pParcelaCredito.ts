@@ -24,7 +24,7 @@ export class PParcelaCredito {
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   juros: number;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   data_criacao: Date;
 
   @Column({ type: 'date' })

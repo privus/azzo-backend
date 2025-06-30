@@ -61,6 +61,7 @@ export class PSell {
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   fonte_lead: string;
-
   
+  @Column({ type: 'int', nullable: true })
+  atendente: number;
 }

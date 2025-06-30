@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
-import { PEcommerce, PCliente, PFormaPagamento, PParcelaCredito, PItensVenda, StatusPagamento } from './';
+import { PEcommerce, PCliente, PFormaPagamento, PParcelaCredito, PItensVenda, StatusPagamento, PVendedor } from './';
 import { PStatusVenda } from './pStatusVenda';
 
 
@@ -91,4 +91,9 @@ export class PVenda {
   @ManyToOne(() => StatusPagamento)
   @JoinColumn({ name: 'status_pagamento_id' })
   status_pagamento: StatusPagamento;
+
+  @ManyToOne(() => PVendedor)
+  @JoinColumn({ name: 'vendedor_id' })
+  vendedor: PVendedor;
+
 }
