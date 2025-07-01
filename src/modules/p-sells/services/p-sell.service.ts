@@ -15,6 +15,7 @@ import {
   PStatusCliente,
   PVendedor,
 } from '../../../infrastructure/database/entities';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class PSellsService {
@@ -33,6 +34,7 @@ export class PSellsService {
     @InjectRepository(PVendedor) private readonly vendedorRepository: Repository<PVendedor>,
   ) {}
 
+  @Cron(CronExpression.EVERY_3_HOURS)
   async createSells() {
     const orders = await this.pSellsRepository.find();
     const statusPago = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 2 } });
@@ -89,9 +91,8 @@ export class PSellsService {
         await this.clienteRepository.save(cliente);
       }
 
-      const vendedorId = order.atendente == null ? 2 : order.atendente;
+      const vendedorId = order.atendente === null ? 2 : Number(order.atendente);
       const vendedor = await this.vendedorRepository.findOne({ where: { vendedor_id: vendedorId } });
-
 
       let formaPagamento = await this.formaPagamentoRepository.findOne({ where: { nome: order.forma_pagamento } });
       if (!formaPagamento) {
@@ -117,7 +118,7 @@ export class PSellsService {
         }
       }
 
-      const status_pagamento = order.forma_pagamento === 'Outro' ? statusPendente : statusPago;
+      const status_pagamento = order.total_pedido === 0 ? statusPago : (order.forma_pagamento === 'Outro' ? statusPendente : statusPago);
 
       let vendaExistente = await this.vendaRepository.findOne({
         where: { venda_id: order.p_venda_id },
@@ -137,7 +138,8 @@ export class PSellsService {
         vendaExistente.fonte_lead = order.fonte_lead || null;
         vendaExistente.observacao = order.adicionais || null;
         vendaExistente.numero_tiny = Number(order.numero_tiny) || null;
-        vendaExistente.vendedor = vendedor || null;
+        vendaExistente.vendedor = vendedor;
+        vendaExistente.status_pagamento = status_pagamento;
 
         await this.vendaRepository.save(vendaExistente);
         await this.itensVendaRepository.delete({ venda: { venda_id: order.p_venda_id } });
@@ -199,6 +201,7 @@ export class PSellsService {
           'status_pagamento',
           'itensVenda',
           'itensVenda.produto',
+          'vendedor',
         ]
       });
     }
@@ -211,6 +214,7 @@ export class PSellsService {
         'status_pagamento',
         'itensVenda',
         'itensVenda.produto',
+        'vendedor',
       ],      
     });
   }

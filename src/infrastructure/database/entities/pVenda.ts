@@ -95,5 +95,4 @@ export class PVenda {
   @ManyToOne(() => PVendedor)
   @JoinColumn({ name: 'vendedor_id' })
   vendedor: PVendedor;
-
 }

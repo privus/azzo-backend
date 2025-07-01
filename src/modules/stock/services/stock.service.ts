@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { Distribuidor, Estoque, Fornecedor, Produto } from '../../../infrastructure/database/entities';
+import { Distribuidor, Estoque, Fornecedor, Produto, SaidaEstoque } from '../../../infrastructure/database/entities';
 import { IProductsRepository, ISellsRepository, IStockRepository } from '../../../domain/repositories';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -18,6 +18,7 @@ export class StockService implements IStockRepository {
     @InjectRepository(Distribuidor) private readonly distribuidorRepository: Repository<Distribuidor>,
     @Inject('IProductsRepository') private readonly productRepository: IProductsRepository,
     @Inject('ISellsRepository') private readonly sellRepository: ISellsRepository,
+    @InjectRepository(SaidaEstoque) private readonly saidaRepository: Repository<SaidaEstoque>,
   ) {}
 
   async getStock(): Promise<Estoque[]> {
@@ -207,7 +208,7 @@ export class StockService implements IStockRepository {
   }
   
   async updateStockFromJson(): Promise<string> {
-    const jsonFilePath = 'src/utils/tabela_final.json';
+    const jsonFilePath = 'src/utils/contagem-estoque-junho.json';
     if (!fs.existsSync(jsonFilePath)) {
       console.error(`❌ Arquivo '${jsonFilePath}' não encontrado.`);
       return;
@@ -223,7 +224,7 @@ export class StockService implements IStockRepository {
         continue;
       }
   
-      produto.saldo_estoque = item.saldo_estoque;
+      produto.saldo_estoque = item.saldo_estoque === null ? 0 : item.saldo_estoque;
       await this.productRepository.saveProduct(produto);
     }
   

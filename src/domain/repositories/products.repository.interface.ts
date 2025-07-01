@@ -1,3 +1,4 @@
+import { UpdateProductDto } from 'src/modules/products/dto/update-product.dto';
 import { Produto } from '../../infrastructure/database/entities';
 
 export interface IProductsRepository {
@@ -7,7 +8,7 @@ export interface IProductsRepository {
   findAllProducts(): Promise<Produto[]>;
   findProductById(id: number): Promise<Produto>;
   findBy(param: Partial<Produto>): Promise<Produto | null>;
-  updateTinyCodes(id: number, updateTinyDto: { tiny_mg: number; tiny_sp: number }): Promise<string>;
+  updateProduct(id: number, data: UpdateProductDto): Promise<string>;
   incrementStock(produto_id: number, quantidade: number): Promise<void>;
   findProductByPartialCode(partialCode: string): Promise<Produto[] | undefined>;
   findByEan(ean: number): Promise<Produto[] | null>;

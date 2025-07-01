@@ -38,11 +38,11 @@ export class ProductsController {
   }
 
   @ApiOperation({ summary: 'Salvar códigos Tiny.' })
-  @Patch(':id/tiny-codes')
-  async updateTinyCodes(
+  @Patch(':id/updateProduct')
+  async updateProduct(
     @Param('id') id: number, 
     @Body() updateTinyDto: { tiny_mg: number; tiny_sp: number }) {
-      const resultMessage = await this.productsService.updateTinyCodes(id, updateTinyDto);
+      const resultMessage = await this.productsService.updateProduct(id, updateTinyDto);
       return { message: resultMessage };
   }
 

@@ -6,6 +6,7 @@ import { CategoriaProduto, Fornecedor, Produto } from '../../../infrastructure/d
 import { ProdutoAPIResponse } from '../dto/products.dto';
 import { IProductsRepository } from '../../../domain/repositories';
 import * as fs from 'fs';
+import { UpdateProductDto } from '../dto/update-product.dto';
 
 @Injectable()
 export class ProductsService implements IProductsRepository {
@@ -259,8 +260,8 @@ export class ProductsService implements IProductsRepository {
       return produtos
   }  
 
-  async updateTinyCodes(id: number, updateTinyDto: { tiny_mg: number; tiny_sp: number }): Promise<string> {
-    await this.produtoRepository.update(id, updateTinyDto);
+  async updateProduct(id: number, data: UpdateProductDto ): Promise<string> {
+    await this.produtoRepository.update(id, data);
     return 'Produtos atualizados com Sucesso!';
   }
 

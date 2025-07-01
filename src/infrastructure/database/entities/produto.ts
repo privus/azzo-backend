@@ -74,4 +74,13 @@ export class Produto {
   @OneToOne(() => Produto, { nullable: true })
   @JoinColumn({ name: 'unidade_id' })
   unidade: Produto;  
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  altura: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  largura: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  comprimento: number;
 }
