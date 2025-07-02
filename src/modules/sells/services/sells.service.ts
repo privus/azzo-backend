@@ -259,6 +259,7 @@ export class SellsService implements ISellsRepository {
             existingSell.valor_final = Number(sell.amount_final);
             existingSell.desconto = sell.discount_total || 0
             existingSell.valor_parcela = Number(sell.installment_value)
+            existingSell.forma_pagamento = sell.payment_term_text || '';
             cliente.valor_ultima_compra = Number(sell.amount_final);
 
             const paymentTerms = sell.payment_term_text ? sell.payment_term_text.match(/\d+/g) : null;

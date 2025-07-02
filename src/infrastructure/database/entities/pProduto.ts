@@ -4,7 +4,7 @@ import { PItensVenda } from '.';
 @Entity('p_produtos')
 export class PProduto {
   @PrimaryGeneratedColumn()
-  id: number;
+  produto_id: number;
 
   @Column({ type: 'varchar', length: 255, nullable: false })
   nome: string;

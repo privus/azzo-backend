@@ -63,7 +63,7 @@ export class PSellsService {
 
         if (!produto) {
           produto = this.produtoRepository.create({
-            id: prod.produto_id,
+            produto_id: prod.produto_id,
             nome: prod.nome_produto,
             preco: prod.preco_unitario,
             codigo: prod.cod_produto,
@@ -216,6 +216,22 @@ export class PSellsService {
         'itensVenda.produto',
         'vendedor',
       ],      
+    });
+  }
+
+  getSellById(id: number) {
+    return this.vendaRepository.findOne({
+      where: { venda_id: id },
+      relations: [
+        'cliente',
+        'forma_pagamento',
+        'ecommerce',
+        'status_venda',
+        'status_pagamento',
+        'itensVenda',
+        'itensVenda.produto',
+        'vendedor',
+      ],
     });
   }
 }

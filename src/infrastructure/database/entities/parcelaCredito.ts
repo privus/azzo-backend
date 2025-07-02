@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { Account, StatusPagamento, Venda } from '.';
+import { Account, CategoriaCredito, StatusPagamento, Venda } from '.';
 
 @Entity('parcela_credito')
 export class ParcelaCredito {
@@ -38,6 +38,10 @@ export class ParcelaCredito {
 
   @Column({ type: 'varchar', length: 180, nullable: true })
   atualizado_por: string;
+
+  @ManyToOne(() => CategoriaCredito, (categoria) => categoria.parcelacredito)
+  @JoinColumn({ name: 'categoria_id' })
+  categoria: CategoriaCredito;
 
   @ManyToOne(() => StatusPagamento)
   @JoinColumn({ name: 'status_pagamento_id' })
