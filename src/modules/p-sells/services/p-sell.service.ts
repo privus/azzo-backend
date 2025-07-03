@@ -37,7 +37,7 @@ export class PSellsService {
     @InjectRepository(PParcelaCredito) private readonly parcelaRepository: Repository<PParcelaCredito>,
   ) {}
 
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Cron(CronExpression.EVERY_3_HOURS)
   async createSells() {
     const orders = await this.pSellsRepository.find();
     const statusPago = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 2 } });
