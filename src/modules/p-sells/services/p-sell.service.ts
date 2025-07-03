@@ -37,7 +37,7 @@ export class PSellsService {
     @InjectRepository(PParcelaCredito) private readonly parcelaRepository: Repository<PParcelaCredito>,
   ) {}
 
-  @Cron(CronExpression.EVERY_3_HOURS)
+  @Cron(CronExpression.EVERY_5_MINUTES)
   async createSells() {
     const orders = await this.pSellsRepository.find();
     const statusPago = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 2 } });
@@ -121,7 +121,7 @@ export class PSellsService {
         }
       }
 
-      const status_pagamento = order.total_pedido === 0 ? statusPago : (order.forma_pagamento === 'Outro' ? statusPendente : statusPago);
+      const status_pagamento = +order.total_pedido === 0 ? statusPago : (order.forma_pagamento === 'Outro' ? statusPendente : statusPago);
 
       let vendaExistente = await this.vendaRepository.findOne({
         where: { venda_id: order.p_venda_id },
