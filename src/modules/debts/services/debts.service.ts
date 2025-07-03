@@ -349,11 +349,11 @@ export class DebtsService {
   }   
   
   async performanceDebtsPeriods(
-    conpany_id: number,
     fromDate1: string,
     toDate1: string,
     fromDate2: string,
-    toDate2: string
+    toDate2: string,
+    conpany_id: number,
   ): Promise<DebtsComparisonReport> {
     const debitosPeriodo1 = await this.getDebtsBetweenDates(conpany_id, fromDate1, toDate1);
     const debitosPeriodo2 = await this.getDebtsBetweenDates(conpany_id, fromDate2, toDate2);
