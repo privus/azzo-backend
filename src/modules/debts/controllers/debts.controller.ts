@@ -29,9 +29,9 @@ export class DebtsController {
   }
 
   @ApiOperation({ summary: 'Relatorio de despesas do mês atual com percetual' })
-  @Get('debtsReport')
-  async getDebtsComparison(@Query('fromDate1') fromDate1: string, @Query('toDate1') toDate1: string, @Query('fromDate2') fromDate2: string, @Query('toDate2') toDate2: string) {
-    return this.debtsService.performanceDebtsPeriods(fromDate1, toDate1, fromDate2, toDate2);
+  @Get('debtsReport:id')
+  async getDebtsComparison(@Param('id') id: number, @Query('fromDate1') fromDate1: string, @Query('toDate1') toDate1: string, @Query('fromDate2') fromDate2: string, @Query('toDate2') toDate2: string) {
+    return this.debtsService.performanceDebtsPeriods(id, fromDate1, toDate1, fromDate2, toDate2);
   }
 
   @ApiOperation({ summary: 'Obter todas as categorias' })

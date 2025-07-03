@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
-import { PEcommerce, PCliente, PFormaPagamento, PParcelaCredito, PItensVenda, StatusPagamento, PVendedor } from './';
+import { PEcommerce, PCliente, PFormaPagamento, PParcelaCredito, PItensVenda, StatusPagamento, PVendedor, Account } from './';
 import { PStatusVenda } from './pStatusVenda';
 
 
@@ -80,7 +80,6 @@ export class PVenda {
   @OneToMany(() => PItensVenda, (item) => item.venda, { cascade: true, onDelete: 'CASCADE' })
   itensVenda: PItensVenda[];  
 
-  // Esta entidade não será preenchida de imediato
   @OneToMany(() => PParcelaCredito, (parcela) => parcela.venda, { cascade: true, onDelete: 'CASCADE' })
   parcela_credito?: PParcelaCredito[];  
 
@@ -95,4 +94,8 @@ export class PVenda {
   @ManyToOne(() => PVendedor)
   @JoinColumn({ name: 'vendedor_id' })
   vendedor: PVendedor;
+
+  @ManyToOne(() => Account)
+  @JoinColumn({ name: 'account_id' })
+  account: Account;
 }
