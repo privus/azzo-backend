@@ -234,7 +234,8 @@ export class PSellsService {
         'itensVenda',
         'itensVenda.produto',
         'vendedor',
-        'parcela_credito.status_pagamento',        
+        'parcela_credito.status_pagamento',
+        'parcela_credito.account',        
       ],
     });
   }
