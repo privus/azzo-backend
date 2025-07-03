@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsInt, IsArray, ArrayNotEmpty, ArrayMinSize, IsPositive, IsDefined, Length } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsArray, ArrayNotEmpty, Length } from 'class-validator';
 
 export class RomaneioDto {
   /**

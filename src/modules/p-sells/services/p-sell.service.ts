@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MoreThanOrEqual, Repository } from 'typeorm';
+import { In, MoreThanOrEqual, Repository } from 'typeorm';
 import {
   PSell,
   PVenda,
@@ -14,8 +14,10 @@ import {
   PItensVenda,
   PStatusCliente,
   PVendedor,
+  PParcelaCredito,
 } from '../../../infrastructure/database/entities';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { InstallmentsDto, UpdateSellDto } from '../dto';
 
 @Injectable()
 export class PSellsService {
@@ -32,6 +34,7 @@ export class PSellsService {
     @InjectRepository(PItensVenda) private readonly itensVendaRepository: Repository<PItensVenda>,
     @InjectRepository(PStatusCliente) private readonly statusClienteRepository: Repository<PStatusCliente>,
     @InjectRepository(PVendedor) private readonly vendedorRepository: Repository<PVendedor>,
+    @InjectRepository(PParcelaCredito) private readonly parcelaRepository: Repository<PParcelaCredito>,
   ) {}
 
   @Cron(CronExpression.EVERY_3_HOURS)
@@ -231,7 +234,54 @@ export class PSellsService {
         'itensVenda',
         'itensVenda.produto',
         'vendedor',
+        'parcela_credito.status_pagamento',        
       ],
     });
+  }
+
+  async generateInstallments(venda_id: number, installments: InstallmentsDto[]) {
+    // Opcional: Remover parcelas antigas dessa venda antes de criar novas
+    await this.parcelaRepository.delete({ venda: { venda_id } });
+    const statusPago = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 2 } }); 
+    const statusPendente = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 1 } });
+
+    const saved = [];
+    for (const par of installments) {
+      const status_pagamento = par.data_pagamento ? statusPago : statusPendente;
+      const parcela = this.parcelaRepository.create({
+        venda: { venda_id },
+        valor: par.valor,
+        numero: par.numero,
+        data_vencimento: par.data_vencimento,
+        data_competencia: par.data_competencia,
+        data_pagamento: par.data_pagamento || null,
+        status_pagamento,
+      });
+      saved.push(await this.parcelaRepository.save(parcela));
+    }
+    return saved;
+  }
+
+  findAllPaymentMethods() {
+    return this.formaPagamentoRepository.find({
+      order: { nome: 'ASC' },
+    });
+  }
+
+  async updateSell(updateSell: UpdateSellDto) {
+    let forma_pagamento = await this.formaPagamentoRepository.findOne({ where: { forma_pagamento_id: updateSell.forma_pagamento_id } });
+    if (!forma_pagamento && updateSell.forma_pagamento_nome) {
+      forma_pagamento = this.formaPagamentoRepository.create({ nome: updateSell.forma_pagamento_nome });
+      await this.formaPagamentoRepository.save(forma_pagamento);
+    }
+
+    return this.vendaRepository.update(
+      { venda_id: updateSell.codigo },
+      {
+        status_pagamento: updateSell.status_pagamento_id ? { status_pagamento_id: updateSell.status_pagamento_id } : undefined,
+        numero_nfe: updateSell.numero_nfe || null,
+        forma_pagamento
+      },
+    ).then(() => 'Venda atualizada com sucesso');
   }
 }

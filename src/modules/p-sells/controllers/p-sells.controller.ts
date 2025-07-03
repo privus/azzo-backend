@@ -1,6 +1,8 @@
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { Controller, Get, Query, Patch, Body, Param } from '@nestjs/common';
+import { Controller, Get, Query, Patch, Body, Param, Post } from '@nestjs/common';
 import { PSellsService } from '../services/p-sell.service';
+import { InstallmentsDto, UpdateSellDto } from '../dto';
+
 
 @ApiTags('pSells')
 @Controller('pSells')
@@ -13,10 +15,31 @@ export class PSellsController {
     return this.pSellsService.sellsByDate(fromDate);
   }
 
+  @ApiOperation({ summary: 'Todas as formas de pagamento' })
+  @Get('paymentMethods')
+  async getPaymentMethods() {
+    return this.pSellsService.findAllPaymentMethods();
+  }
+
   @ApiOperation({ summary: 'Sincroniza com a tabela pSell' })
   @Get('syncro')
   async relatationsSells() {
     return this.pSellsService.createSells();
+  }
+
+  @ApiOperation({ summary: 'Cria parcelas de uma venda' })
+  @Post('installments')
+  async createInstallments(
+    @Body() body: { venda_id: number; parcelas: InstallmentsDto[] }
+  ) {
+    return this.pSellsService.generateInstallments(body.venda_id, body.parcelas);
+  }
+
+  @ApiOperation({ summary: 'Atualizar status de uma venda' })
+  @Patch('status')
+  async updateSellStatus(@Body() updateStatusDto: UpdateSellDto) {
+    const resultMessage = await this.pSellsService.updateSell(updateStatusDto);
+    return { message: resultMessage };
   }
 
   @ApiOperation({ summary: 'Obter venda por ID' })
