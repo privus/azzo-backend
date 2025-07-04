@@ -3,7 +3,7 @@ export interface DebtsComparisonReport {
     totalPeriodo2: number;
     variacaoPercentual: number;
     direcao: 'aumento' | 'queda' | 'neutro'; 
-    DepesasMesAtual: number;
+    DespesasMesAtual: number;
     despesasDepartamento: {
       [departamento: string]: number;
     };

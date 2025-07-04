@@ -551,6 +551,7 @@ export class SellsService implements ISellsRepository {
     await this.updateStatus(codigo, status_venda_id);
     venda.numero_nfe = numero_nfe;
     venda.valor_frete = valor_frete;
+    venda.status_venda = novoStatus;
     await this.vendaRepository.save(venda);
 
     return `Status da venda ${venda.codigo} atualizado para ${novoStatus.nome}, Nf-e nº ${numero_nfe}.`;
@@ -565,7 +566,7 @@ export class SellsService implements ISellsRepository {
     venda.status_venda = novoStatus;
     await this.updateStatusSellentt(codigo, status_venda_id);
     await this.vendaRepository.save(venda);
-  }  
+  }
 
   async exportTiny(id: number): Promise<string> {
     try {

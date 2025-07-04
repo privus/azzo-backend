@@ -29,5 +29,4 @@ export class UpdateSellStatusDto {
   @IsOptional()
   @IsNumber({}, { message: 'O valor do frete deve ser um número.' })
   valor_frete?: number;
-
 }

@@ -389,7 +389,7 @@ export class DebtsService {
       totalPeriodo2: Number(totalPeriodo2.toFixed(2)),
       variacaoPercentual: Number(variacao.toFixed(2)),
       direcao,
-      DepesasMesAtual: Number(totalPeriodo2.toFixed(2)),
+      DespesasMesAtual: Number(totalPeriodo2.toFixed(2)),
       despesasDepartamento,
       despesasCategoria,
     };
