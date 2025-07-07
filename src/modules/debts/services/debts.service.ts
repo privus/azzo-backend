@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan, MoreThanOrEqual, Between, Raw } from 'typeorm';
+import { Repository, LessThan, MoreThanOrEqual, Between, Raw, In, Not } from 'typeorm';
 import { Account, CategoriaDebito, Company, Debito, Departamento, ParcelaDebito, RateioDebito, StatusPagamento } from '../../../infrastructure/database/entities';
 import { DebtsDto, UpdateInstalmentDto, DebtsComparisonReport, UpdateDebtStatusDto } from '../dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -190,7 +190,7 @@ export class DebtsService {
 
     const parcela = await this.parcelaRepository.findOne({
       where: { parcela_id },
-      relations: ['status_pagamento', 'debito'],
+      relations: ['status_pagamento', 'account', 'debito'],
     });
 
     if (!parcela) {
@@ -227,24 +227,45 @@ export class DebtsService {
         parcela.data_vencimento = novaData;
     }
 
-    if (parcela.debito && valor_total) {
+    if (parcela.debito && valor_total !== undefined) {
       const debito = await this.debtRepository.findOne({
         where: { debito_id: parcela.debito.debito_id },
+        relations: ['parcela_debito', 'company'],
       });
     
-      const debitoValorAtual = +(debito.valor_total ?? 0);
-      const debitoJurosAtual = +(debito.juros ?? 0);
+      const parcelas = debito.parcela_debito || [];
     
-      // Considera o valor de juros da parcela se existir
-      const jurosParcela = +(parcela.juros ?? 0);
+      let novo_valor_total = 0;
+      if (parcelas.length === 1) {
+        // Só existe uma parcela
+        novo_valor_total = valor_total;
+      } else {
+        // Mais de uma parcela: soma todas, mas substitua a que foi alterada
+        novo_valor_total = parcelas.reduce((acc, p) => {
+          if (p.parcela_id === parcela_id) {
+            return acc + valor_total;
+          }
+          return acc + Number(p.valor || 0);
+        }, 0);
+      }
     
-      // Atualiza o total com a diferença + juros
-      debito.valor_total = +(debitoValorAtual + diferenca + jurosParcela).toFixed(2);
-      debito.juros = +(debitoJurosAtual + jurosParcela).toFixed(2);
+      debito.valor_total = +novo_valor_total.toFixed(2);
     
       await this.debtRepository.save(debito);
-    }    
 
+                // ATUALIZA RATEIO_DEBITO CASO SEJA company_id = 1
+      if (debito.company.company_id === 1) {
+        // Busca todos os rateios deste debito
+        const rateio = await this.rateioDebitoRepository.findOne({
+          where: { debito: { debito_id: debito.debito_id } }
+        });
+        // Atualiza todos os valores de rateio para igualar ao novo valor_total do debito
+        rateio.valor = debito.valor_total;
+        await this.rateioDebitoRepository.save(rateio);
+
+      }
+    }
+    
     await this.parcelaRepository.save(parcela);
 
     return `Status da parcela ${parcela_id} atualizado para ${novoStatus.nome}.`;
@@ -467,5 +488,98 @@ export class DebtsService {
       }
     }
   } 
-  
+
+
+  async balanceDebtsPrivus(): Promise<Record<string, number>> {
+    // IDs dos grupos
+    const AzzoId = 2;
+    const personiziId = 4;
+    const grupoId = 1;
+
+    // Passo 1: buscar débitos onde o pagador (account) é diferente do dono do débito (company)
+    // e só débitos que pertencem ao grupo
+    const debtsAzzoPayingForPerson = await this.debtRepository.find({
+      relations: [
+        'company',
+        'account',
+        'account.company',
+        'parcela_debito.account.company',
+      ],
+      where: {
+        company: { company_id: personiziId },
+        account: { 
+          company: { 
+            company_id: Not(personiziId)
+          } 
+        },
+      },
+    });
+
+    const debtsPersonPayingForAzzo = await this.debtRepository.find({
+      relations: [
+        'company',
+        'account',
+        'account.company',
+        'parcela_debito.account.company',
+      ],
+      where: {
+        company: { company_id: AzzoId },
+        account: { 
+          company: { 
+            company_id: Not(AzzoId)
+          } 
+        },
+      },
+    });
+
+    // Passo 2: para cada débito, encontrar quem está pagando (empresa do account)
+    // e cruzar com o rateioDebito
+    const relatorio: Record<string, number> = {};
+
+    const totalAzzoPagouPersonizi = debtsAzzoPayingForPerson.reduce(
+      (acc, debito) => acc + Number(debito.valor_total || 0), 0
+    );
+    relatorio['Azzo pagou para Personizi'] = Number(totalAzzoPagouPersonizi.toFixed(2));
+
+    const totalPersoniziPagouAzzo = debtsPersonPayingForAzzo.reduce(
+      (acc, debito) => acc + Number(debito.valor_total || 0), 0
+    );
+    relatorio['Personizi pagou para Azzo'] = Number(totalPersoniziPagouAzzo.toFixed(2));
+ // ----------- 3. Azzo deve ao Grupo (pelo rateio) -----------
+    const rateiosAzzoGrupo = await this.rateioDebitoRepository.find({
+      relations: [
+        'debito',
+        'debito.company',
+        'paying_company',
+      ],
+      where: {
+        paying_company: { company_id: AzzoId },
+        debito: { company: { company_id: grupoId } },
+      },
+    });
+
+    relatorio['Azzo deve ao Grupo'] = rateiosAzzoGrupo.reduce(
+      (acc, rateio) => acc + Number(rateio.valor || 0), 0
+    );
+
+    // ----------- 4. Personizi deve ao Grupo (pelo rateio) -----------
+    const rateiosPersoniziGrupo = await this.rateioDebitoRepository.find({
+      relations: [
+        'debito',
+        'debito.company',
+        'paying_company',
+      ],
+      where: {
+        paying_company: { company_id: personiziId },
+        debito: { company: { company_id: grupoId } },
+      },
+    });
+
+    relatorio['Personizi deve ao Grupo'] = rateiosPersoniziGrupo.reduce(
+      (acc, rateio) => acc + Number(rateio.valor || 0), 0
+    );
+
+    return relatorio;
+  }
+
 }

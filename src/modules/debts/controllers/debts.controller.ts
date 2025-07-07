@@ -34,6 +34,11 @@ export class DebtsController {
     return this.debtsService.performanceDebtsPeriods(fromDate1, toDate1, fromDate2, toDate2, company);
   }
 
+  @Get('balance')
+  async getDebtsBalance() {
+    return this.debtsService.balanceDebtsPrivus()
+  }
+
   @ApiOperation({ summary: 'Obter todas as categorias' })
   @Get('categories')
   async getAllCategories() {
