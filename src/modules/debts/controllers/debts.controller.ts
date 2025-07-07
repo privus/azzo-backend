@@ -39,6 +39,11 @@ export class DebtsController {
     return this.debtsService.balanceDebtsPrivus()
   }
 
+  @Get('associete')
+  async associeteParcelDebts() {
+    return this.debtsService.associeteParcelaToAccount();
+  }
+
   @ApiOperation({ summary: 'Obter todas as categorias' })
   @Get('categories')
   async getAllCategories() {

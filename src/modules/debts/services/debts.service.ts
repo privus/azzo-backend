@@ -616,4 +616,23 @@ export class DebtsService {
 
   }
 
+  associeteParcelaToAccount(): Promise<void> {
+    const parcelas = this.parcelaRepository.find({
+      where: { account: null },
+      relations: ['debito', 'debito.account'],
+    });
+
+    return parcelas.then(async (parcelas) => {
+      for (const parcela of parcelas) {
+        if (parcela.debito.account) {
+          parcela.account = parcela.debito.account;
+          await this.parcelaRepository.save(parcela);
+          console.log(`Parcela ${parcela.parcela_id} associada à conta ${parcela.account.nome}`);
+        } else {
+          console.warn(`Débito ou conta não encontrada para a parcela ${parcela.parcela_id}`);
+        }
+      }
+    });
+  }
+
 }
