@@ -490,131 +490,126 @@ export class DebtsService {
   } 
 
 
-  async balanceDebtsPrivus(): Promise<Record<string, number>> {
-    // IDs dos grupos
+  async balanceDebtsPrivus(fromDate: string, toDate: string): Promise<Record<string, number>> {
     const AzzoId = 2;
     const personiziId = 4;
     const grupoId = 1;
-
-    // Passo 1: buscar débitos onde o pagador (account) é diferente do dono do débito (company)
-    // e só débitos que pertencem ao grupo
-    const debtsAzzoPayingForPerson = await this.debtRepository.find({
-      relations: [
-        'company',
-        'account',
-        'account.company',
-        'parcela_debito.account.company',
-      ],
-      where: {
-        company: { company_id: personiziId },
-        account: { 
-          company: { 
-            company_id: Not(personiziId)
-          } 
-        },
-      },
-    });
-
-    const debtsPersonPayingForAzzo = await this.debtRepository.find({
-      relations: [
-        'company',
-        'account',
-        'account.company',
-        'parcela_debito.account.company',
-      ],
-      where: {
-        company: { company_id: AzzoId },
-        account: { 
-          company: { 
-            company_id: Not(AzzoId)
-          } 
-        },
-      },
-    });
-
     const relatorio: Record<string, number> = {};
 
-    const totalAzzoPagouPersonizi = debtsAzzoPayingForPerson.reduce(
-      (acc, debito) => acc + Number(debito.valor_total || 0), 0
+    const to =  new Date(toDate);
+    const from = new Date(fromDate);
+  
+    // 1. Azzo pagou para Personizi (parcelas pagas dentro do período)
+    const parcelasAzzoPagouPersonizi = await this.parcelaRepository
+      .createQueryBuilder('parcela_debito')
+      .leftJoinAndSelect('parcela_debito.debito', 'debito')
+      .leftJoinAndSelect('debito.company', 'debitoCompany')
+      .leftJoinAndSelect('parcela_debito.account', 'account')
+      .leftJoinAndSelect('account.company', 'accountCompany')
+      .where('accountCompany.company_id = :azzoId', { azzoId: AzzoId })
+      .andWhere('debitoCompany.company_id = :personiziId', { personiziId })
+      .andWhere('parcela_debito.data_pagamento IS NOT NULL')
+      .andWhere('parcela_debito.data_pagamento BETWEEN :from AND :to', { from: fromDate, to: toDate })
+      .getMany();
+  
+    relatorio['Azzo pagou para Personizi'] = parcelasAzzoPagouPersonizi.reduce(
+      (acc, parcela) => acc + Number(parcela.valor || 0), 0
     );
-    relatorio['Azzo pagou para Personizi'] = Number(totalAzzoPagouPersonizi.toFixed(2));
-
-    const totalPersoniziPagouAzzo = debtsPersonPayingForAzzo.reduce(
-      (acc, debito) => acc + Number(debito.valor_total || 0), 0
+  
+    // 2. Personizi pagou para Azzo (parcelas pagas dentro do período)
+    const parcelasPersoniziPagouAzzo = await this.parcelaRepository
+      .createQueryBuilder('parcela_debito')
+      .leftJoinAndSelect('parcela_debito.debito', 'debito')
+      .leftJoinAndSelect('debito.company', 'debitoCompany')
+      .leftJoinAndSelect('parcela_debito.account', 'account')
+      .leftJoinAndSelect('account.company', 'accountCompany')
+      .where('accountCompany.company_id = :personiziId', { personiziId })
+      .andWhere('debitoCompany.company_id = :azzoId', { azzoId: AzzoId })
+      .andWhere('parcela_debito.data_pagamento IS NOT NULL')
+      .andWhere('parcela_debito.data_pagamento BETWEEN :from AND :to', { from: fromDate, to: toDate })
+      .getMany();
+  
+    relatorio['Personizi pagou para Azzo'] = parcelasPersoniziPagouAzzo.reduce(
+      (acc, parcela) => acc + Number(parcela.valor || 0), 0
     );
-    relatorio['Personizi pagou para Azzo'] = Number(totalPersoniziPagouAzzo.toFixed(2));
-
-
-    const rateiosAzzoPg = await this.rateioDebitoRepository.find({
-      relations: [
-        'debito.company',
-        'paying_company',
-        'debito.parcela_debito.account.company',
-      ],
-      where: {
-        paying_company: { company_id: AzzoId },
-
-      },
-    });
-
+  
+    // 3. Rateios pagos por Azzo para o Grupo dentro do período
+    const rateiosAzzoPg = await this.rateioDebitoRepository
+      .createQueryBuilder('rateio')
+      .leftJoinAndSelect('rateio.debito', 'debito')
+      .leftJoinAndSelect('debito.company', 'debitoCompany')
+      .leftJoinAndSelect('debito.parcela_debito', 'parcela_debito')
+      .leftJoinAndSelect('parcela_debito.account', 'parcelaAccount')
+      .leftJoinAndSelect('parcelaAccount.company', 'parcelaAccountCompany')
+      .leftJoinAndSelect('rateio.paying_company', 'paying_company')
+      .where('paying_company.company_id = :azzoId', { azzoId: AzzoId })
+      .andWhere('debito.company_id = :grupoId', { grupoId })
+      .andWhere('debito.data_criacao BETWEEN :from AND :to', { from: fromDate, to: toDate })
+      .getMany();
+  
     relatorio['Azzo pagou para Grupo'] = rateiosAzzoPg.reduce(
       (acc, rateio) => acc + Number(rateio.valor || 0), 0
     );
-
-    // ----------- 4. Personizi deve ao Grupo (pelo rateio) -----------
-    const rateiosPersoniziPg = await this.rateioDebitoRepository.find({
-      relations: [
-        'debito.company',
-        'paying_company',
-        'debito.parcela_debito.account.company',
-      ],
-      where: {
-        paying_company: { company_id: personiziId },
-      },
-    });
-
+  
+    // 4. Rateios pagos por Personizi para o Grupo dentro do período
+    const rateiosPersoniziPg = await this.rateioDebitoRepository
+      .createQueryBuilder('rateio')
+      .leftJoinAndSelect('rateio.debito', 'debito')
+      .leftJoinAndSelect('debito.company', 'debitoCompany')
+      .leftJoinAndSelect('debito.parcela_debito', 'parcela_debito')
+      .leftJoinAndSelect('parcela_debito.account', 'parcelaAccount')
+      .leftJoinAndSelect('parcelaAccount.company', 'parcelaAccountCompany')
+      .leftJoinAndSelect('rateio.paying_company', 'paying_company')
+      .where('paying_company.company_id = :personiziId', { personiziId })
+      .andWhere('debito.company_id = :grupoId', { grupoId })
+      .andWhere('debito.data_criacao BETWEEN :from AND :to', { from: fromDate, to: toDate })
+      .getMany();
+  
     relatorio['Personizi pagou para Grupo'] = rateiosPersoniziPg.reduce(
       (acc, rateio) => acc + Number(rateio.valor || 0), 0
     );
-
-    // ----------- Campo extra: "Quem está devendo para o grupo" -----------
-  let totalAzzoDeveGrupo = 0;
-  let totalPersoniziDeveGrupo = 0;
-
-  // Azzo
+  
+    // -- Quem está devendo para o grupo (saldo de rateio não quitado no período) --
+  
+    let totalAzzoDeveGrupo = 0;
+    let totalPersoniziDeveGrupo = 0;
+  
+    // Azzo
     for (const rateio of rateiosAzzoPg) {
-      // Total pago (parcelas pagas por Azzo)
       const totalPago = (rateio.debito.parcela_debito || [])
         .filter(parcela =>
           parcela.data_pagamento &&
-          parcela.account?.company?.company_id &&
-          parcela.account?.company?.company_id === AzzoId
+          parcela.account?.company?.company_id === AzzoId &&
+          parcela.data_pagamento >= from &&
+          parcela.data_pagamento <= to
         )
         .reduce((acc, parcela) => acc + Number(parcela.valor || 0), 0);
-
+  
       const faltaPagar = Math.max(Number(rateio.valor) - totalPago, 0);
       totalAzzoDeveGrupo += faltaPagar;
     }
-
+  
     // Personizi
     for (const rateio of rateiosPersoniziPg) {
       const totalPago = (rateio.debito.parcela_debito || [])
         .filter(parcela =>
           parcela.data_pagamento &&
-          parcela.account?.company?.company_id === personiziId
+          parcela.account?.company?.company_id === personiziId &&
+          parcela.data_pagamento >= from &&
+          parcela.data_pagamento <= to
         )
         .reduce((acc, parcela) => acc + Number(parcela.valor || 0), 0);
-
+  
       const faltaPagar = Math.max(Number(rateio.valor) - totalPago, 0);
       totalPersoniziDeveGrupo += faltaPagar;
     }
-
+  
     relatorio['Azzo está devendo para Grupo'] = Number(totalAzzoDeveGrupo.toFixed(2));
     relatorio['Personizi está devendo para Grupo'] = Number(totalPersoniziDeveGrupo.toFixed(2));
-
+  
     return relatorio;
-
   }
+  
 
   associeteParcelaToAccount(): Promise<void> {
     const parcelas = this.parcelaRepository.find({

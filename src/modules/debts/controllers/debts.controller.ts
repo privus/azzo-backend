@@ -35,8 +35,8 @@ export class DebtsController {
   }
 
   @Get('balance')
-  async getDebtsBalance() {
-    return this.debtsService.balanceDebtsPrivus()
+  async getDebtsBalance(@Query('fromDate') fromDate: string, @Query('toDate') toDate: string,) {
+    return this.debtsService.balanceDebtsPrivus(fromDate, toDate);
   }
 
   @Get('associete')
