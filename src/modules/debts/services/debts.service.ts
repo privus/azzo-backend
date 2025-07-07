@@ -532,8 +532,6 @@ export class DebtsService {
       },
     });
 
-    // Passo 2: para cada débito, encontrar quem está pagando (empresa do account)
-    // e cruzar com o rateioDebito
     const relatorio: Record<string, number> = {};
 
     const totalAzzoPagouPersonizi = debtsAzzoPayingForPerson.reduce(
@@ -545,41 +543,77 @@ export class DebtsService {
       (acc, debito) => acc + Number(debito.valor_total || 0), 0
     );
     relatorio['Personizi pagou para Azzo'] = Number(totalPersoniziPagouAzzo.toFixed(2));
- // ----------- 3. Azzo deve ao Grupo (pelo rateio) -----------
-    const rateiosAzzoGrupo = await this.rateioDebitoRepository.find({
+
+
+    const rateiosAzzoPg = await this.rateioDebitoRepository.find({
       relations: [
-        'debito',
         'debito.company',
         'paying_company',
+        'debito.parcela_debito.account.company',
       ],
       where: {
         paying_company: { company_id: AzzoId },
-        debito: { company: { company_id: grupoId } },
+
       },
     });
 
-    relatorio['Azzo deve ao Grupo'] = rateiosAzzoGrupo.reduce(
+    relatorio['Azzo pagou para Grupo'] = rateiosAzzoPg.reduce(
       (acc, rateio) => acc + Number(rateio.valor || 0), 0
     );
 
     // ----------- 4. Personizi deve ao Grupo (pelo rateio) -----------
-    const rateiosPersoniziGrupo = await this.rateioDebitoRepository.find({
+    const rateiosPersoniziPg = await this.rateioDebitoRepository.find({
       relations: [
-        'debito',
         'debito.company',
         'paying_company',
+        'debito.parcela_debito.account.company',
       ],
       where: {
         paying_company: { company_id: personiziId },
-        debito: { company: { company_id: grupoId } },
       },
     });
 
-    relatorio['Personizi deve ao Grupo'] = rateiosPersoniziGrupo.reduce(
+    relatorio['Personizi pagou para Grupo'] = rateiosPersoniziPg.reduce(
       (acc, rateio) => acc + Number(rateio.valor || 0), 0
     );
 
+    // ----------- Campo extra: "Quem está devendo para o grupo" -----------
+  let totalAzzoDeveGrupo = 0;
+  let totalPersoniziDeveGrupo = 0;
+
+  // Azzo
+    for (const rateio of rateiosAzzoPg) {
+      // Total pago (parcelas pagas por Azzo)
+      const totalPago = (rateio.debito.parcela_debito || [])
+        .filter(parcela =>
+          parcela.data_pagamento &&
+          parcela.account?.company?.company_id &&
+          parcela.account?.company?.company_id === AzzoId
+        )
+        .reduce((acc, parcela) => acc + Number(parcela.valor || 0), 0);
+
+      const faltaPagar = Math.max(Number(rateio.valor) - totalPago, 0);
+      totalAzzoDeveGrupo += faltaPagar;
+    }
+
+    // Personizi
+    for (const rateio of rateiosPersoniziPg) {
+      const totalPago = (rateio.debito.parcela_debito || [])
+        .filter(parcela =>
+          parcela.data_pagamento &&
+          parcela.account?.company?.company_id === personiziId
+        )
+        .reduce((acc, parcela) => acc + Number(parcela.valor || 0), 0);
+
+      const faltaPagar = Math.max(Number(rateio.valor) - totalPago, 0);
+      totalPersoniziDeveGrupo += faltaPagar;
+    }
+
+    relatorio['Azzo está devendo para Grupo'] = Number(totalAzzoDeveGrupo.toFixed(2));
+    relatorio['Personizi está devendo para Grupo'] = Number(totalPersoniziDeveGrupo.toFixed(2));
+
     return relatorio;
+
   }
 
 }
