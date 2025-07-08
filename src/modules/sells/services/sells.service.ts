@@ -1048,6 +1048,7 @@ export class SellsService implements ISellsRepository {
     fromDate2: string,
     toDate2: string
   ): Promise<SalesComparisonReport> {
+    // Busca vendas dos períodos comparativos
     const vendasPeriodo1 = await this.sellsBetweenDates(fromDate1, toDate1);
     const vendasPeriodo2 = await this.sellsBetweenDates(fromDate2, toDate2);
   
@@ -1066,21 +1067,16 @@ export class SellsService implements ISellsRepository {
     if (variacao > 0) direcao = 'aumento';
     else if (variacao < 0) direcao = 'queda';
   
-    // === Dados do mês atual ===
-    const agora = new Date();
-
-    const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString().slice(0, 10);
-    const hj = agora.toISOString().slice(0, 10);
-    console.log('Inicio do mês ====>', inicioMes);
-  
-    const relatorioMesAtual = await this.reportBrandSalesBySeller(inicioMes, hj);
-    const azzoData = relatorioMesAtual["Azzo"];
-    console.log('Azzo Data ====>', azzoData);
-    const faturamentoMesAtual = azzoData.totalFaturado;
+    // Relatório de marcas usando O PERÍODO FILTRADO pelo usuário (não mais fixo no mês atual)
+    const relatorioPeriodoSelecionado = await this.reportBrandSalesBySeller(fromDate2, toDate2);
+    const azzoData = relatorioPeriodoSelecionado["Azzo"] || { totalFaturado: 0, marcas: {} };
+    const faturamentoMesAtual = azzoData.totalFaturado || 0;
   
     const faturamentoPorMarcaMesAtual: { [marca: string]: number } = {};
-    for (const marca in azzoData.marcas) {
-      faturamentoPorMarcaMesAtual[marca] = Number(azzoData.marcas[marca].valor.toFixed(2));
+    if (azzoData.marcas) {
+      for (const marca in azzoData.marcas) {
+        faturamentoPorMarcaMesAtual[marca] = Number(azzoData.marcas[marca].valor?.toFixed(2) || 0);
+      }
     }
   
     return {
@@ -1092,6 +1088,7 @@ export class SellsService implements ISellsRepository {
       faturamentoPorMarcaMesAtual
     };
   }
+  
 
   @Cron(CronExpression.EVERY_DAY_AT_9AM)
   async syncroTinyInvoiceNf(): Promise<string> {
