@@ -80,6 +80,12 @@ export class SellsController {
     return this.sellsService.performanceSalesPeriods(fromDate1, toDate1, fromDate2, toDate2);
   }
 
+  @ApiOperation({ summary: 'Dados vendas por período' })
+  @Get('customersPureli')
+  async getCustomersPureli() {
+    return this.sellsService.customersPureli();
+  }
+
   @ApiOperation({ summary: 'Atualizar status de uma venda' })
   @Patch('status')
   async updateSellStatus(@Body() updateStatusDto: UpdateSellStatusDto) {

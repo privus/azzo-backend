@@ -1488,4 +1488,58 @@ export class SellsService implements ISellsRepository {
         },
     });
   }
+
+    async customersPureli(): Promise<
+    Array<{ 
+      codigo: number;
+      nome: string;
+      cidade: string;
+      regiao: string;
+      quantidadeVendas: number;
+    }>
+  > {
+    // Busca todas as vendas que têm itens do fornecedor_id 7, já populando as relações necessárias
+    const vendas = await this.vendaRepository.find({
+      relations: [
+        'cliente.cidade',
+        'cliente.regiao',
+        'itensVenda.produto.fornecedor'
+      ],
+    });
+
+    // Map para contabilizar por cliente
+    const clientesMap = new Map<number, {
+      codigo: number;
+      nome: string;
+      cidade: string;
+      regiao: string;
+      quantidadeVendas: number;
+    }>();
+
+    for (const venda of vendas) {
+      if (!venda.cliente || !venda.itensVenda) continue;
+      // Verifica se tem algum item desse fornecedor
+      const temFornecedor7 = venda.itensVenda.some(
+        item => item.produto?.fornecedor?.fornecedor_id === 7
+      );
+      if (!temFornecedor7) continue;
+
+      const codigo = venda.cliente.codigo;
+      if (!clientesMap.has(codigo)) {
+        clientesMap.set(codigo, {
+          codigo: codigo,
+          nome: venda.cliente.nome,
+          cidade: venda.cliente.cidade_string,
+          regiao: venda.cliente.regiao?.nome || '',
+          quantidadeVendas: 1
+        });
+      } else {
+        clientesMap.get(codigo)!.quantidadeVendas += 1;
+      }
+    }
+
+    // Retorna o resultado em array
+    return Array.from(clientesMap.values()).sort((a, b) => b.quantidadeVendas - a.quantidadeVendas);
+  }
+
 }

@@ -487,8 +487,7 @@ export class DebtsService {
         );
       }
     }
-  } 
-
+  }
 
   async balanceDebtsPrivus(fromDate: string, toDate: string): Promise<GrupoCompensacaoReport> {
     const azzoId = 2;
