@@ -12,7 +12,7 @@ export class Debito {
   @Column({ type: 'varchar', length: 180, nullable: true })
   nome: string;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   data_criacao: Date;
 
   @Column({ type: 'date', nullable: true, default: null })

@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan, MoreThanOrEqual, Between, Raw, In, Not } from 'typeorm';
+import { Repository, LessThan } from 'typeorm';
 import { Account, CategoriaDebito, Company, Debito, Departamento, ParcelaDebito, RateioDebito, StatusPagamento } from '../../../infrastructure/database/entities';
 import { DebtsDto, UpdateInstalmentDto, DebtsComparisonReport, UpdateDebtStatusDto, GrupoCompensacaoReport } from '../dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import * as fs from 'fs';
 
 @Injectable()
 export class DebtsService {
@@ -76,7 +77,6 @@ export class DebtsService {
       return this.parcelaRepository.create({
         numero: index + 1,
         valor: Number(debtDto.valor_total / debtDto.numero_parcelas),
-        data_criacao: new Date(),
         data_competencia: new Date(debtDto.data_competencia),
         data_vencimento: new Date(dataVencimento),
         status_pagamento: index === 0 && debtDto.data_pagamento ? statusPagamentoPago : statusPagamentoPendente,
@@ -604,6 +604,59 @@ export class DebtsService {
         }
       }
     });
+  }
+
+  async importDebitosFromJson(): Promise<string> {
+    const jsonFilePath = 'src/utils/debitos-melhor-envios.json';
+    const jsonString = fs.readFileSync(jsonFilePath, 'utf-8');
+    const debitos: any[] = JSON.parse(jsonString);
+  
+    for (const debitoDto of debitos) {
+      // Busca as relações necessárias (departamento, categoria, status, etc.)
+      const departamento = await this.departamentoRepository.findOne({ where: { departamento_id: debitoDto.departamento_id } });
+      const categoria = await this.categoriaDebitoRepository.findOne({ where: { categoria_id: debitoDto.categoria_id } });
+      const account = await this.accountRepository.findOne({ where: { account_id: debitoDto.account_id } });
+      const company = await this.companyRepository.findOne({ where: { company_id: debitoDto.company_id } });
+      const statusPagamento = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: debitoDto.status_pagamento_id } });
+      const criado_por = 'talita@personizi.com'
+      // Cria o débito
+      const debitoEntity = this.debtRepository.create({
+        nome: debitoDto.nome,
+        descricao: debitoDto.descricao,
+        valor_total: debitoDto.valor_total,
+        data_competencia: new Date(debitoDto.data_competencia),
+        data_pagamento: debitoDto.data_pagamento ? new Date(debitoDto.data_pagamento) : null,
+        numero_parcelas: debitoDto.numero_parcelas,
+        status_pagamento: statusPagamento,
+        departamento,
+        categoria,
+        tipo: debitoDto.tipo,
+        account,
+        company,
+        criado_por,
+        valor_parcela: debitoDto.valor_total / debitoDto.numero_parcelas,
+        juros: debitoDto.juros || 0,
+      });
+  
+      const savedDebito = await this.debtRepository.save(debitoEntity);
+  
+      // Cria as parcelas
+      for (let i = 0; i < debitoDto.numero_parcelas; i++) {
+        await this.parcelaRepository.save(this.parcelaRepository.create({
+          numero: i + 1,
+          valor: debitoDto.valor_total / debitoDto.numero_parcelas,
+          data_competencia: new Date(debitoDto.data_competencia),
+          data_vencimento: new Date(debitoDto.data_competencia),
+          status_pagamento: statusPagamento,
+          data_pagamento: debitoDto.data_pagamento ? new Date(debitoDto.data_pagamento) : null,
+          debito: savedDebito,
+          account,
+          juros: debitoDto.juros || 0,
+        }));
+      }
+    }
+  
+    return `Importação de ${debitos.length} débitos concluída com sucesso!`;
   }
 
 }

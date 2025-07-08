@@ -41,7 +41,7 @@ export class DebtsController {
 
   @Get('associete')
   async associeteParcelDebts() {
-    return this.debtsService.associeteParcelaToAccount();
+    return this.debtsService.importDebitosFromJson();
   }
 
   @ApiOperation({ summary: 'Obter todas as categorias' })
