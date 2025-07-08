@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan, MoreThanOrEqual, Between, Raw, In, Not } from 'typeorm';
 import { Account, CategoriaDebito, Company, Debito, Departamento, ParcelaDebito, RateioDebito, StatusPagamento } from '../../../infrastructure/database/entities';
-import { DebtsDto, UpdateInstalmentDto, DebtsComparisonReport, UpdateDebtStatusDto } from '../dto';
+import { DebtsDto, UpdateInstalmentDto, DebtsComparisonReport, UpdateDebtStatusDto, GrupoCompensacaoReport } from '../dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
@@ -490,14 +490,10 @@ export class DebtsService {
   } 
 
 
-  async balanceDebtsPrivus(fromDate: string, toDate: string): Promise<Record<string, number | string>> {
-    const AzzoId = 2;
+  async balanceDebtsPrivus(fromDate: string, toDate: string): Promise<GrupoCompensacaoReport> {
+    const azzoId = 2;
     const personiziId = 4;
     const grupoId = 1;
-    const relatorio: Record<string, number | string> = {};
-
-    const to =  new Date(toDate);
-    const from = new Date(fromDate);
   
     // 1. Azzo pagou para Personizi (parcelas pagas dentro do período)
     const parcelasAzzoPagouPersonizi = await this.parcelaRepository
@@ -506,14 +502,14 @@ export class DebtsService {
       .leftJoinAndSelect('debito.company', 'debitoCompany')
       .leftJoinAndSelect('parcela_debito.account', 'account')
       .leftJoinAndSelect('account.company', 'accountCompany')
-      .where('accountCompany.company_id = :azzoId', { azzoId: AzzoId })
+      .where('accountCompany.company_id = :azzoId', { azzoId })
       .andWhere('debitoCompany.company_id = :personiziId', { personiziId })
       .andWhere('parcela_debito.data_pagamento IS NOT NULL')
       .andWhere('parcela_debito.data_pagamento BETWEEN :from AND :to', { from: fromDate, to: toDate })
       .getMany();
   
-    relatorio['Azzo pagou para Personizi'] = parcelasAzzoPagouPersonizi.reduce(
-      (acc, parcela) => acc + Number(parcela.valor || 0), 0
+    const azzoPagouParaPersonizi = Number(
+      parcelasAzzoPagouPersonizi.reduce((acc, parcela) => acc + Number(parcela.valor || 0), 0).toFixed(2)
     );
   
     // 2. Personizi pagou para Azzo (parcelas pagas dentro do período)
@@ -524,53 +520,72 @@ export class DebtsService {
       .leftJoinAndSelect('parcela_debito.account', 'account')
       .leftJoinAndSelect('account.company', 'accountCompany')
       .where('accountCompany.company_id = :personiziId', { personiziId })
-      .andWhere('debitoCompany.company_id = :azzoId', { azzoId: AzzoId })
+      .andWhere('debitoCompany.company_id = :azzoId', { azzoId })
       .andWhere('parcela_debito.data_pagamento IS NOT NULL')
       .andWhere('parcela_debito.data_pagamento BETWEEN :from AND :to', { from: fromDate, to: toDate })
       .getMany();
   
-    relatorio['Personizi pagou para Azzo'] = parcelasPersoniziPagouAzzo.reduce(
-      (acc, parcela) => acc + Number(parcela.valor || 0), 0
+    const personiziPagouParaAzzo = Number(
+      parcelasPersoniziPagouAzzo.reduce((acc, parcela) => acc + Number(parcela.valor || 0), 0).toFixed(2)
     );
   
+    // 3. Total pago de despesas do grupo por Azzo e Personizi
     const parcelasPagasGrupo = await this.parcelaRepository
-    .createQueryBuilder('parcela_debito')
-    .leftJoinAndSelect('parcela_debito.debito', 'debito')
-    .leftJoinAndSelect('debito.company', 'debitoCompany')
-    .leftJoinAndSelect('parcela_debito.account', 'account')
-    .leftJoinAndSelect('account.company', 'accountCompany')
-    .where('debitoCompany.company_id = :grupoId', { grupoId })
-    .andWhere('parcela_debito.data_pagamento IS NOT NULL')
-    .andWhere('parcela_debito.data_pagamento BETWEEN :from AND :to', { from: fromDate, to: toDate })
-    .andWhere('accountCompany.company_id IN (:...ids)', { ids: [AzzoId, personiziId] })
-    .getMany();
-
-  // 2. Soma os pagamentos por empresa
-  let totalAzzo = 0;
-  let totalPersonizi = 0;
-
-  for (const parcela of parcelasPagasGrupo) {
-    const pagadorId = parcela.account?.company?.company_id;
-    if (pagadorId === AzzoId) totalAzzo += Number(parcela.valor || 0);
-    if (pagadorId === personiziId) totalPersonizi += Number(parcela.valor || 0);
-  }
-
-  relatorio['Total pago por Azzo (Grupo)'] = Number(totalAzzo.toFixed(2));
-  relatorio['Total pago por Personizi (Grupo)'] = Number(totalPersonizi.toFixed(2));
-
-  // 3. Calcula quem deve compensar quem
-  const diferenca = totalAzzo - totalPersonizi;
-  if (diferenca > 0) {
-    relatorio['Personizi deve compensar Azzo'] = Number((diferenca / 2).toFixed(2));
-  } else if (diferenca < 0) {
-    relatorio['Azzo deve compensar Personizi'] = Number((-diferenca / 2).toFixed(2));
-  } else {
-    relatorio['Situação'] = 'Pagamentos equilibrados';
-  }
-
-    return relatorio;
-  }
+      .createQueryBuilder('parcela_debito')
+      .leftJoinAndSelect('parcela_debito.debito', 'debito')
+      .leftJoinAndSelect('debito.company', 'debitoCompany')
+      .leftJoinAndSelect('parcela_debito.account', 'account')
+      .leftJoinAndSelect('account.company', 'accountCompany')
+      .where('debitoCompany.company_id = :grupoId', { grupoId })
+      .andWhere('parcela_debito.data_pagamento IS NOT NULL')
+      .andWhere('parcela_debito.data_pagamento BETWEEN :from AND :to', { from: fromDate, to: toDate })
+      .andWhere('accountCompany.company_id IN (:...ids)', { ids: [azzoId, personiziId] })
+      .getMany();
   
+    let totalPagoPorAzzoGrupo = 0;
+    let totalPagoPorPersoniziGrupo = 0;
+  
+    for (const parcela of parcelasPagasGrupo) {
+      const pagadorId = parcela.account?.company?.company_id;
+      if (pagadorId === azzoId) totalPagoPorAzzoGrupo += Number(parcela.valor || 0);
+      if (pagadorId === personiziId) totalPagoPorPersoniziGrupo += Number(parcela.valor || 0);
+    }
+  
+    totalPagoPorAzzoGrupo = Number(totalPagoPorAzzoGrupo.toFixed(2));
+    totalPagoPorPersoniziGrupo = Number(totalPagoPorPersoniziGrupo.toFixed(2));
+  
+    // 4. Compensação
+    const diferenca = totalPagoPorAzzoGrupo - totalPagoPorPersoniziGrupo;
+    let compensacao: GrupoCompensacaoReport['compensacao'];
+    if (diferenca > 0) {
+      compensacao = {
+        deve: 'Personizi',
+        valor: Number((diferenca / 2).toFixed(2)),
+        situacao: `Personizi deve compensar Azzo em R$ ${(diferenca / 2).toFixed(2)}`
+      };
+    } else if (diferenca < 0) {
+      compensacao = {
+        deve: 'Azzo',
+        valor: Number((-diferenca / 2).toFixed(2)),
+        situacao: `Azzo deve compensar Personizi em R$ ${(-diferenca / 2).toFixed(2)}`
+      };
+    } else {
+      compensacao = {
+        deve: null,
+        valor: 0,
+        situacao: 'Pagamentos equilibrados'
+      };
+    }
+  
+    // 5. Retorno estruturado
+    return {
+      azzoPagouParaPersonizi,
+      personiziPagouParaAzzo,
+      totalPagoPorAzzoGrupo,
+      totalPagoPorPersoniziGrupo,
+      compensacao
+    };
+  }
 
   associeteParcelaToAccount(): Promise<void> {
     const parcelas = this.parcelaRepository.find({
