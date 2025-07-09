@@ -77,6 +77,6 @@ export class Debito {
   @JoinColumn({ name: 'company_id' })
   company: Company;
 
-  @OneToMany(() => RateioDebito, (rateio) => rateio.debito)
+  @OneToMany(() => RateioDebito, (rateio) => rateio.debito, { cascade: true, onDelete: 'CASCADE' })
   rateio_debito: RateioDebito;
 }
