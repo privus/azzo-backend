@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { HttpModule } from '@nestjs/axios';
-import { Distribuidor, Estoque, Fornecedor, SaidaEstoque, TinyTokens } from '../../infrastructure/database/entities';
+import { Distribuidor, Estoque, Fornecedor, Produto, SaidaEstoque, TinyTokens } from '../../infrastructure/database/entities';
 import { StockService } from './services/stock.service';
 import { ProductsModule } from '../products/products.module';
 import { TinyTokenService } from '../sells/services/tiny-token.service';
@@ -10,7 +10,7 @@ import { StockController } from './controllers/stock.controller';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Estoque, TinyTokens, Fornecedor, Distribuidor, SaidaEstoque]),
+    TypeOrmModule.forFeature([Estoque, TinyTokens, Fornecedor, Distribuidor, SaidaEstoque, Produto]),
     HttpModule,
     ProductsModule,
     SellsModule,

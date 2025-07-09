@@ -431,6 +431,7 @@ export class SellsService implements ISellsRepository {
   
       await this.saidaRepository.save(saida);
     }
+    
   }
 
   async associatePairedSells(): Promise<void> {
@@ -1538,7 +1539,6 @@ export class SellsService implements ISellsRepository {
       }
     }
 
-    // Retorna o resultado em array
     return Array.from(clientesMap.values()).sort((a, b) => b.quantidadeVendas - a.quantidadeVendas);
   }
 

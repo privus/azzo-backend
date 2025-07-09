@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { XMLParser } from 'fast-xml-parser';
 import * as fs from 'fs';
 import { StockImportResponse, StockLiquid } from '../dto';
+import { StockOutDto } from '../dto/stock-out.dto';
 
 @Injectable()
 export class StockService implements IStockRepository {
@@ -19,6 +20,7 @@ export class StockService implements IStockRepository {
     @Inject('IProductsRepository') private readonly productRepository: IProductsRepository,
     @Inject('ISellsRepository') private readonly sellRepository: ISellsRepository,
     @InjectRepository(SaidaEstoque) private readonly saidaRepository: Repository<SaidaEstoque>,
+    @InjectRepository(Produto) private readonly produtoRepository: Repository<Produto>,
   ) {}
 
   async getStock(): Promise<Estoque[]> {
@@ -230,5 +232,36 @@ export class StockService implements IStockRepository {
   
     return '✅ Estoque atualizado com sucesso.';
   }
+
+  async getStockOut(out: StockOutDto): Promise<string> {
+    const { produtos, observacao } = out;
+  
+    let totalUnidadesSaidas = 0;
+  
+    for (const item of produtos) {
+      const produto = await this.productRepository.findProductById(item.produto_id);
+      if (!produto) {
+        throw new Error(`Produto com ID ${item.produto_id} não encontrado.`);
+      }
+      let quantidadeEmUnidadesBase = Number(item.quantidade);
+      if (produto.qt_uni && produto.unidade) {
+        quantidadeEmUnidadesBase *= produto.qt_uni;
+      }    
+  
+      totalUnidadesSaidas += quantidadeEmUnidadesBase;
+  
+      await this.produtoRepository.decrement({ produto_id: produto.produto_id }, 'saldo_estoque', quantidadeEmUnidadesBase);
+  
+      const saida = this.saidaRepository.create({
+        quantidade: item.quantidade,
+        produto,
+        observacao,
+      });
+  
+      await this.saidaRepository.save(saida);
+    }
+  
+    return `Saída de estoque realizada com sucesso. Total de unidades: ${totalUnidadesSaidas}.`;
+  }  
   
 }
