@@ -1,10 +1,10 @@
-import { Controller, Get, Param, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { StockService } from '../services/stock.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { Distribuidor, Produto } from '../../../infrastructure/database/entities';
-import { StockImportResponse, StockLiquid } from '../dto';
+import { StockImportResponse, StockLiquid, StockOutDto } from '../dto';
 
 ApiTags('stock')
 @Controller('stock')
@@ -20,12 +20,19 @@ export class StockController {
   }
 
   @ApiOperation({ summary: 'update estoque'})
-  @Get('update-stock')
+  @Get('updateStock')
   async updateStock(): Promise<string> {
     return this.stockService.updateStockFromJson();
   }
 
-  @ApiOperation({ summary: 'Importar estoque de NFe XML' })
+  @ApiOperation({ summary: 'Registrar saída estoque' })
+  @Post('stockOut')
+  async stockOut(@Body() stockOutDto: StockOutDto) {
+    const message = await this.stockService.getStockOut(stockOutDto);
+    return { message };
+  }
+
+  @ApiOperation({ summary: 'Importar estoque por XML' })
   @Post('upload/:id')
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
