@@ -6,9 +6,9 @@ export class RateioDebito {
   @PrimaryGeneratedColumn()
   rateio_id: number;
 
-  @ManyToOne(() => Debito)
+  @ManyToOne(() => Debito, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'debito_id' })
-  debito: Debito;
+  debito: Debito;  
 
   @ManyToOne(() => Company)
   @JoinColumn({ name: 'company_id' })  
