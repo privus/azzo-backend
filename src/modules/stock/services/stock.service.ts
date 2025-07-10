@@ -10,9 +10,6 @@ import { StockOutDto } from '../dto/stock-out.dto';
 
 @Injectable()
 export class StockService implements IStockRepository {
-  private readonly apiUrlTiny: string;
-  private readonly nfeTag = 'notas';
-
   constructor(
     @InjectRepository(Estoque) private readonly stockRepository: Repository<Estoque>,
     @InjectRepository(Fornecedor) private readonly fornecedorRepository: Repository<Fornecedor>,
@@ -262,6 +259,13 @@ export class StockService implements IStockRepository {
     }
   
     return `Saída de estoque realizada com sucesso. Total de unidades: ${totalUnidadesSaidas}.`;
-  }  
-  
+  }
+
+  async findProductOut(id: number): Promise<SaidaEstoque[]> {
+    return await this.saidaRepository.find({
+      where: { produto: { produto_id: id } },
+      order: { data_saida: 'DESC' },  
+      take: 30,
+    });
+  }
 }

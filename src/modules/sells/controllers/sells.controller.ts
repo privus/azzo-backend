@@ -213,7 +213,7 @@ export class SellsController {
     const { fileName, pdfBuffer } = await this.printOrderService.printOrder(id, responsible);
   
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'inline; filename=' + fileName); // 👈 inline, não attachment
+    res.setHeader('Content-Disposition', 'inline; filename=' + fileName);
     return res.send(pdfBuffer);
   }   
 }

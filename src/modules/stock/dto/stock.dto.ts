@@ -23,3 +23,16 @@ export interface StockImportResponse {
   }[];
 }
 
+export interface Last10OutDto {
+  saida_id: number;
+  quantidade: number;
+  data_saida: string;
+  observacao: string;
+  produto: {
+    nome: string;
+    codigo: string;
+  };
+}
+
+
+

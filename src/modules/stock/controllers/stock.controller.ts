@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { StockService } from '../services/stock.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { Distribuidor, Produto } from '../../../infrastructure/database/entities';
+import { Distribuidor, Produto, SaidaEstoque } from '../../../infrastructure/database/entities';
 import { StockImportResponse, StockLiquid, StockOutDto } from '../dto';
 
 ApiTags('stock')
@@ -56,5 +56,11 @@ export class StockController {
   @Get('dist')
   async getDistribuidores(): Promise<Distribuidor[]> {
     return this.stockService.findAllDistributors();
+  }
+
+  @ApiOperation({ summary: 'Obter ultimas 10 saidas do produto' })
+  @Get('out/:id')
+  async findProductOut(@Param('id') id: number): Promise<SaidaEstoque[]> {
+    return this.stockService.findProductOut(id);
   }
 }
