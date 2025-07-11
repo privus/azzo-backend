@@ -4,10 +4,11 @@ import { Repository, LessThan } from 'typeorm';
 import { Account, CategoriaDebito, Company, Debito, Departamento, ParcelaDebito, RateioDebito, StatusPagamento } from '../../../infrastructure/database/entities';
 import { DebtsDto, UpdateInstalmentDto, DebtsComparisonReport, UpdateDebtStatusDto, GrupoCompensacaoReport } from '../dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { IDebtsRepository } from '../../../domain/repositories/debts.repository.interface';
 import * as fs from 'fs';
 
 @Injectable()
-export class DebtsService {
+export class DebtsService implements IDebtsRepository {
   constructor(
     @InjectRepository(Debito) private readonly debtRepository: Repository<Debito>,
     @InjectRepository(ParcelaDebito) private readonly parcelaRepository: Repository<ParcelaDebito>,
@@ -656,6 +657,51 @@ export class DebtsService {
     }
   
     return `Importação de ${debitos.length} débitos concluída com sucesso!`;
+  }
+
+  async createDebtFromNfeXml(debtDto: DebtsDto, duplicatas: any[]): Promise<Debito> {
+    const categoria = await this.categoriaDebitoRepository.findOne({ where: { categoria_id: debtDto.categoria_id } });
+    const departamento = await this.departamentoRepository.findOne({ where: { departamento_id: debtDto.departamento_id } });
+    const account = await this.accountRepository.findOne({ where: { account_id: debtDto.account_id } });
+    const company = await this.companyRepository.findOne({ where: { company_id: debtDto.company_id } });
+
+
+    const statusPagamentoPendente = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 1 } });
+
+
+    const debitoEntity = this.debtRepository.create({
+      nome: debtDto.nome,
+      descricao: debtDto.descricao,
+      valor_total: debtDto.valor_total,
+      data_competencia: new Date(debtDto.data_competencia),
+      data_pagamento: null,
+      numero_parcelas: debtDto.numero_parcelas,
+      valor_parcela: debtDto.valor_total / debtDto.numero_parcelas,
+      status_pagamento: statusPagamentoPendente,
+      departamento,
+      categoria,
+      criado_por: debtDto.criado_por,
+      account,
+      company,
+      tipo: debtDto.tipo,
+    });
+    const savedDebt = await this.debtRepository.save(debitoEntity);
+  
+    const duplicatasArray = Array.isArray(duplicatas) ? duplicatas : [duplicatas];
+    for (let i = 0; i < duplicatasArray.length; i++) {
+      const dup = duplicatasArray[i];
+      const [ano, mes, dia] = dup.dVenc.split('-').map(Number);
+      await this.parcelaRepository.save(this.parcelaRepository.create({
+        numero: i + 1,
+        valor: Number(dup.vDup),
+        data_competencia: new Date(debtDto.data_competencia),
+        data_vencimento: new Date(ano, mes - 1, dia),
+        status_pagamento: statusPagamentoPendente,
+        debito: savedDebt,
+        account,
+      }));
+    }
+    return savedDebt
   }
 
 }

@@ -14,4 +14,6 @@ export interface IProductsRepository {
   findByEan(ean: number): Promise<Produto[] | null>;
   decrementStock(produto_id: number, quantidade: number): Promise<void>;
   saveProduct(product: Produto): Promise<Produto>;
+  updateStockMinimumFromJson(): Promise<void>;
+  activeProducts(product_id: number): Promise<void>;
 }

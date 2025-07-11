@@ -1,12 +1,14 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, ConflictException } from '@nestjs/common';
 import { Distribuidor, Estoque, Fornecedor, Produto, SaidaEstoque } from '../../../infrastructure/database/entities';
-import { IProductsRepository, ISellsRepository, IStockRepository } from '../../../domain/repositories';
+import { IDebtsRepository, IProductsRepository, ISellsRepository, IStockRepository } from '../../../domain/repositories';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { XMLParser } from 'fast-xml-parser';
 import * as fs from 'fs';
 import { StockImportResponse, StockLiquid } from '../dto';
 import { StockOutDto } from '../dto/stock-out.dto';
+import { DebtsDto } from 'src/modules/debts/dto';
+
 
 @Injectable()
 export class StockService implements IStockRepository {
@@ -18,6 +20,7 @@ export class StockService implements IStockRepository {
     @Inject('ISellsRepository') private readonly sellRepository: ISellsRepository,
     @InjectRepository(SaidaEstoque) private readonly saidaRepository: Repository<SaidaEstoque>,
     @InjectRepository(Produto) private readonly produtoRepository: Repository<Produto>,
+    @Inject('IDebtsRepository') private readonly debtsService: IDebtsRepository,
   ) {}
 
   async getStock(): Promise<Estoque[]> {
@@ -44,14 +47,15 @@ export class StockService implements IStockRepository {
     const ide = info.ide;
     const valorNf = info.total.ICMSTot.vNF; 
     const numero_nfe = json.nfeProc.NFe.infNFe.ide.nNF
+    const debito = info.cobr
+    const nomeFornecedor = info.emit.xFant
+
     
     const existente = await this.stockRepository.findOne({
       where: { numero_nfe: numero_nfe, origem: 'NFE_XML' },
     });
     
-    if (existente) {
-      throw new Error(`A NFE número ${numero_nfe} já foi importada anteriormente.`);
-    }
+
   
     const itens = Array.isArray(itensNFe) ? itensNFe : [itensNFe];
     const dist_type = Number(typeId);
@@ -142,7 +146,37 @@ export class StockService implements IStockRepository {
       
        
       await this.productRepository.incrementStock(produtoFinal.produto_id, quantidade);
+
+      // ATIVAR UNIDADE E CAIXA (se existirem)
+      if (unidade) {
+        await this.productRepository.activeProducts(unidade.sellent_id);
+      }
+      if (caixa) {
+        await this.productRepository.activeProducts(caixa.sellent_id);
+      }
       quantidadeImportada++;
+    }
+
+    let debitoCriado = null;
+    if (debito && debito.fat && debito.dup) {
+      const debtsDto: DebtsDto = {
+        nome: `${nomeFornecedor} NF-e ${numero_nfe}`,
+        descricao: `Débito gerado automaticamente pela NF-e ${numero_nfe}`,
+        valor_total: parseFloat(debito.fat.vOrig),
+        data_competencia: ide.dhEmi || ide.dEmi,
+        data_vencimento: Array.isArray(debito.dup) ? debito.dup[0].dVenc : debito.dup.dVenc,
+        numero_parcelas: Array.isArray(debito.dup) ? debito.dup.length : 1,
+        company_id: 2,
+        user_company_id: 2,
+        departamento_id: 2,
+        categoria_id: 14,
+        criado_por: 'geecom@azzo.com',
+        account_id: 3,
+        tipo: 'CUSTO',
+      };
+
+      // **Chama o serviço de débitos para criar o débito e as parcelas**
+      debitoCriado = await this.debtsService.createDebtFromNfeXml(debtsDto, debito.dup);
     }
     
       return {
@@ -158,7 +192,8 @@ export class StockService implements IStockRepository {
           qt_caixa: p.quantidadeCx,
           quantidade: p.quantidade,
           valor_total: p.valor,
-        }))
+        })),
+        debito: debitoCriado ? { debito_id: debitoCriado.debito_id, nome: debitoCriado.nome, valor_total: debitoCriado.valor_total, numero_parcelas: debitoCriado.numero_parcelas } : null,
       };
          
   }
