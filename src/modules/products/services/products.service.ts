@@ -334,8 +334,11 @@ export class ProductsService implements IProductsRepository {
     return this.produtoRepository.save(produto);
   }
 
-  async activeProducts(product_id: number): Promise<void> {
-    const url = `${this.apiUrl}${this.apiTag}/${product_id}`;
+  async activeProducts(sellent_id: number): Promise<void> {
+    const produto = await this.findBy({sellent_id})
+    produto.ativo = 1;
+    await this.produtoRepository.save(produto);
+    const url = `${this.apiUrl}${this.apiTag}/${sellent_id}`;
     try {
       return this.httpService.axiosRef.put(url, { "is_active": 1 }, {
         headers: {
@@ -343,11 +346,11 @@ export class ProductsService implements IProductsRepository {
           'Content-Type': 'application/json',
         },
       }).then(() => {
-        console.log(`Produto id-${product_id} atualizado com sucesso.`);
+        console.log(`Produto id-${sellent_id} atualizado com sucesso.`);
       });
     }
     catch (error) {
-      console.error(`Erro ao ativar produto id-${product_id}:`, error.message);
+      console.error(`Erro ao ativar produto id-${sellent_id}:`, error.message);
       throw new BadRequestException({ message: error.message });
     }
   }
