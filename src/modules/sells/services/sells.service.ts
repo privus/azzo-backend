@@ -484,15 +484,15 @@ export class SellsService implements ISellsRepository {
 
   async sellsBetweenDates(fromDate: string, toDate?: string): Promise<Venda[]> {
     const start = new Date(fromDate);
-    start.setHours(21, 0, 0, 0);
-  
+    start.setHours(0, 0, 0, 0);
+    
     let end: Date;
     if (toDate) {
       end = new Date(toDate);
-      end.setHours(44, 59, 59, 999);
+      end.setHours(23, 59, 59, 999);
     } else {
       end = new Date(fromDate);
-      end.setHours(48, 59, 59, 999);
+      end.setHours(23, 59, 59, 999);
     }
     console.log('Start END ===============>', start, end);
   
@@ -656,7 +656,6 @@ export class SellsService implements ISellsRepository {
         throw new BadRequestException({ message: error.message || 'Erro desconhecido ao exportar pedido' });
     }
 }
-
 
   async deleteSell(code: number): Promise<string> {
     // Verifica se a venda existe
