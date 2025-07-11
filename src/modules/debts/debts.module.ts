@@ -7,7 +7,7 @@ import { DebtsController } from './controllers/debts.controller';
 @Module({
   imports: [TypeOrmModule.forFeature([Debito, ParcelaDebito, StatusPagamento, Departamento, CategoriaDebito, Account, Company, RateioDebito])],
   controllers: [DebtsController],
-  providers: [DebtsService],
-  exports: [DebtsService],
+  providers: [DebtsService, { provide: 'IDebtsRepository', useClass: DebtsService }],
+  exports: [DebtsService, 'IDebtsRepository'],
 })
 export class DebtsModule {}

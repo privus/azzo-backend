@@ -1,3 +1,5 @@
+import { Debito } from '../../../infrastructure/database/entities';
+
 export interface StockLiquid {
   codigo: string;
   quantidadeVendida: number;
@@ -21,6 +23,7 @@ export interface StockImportResponse {
     quantidade: number;
     valor_total: number;
   }[];
+  debito: Partial<Debito> | null;
 }
 
 export interface Last10OutDto {

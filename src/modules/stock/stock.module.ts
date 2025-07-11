@@ -7,6 +7,7 @@ import { ProductsModule } from '../products/products.module';
 import { TinyTokenService } from '../sells/services/tiny-token.service';
 import { SellsModule } from '../sells/sells.module';
 import { StockController } from './controllers/stock.controller';
+import { DebtsModule } from '../debts/debts.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { StockController } from './controllers/stock.controller';
     HttpModule,
     ProductsModule,
     SellsModule,
+    DebtsModule,
   ],
   providers: [
     StockService,

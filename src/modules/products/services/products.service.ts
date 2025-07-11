@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Like, Repository } from 'typeorm';
@@ -333,5 +333,22 @@ export class ProductsService implements IProductsRepository {
   saveProduct(produto: Produto): Promise<Produto> {
     return this.produtoRepository.save(produto);
   }
-  
+
+  async activeProducts(product_id: number): Promise<void> {
+    const url = `${this.apiUrl}${this.apiTag}/${product_id}`;
+    try {
+      return this.httpService.axiosRef.put(url, { "is_active": 1 }, {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          'Content-Type': 'application/json',
+        },
+      }).then(() => {
+        console.log(`Produto id-${product_id} atualizado com sucesso.`);
+      });
+    }
+    catch (error) {
+      console.error(`Erro ao ativar produto id-${product_id}:`, error.message);
+      throw new BadRequestException({ message: error.message });
+    }
+  }
 }
