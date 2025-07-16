@@ -129,6 +129,13 @@ export class SellsController {
     return sells.length;
   }
 
+  @ApiOperation({ summary: 'Limpar dados Nf-e' })
+  @Get('clearNf/:id')
+  async clearNf(@Param('id') id: number) {
+    const resultMessage = await this.sellsService.clearNfeData(id);
+    return { message: resultMessage };
+  }
+
   @ApiOperation({ summary: 'Exportar pedido para o Tiny'})
   @Get('export/:id')
   async exportToTiny(@Param('id') id: number) {

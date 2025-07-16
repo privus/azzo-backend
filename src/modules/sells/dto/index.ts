@@ -10,3 +10,4 @@ export * from './nf-e.dto';
 export * from './invoice-tiny.dto';
 export * from './project-stock.dto';
 export * from './romaneio.dto';
+export * from './order-assembly.dto';

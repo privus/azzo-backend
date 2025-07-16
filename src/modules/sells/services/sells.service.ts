@@ -1541,4 +1541,20 @@ export class SellsService implements ISellsRepository {
     return Array.from(clientesMap.values()).sort((a, b) => b.quantidadeVendas - a.quantidadeVendas);
   }
 
+  async clearNfeData(code: number): Promise<string> {
+    const venda = await this.vendaRepository.findOne({
+      where: { codigo: code },
+    })
+
+    venda.numero_nfe = null;
+    venda.chave_acesso = null;
+    venda.data_emissao_nfe = null;
+    venda.nfe_emitida = 0;
+    venda.nfe_id = null;
+    venda.nfe_link = null;
+
+    await this.vendaRepository.save(venda);
+
+    return `✅ Dados da Nf-e da venda #${code} foram limpos com sucesso.`;
+  }
 }

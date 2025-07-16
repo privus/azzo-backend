@@ -324,7 +324,7 @@ export class DebtsService implements IDebtsRepository {
     return `Debito com ID ${code} e suas parcelas foram excluídas com sucesso.`;
   }
 
-  async getDebtsByDate(companyId: number, fromDate?: string): Promise<Debito[]> {
+  async getDebtsByDateC(companyId: number, fromDate?: string): Promise<Debito[]> {
     const query = this.debtRepository.createQueryBuilder('debito')
       .leftJoinAndSelect('debito.parcela_debito', 'parcela')
       .leftJoinAndSelect('parcela.status_pagamento', 'parcelaStatus')
@@ -337,14 +337,14 @@ export class DebtsService implements IDebtsRepository {
       .where('accountCompany.company_id = :companyId', { companyId });
   
     if (fromDate) {
-      query.andWhere('debito.data_competencia >= :fromDate', { fromDate: new Date(fromDate) });
+      query.andWhere('debito.vencimento >= :fromDate', { fromDate: new Date(fromDate) });
     }
   
     return await query.getMany();
   }
   
   
-  async getDebtsBetweenDates(companyId: number, fromDate: string, toDate?: string): Promise<Debito[]> {
+  async getDebtsBetweenDatesC(companyId: number, fromDate: string, toDate?: string): Promise<Debito[]> {
     const query = this.debtRepository.createQueryBuilder('debito')
       .leftJoinAndSelect('debito.parcela_debito', 'parcela')
       .leftJoinAndSelect('parcela.status_pagamento', 'parcelaStatus')
@@ -362,13 +362,57 @@ export class DebtsService implements IDebtsRepository {
       const end = new Date(toDate);
       end.setHours(23, 59, 59, 999);
   
-      query.andWhere('debito.data_competencia BETWEEN :start AND :end', { start, end });
+      query.andWhere('debito.vencimento BETWEEN :start AND :end', { start, end });
     } else if (fromDate) {
-      query.andWhere('DATE(debito.data_competencia) = :fromDate', { fromDate });
+      query.andWhere('DATE(debito.vencimento) = :fromDate', { fromDate });
     }
   
     return await query.getMany();
-  }   
+  }
+
+    // Buscar por uma data exata ou data inicial (opcional: toDate)
+  async getDebtsByDate(companyId: number, fromDate?: string): Promise<Debito[]> {
+    const query = this.debtRepository.createQueryBuilder('debito')
+      .leftJoinAndSelect('debito.parcela_debito', 'parcela')
+      .leftJoinAndSelect('parcela.status_pagamento', 'parcelaStatus')
+      .leftJoinAndSelect('debito.status_pagamento', 'statusPagamento')
+      .leftJoinAndSelect('debito.categoria', 'categoria')
+      .leftJoinAndSelect('debito.departamento', 'departamento')
+      .leftJoinAndSelect('debito.company', 'company')
+      .leftJoinAndSelect('debito.account', 'account')
+      .leftJoinAndSelect('account.company', 'accountCompany')
+      .where('accountCompany.company_id = :companyId', { companyId });
+
+    if (fromDate) {
+      query.andWhere('parcela.data_vencimento >= :fromDate', { fromDate });
+    }
+
+    return await query.getMany();
+  }
+
+  // Buscar por um intervalo de datas de vencimento de parcelas
+  async getDebtsBetweenDates(companyId: number, fromDate: string, toDate?: string): Promise<Debito[]> {
+    const query = this.debtRepository.createQueryBuilder('debito')
+      .leftJoinAndSelect('debito.parcela_debito', 'parcela')
+      .leftJoinAndSelect('parcela.status_pagamento', 'parcelaStatus')
+      .leftJoinAndSelect('debito.status_pagamento', 'status_pagamento')
+      .leftJoinAndSelect('debito.categoria', 'categoria')
+      .leftJoinAndSelect('debito.departamento', 'departamento')
+      .leftJoinAndSelect('debito.company', 'company')
+      .leftJoinAndSelect('debito.account', 'account')
+      .leftJoinAndSelect('account.company', 'accountCompany')
+      .where('accountCompany.company_id = :companyId', { companyId });
+
+    // Filtrar pelas datas de vencimento da parcela
+    if (fromDate && toDate) {
+      query.andWhere('parcela.data_vencimento BETWEEN :fromDate AND :toDate', { fromDate, toDate });
+    } else if (fromDate) {
+      query.andWhere('parcela.data_vencimento = :fromDate', { fromDate });
+    }
+
+    return await query.getMany();
+  }
+
   
   async performanceDebtsPeriods(
     fromDate1: string,
@@ -377,8 +421,8 @@ export class DebtsService implements IDebtsRepository {
     toDate2: string,
     conpany_id: number,
   ): Promise<DebtsComparisonReport> {
-    const debitosPeriodo1 = await this.getDebtsBetweenDates(conpany_id, fromDate1, toDate1);
-    const debitosPeriodo2 = await this.getDebtsBetweenDates(conpany_id, fromDate2, toDate2);
+    const debitosPeriodo1 = await this.getDebtsBetweenDatesC(conpany_id, fromDate1, toDate1);
+    const debitosPeriodo2 = await this.getDebtsBetweenDatesC(conpany_id, fromDate2, toDate2);
   
     const totalPeriodo1 = debitosPeriodo1.reduce((acc, d) => acc + Number(d.valor_total || 0), 0);
     const totalPeriodo2 = debitosPeriodo2.reduce((acc, d) => acc + Number(d.valor_total || 0), 0);
