@@ -372,6 +372,7 @@ export class DebtsService implements IDebtsRepository {
 
     // Buscar por uma data exata ou data inicial (opcional: toDate)
   async getDebtsByDate(companyId: number, fromDate?: string): Promise<Debito[]> {
+    console.log('Start END ===============>', { companyId, fromDate });
     const query = this.debtRepository.createQueryBuilder('debito')
       .leftJoinAndSelect('debito.parcela_debito', 'parcela')
       .leftJoinAndSelect('parcela.status_pagamento', 'parcelaStatus')
@@ -392,6 +393,7 @@ export class DebtsService implements IDebtsRepository {
 
   // Buscar por um intervalo de datas de vencimento de parcelas
   async getDebtsBetweenDates(companyId: number, fromDate: string, toDate?: string): Promise<Debito[]> {
+    console.log('Start END ===============>', { companyId, fromDate, toDate });
     const query = this.debtRepository.createQueryBuilder('debito')
       .leftJoinAndSelect('debito.parcela_debito', 'parcela')
       .leftJoinAndSelect('parcela.status_pagamento', 'parcelaStatus')
@@ -413,7 +415,6 @@ export class DebtsService implements IDebtsRepository {
     return await query.getMany();
   }
 
-  
   async performanceDebtsPeriods(
     fromDate1: string,
     toDate1: string,
