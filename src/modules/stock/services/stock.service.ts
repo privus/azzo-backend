@@ -54,8 +54,10 @@ export class StockService implements IStockRepository {
     const existente = await this.stockRepository.findOne({
       where: { numero_nfe: numero_nfe, origem: 'NFE_XML' },
     });
-    
 
+    if (existente) {
+      throw new ConflictException(`NF-e ${numero_nfe} já importada anteriormente.`);
+    }   
   
     const itens = Array.isArray(itensNFe) ? itensNFe : [itensNFe];
     const dist_type = Number(typeId);

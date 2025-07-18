@@ -28,6 +28,7 @@ export class OrderAssemblyService {
       status: 'pausada',
       motivo_pausa: motivo
     });
+    
   }
 
   async resumeAssembly(montagemId: number): Promise<void> {

@@ -226,7 +226,7 @@ export class SellsController {
     return res.send(pdfBuffer);
   }
   
-  @ApiOperation({ summary: 'Gerar romaneio' })
+  @ApiOperation({ summary: 'Iniciar Montagem' })
   @Post('assembly')
   async startAssembly(@Body() assemblyDto: OrderAssemblyDto) {
     const resultMessage = await this.montagemService.startAssembly(assemblyDto)
