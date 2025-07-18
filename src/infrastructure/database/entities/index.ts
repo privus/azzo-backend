@@ -46,4 +46,5 @@ export * from './pProduto';
 export * from './pStatusCliente';
 export * from './pStatusVenda';
 export * from './pVendedor';
+export * from './montagem';
 

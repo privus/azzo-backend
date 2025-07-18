@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { Produto, Venda } from '.';
+import { Montagem, Produto, Venda } from '.';
 
 @Entity('itens_venda')
 export class ItensVenda {
@@ -25,4 +25,8 @@ export class ItensVenda {
   @ManyToOne(() => Produto)
   @JoinColumn({ name: 'produto_id' })
   produto: Produto;
+
+  @ManyToOne(() => Montagem , (montagem) => montagem.itensVenda, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'montagem_id' })
+  montagem: Montagem;
 }

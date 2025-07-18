@@ -1,57 +1,47 @@
-// import { Inject, Injectable } from '@nestjs/common';
-// import { ISellsRepository } from '../../../domain/repositories';
-// import { InjectRepository } from '@nestjs/typeorm';
-// import { ItensVenda } from '../../../infrastructure/database/entities';
-// import { Repository } from 'typeorm';
-// import { OrderAssemblyState } from '../dto';
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { ItensVenda, Montagem } from '../../../infrastructure/database/entities';
+import { Repository } from 'typeorm';
+import { OrderAssemblyDto } from '../dto';
 
-// @Injectable()
-// export class OrderAssemblyService {
-//   constructor(
-//     @InjectRepository(ItensVenda) private readonly itensVendaRepository: Repository<ItensVenda>,
-//     @Inject('ISellsRepository') private readonly sellsSevice: ISellsRepository)
-//   {}
+@Injectable()
+export class OrderAssemblyService {
+  constructor(
+    @InjectRepository(ItensVenda) private readonly itensVendaRepository: Repository<ItensVenda>,
+    @InjectRepository(Montagem) private readonly montagemRepository: Repository<Montagem>
+  ) {}
 
-//   async startAssembly(codigoPedido: number): Promise<OrderAssemblyState> {
-//     const venda = await this.sellsSevice.getSellByCode(codigoPedido);
+  async startAssembly(assemblyDto: OrderAssemblyDto): Promise<string> {
+    const { responsavel, itens } = assemblyDto;
+    const montagem = this.montagemRepository.create({
+      status: 'iniciada',
+      responsavel,
+      data_inicio: new Date(),
+      itensVenda: itens
+    });
+    await this.montagemRepository.save(montagem);
+    return 'Montagem iniciada';
+  }
 
-//     if (!venda) throw new Error('Pedido não encontrado');
+  async pauseAssembly(montagemId: number, motivo: string): Promise<void> {
+    await this.montagemRepository.update(montagemId, {
+      status: 'pausada',
+      motivo_pausa: motivo
+    });
+  }
 
-//     const itens = venda.itensVenda.map(item => ({
-//       produtoId: item.produto.produto_id,
-//       nome: item.produto.nome,
-//       ean: item.produto.ean,
-//       quantidadePedida: item.quantidade,
-//       quantidadeBipada: 0,
-//       status: 'pendente'
-//     }));
+  async resumeAssembly(montagemId: number): Promise<void> {
+    await this.montagemRepository.update(montagemId, {
+      status: 'iniciada',
+      motivo_pausa: null
+    });
+  }
 
-//     // Você pode salvar esse "estado" num Redis, numa tabela extra, etc.
-//     return { codigoPedido, itens, finalizado: false };
-//   }
+  async finishAssembly(montagemId: number): Promise<void> {
+    await this.montagemRepository.update(montagemId, {
+      status: 'finalizada',
+      data_fim: new Date()
+    });
+  }
+}
 
-//   async biparProduto(codigoPedido: number, ean: string): Promise<OrderAssemblyState> {
-//     // Carregar estado da montagem (pode ser da sessão, Redis, ou tabela "MontagemPedido")
-//     let estado = await this.getAssemblyState(codigoPedido);
-
-//     const item = estado.itens.find(i => i.ean === ean);
-//     if (!item) {
-//       throw new Error('Produto não pertence ao pedido!');
-//     }
-//     if (item.quantidadeBipada >= item.quantidadePedida) {
-//       throw new Error('Quantidade deste produto já foi completamente bipada!');
-//     }
-
-//     item.quantidadeBipada += 1;
-//     if (item.quantidadeBipada === item.quantidadePedida) {
-//       item.status = 'montado';
-//     }
-
-//     // Atualizar "estado"
-
-//     // Se todos montados, marcar finalizado
-//     estado.finalizado = estado.itens.every(i => i.status === 'montado');
-//     return estado;
-//   }
-
-// }

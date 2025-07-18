@@ -16,6 +16,7 @@ import {
   Romaneio,
   Transportadora,
   SaidaEstoque,
+  Montagem,
 } from '../../infrastructure/database/entities';
 import { SellsController } from './controllers/sells.controller';
 import { HttpModule } from '@nestjs/axios';
@@ -28,6 +29,7 @@ import { LabelService } from './services/label.service';
 import { PrintOrderService } from './services/print-order.service';
 import { RomaneioService } from './services/romaneio.service';
 import { PrintOrderResumeService } from './services/print-order-resume.service';
+import { OrderAssemblyService } from './services/order-assembly.service';
 
 @Module({
   imports: [
@@ -45,6 +47,7 @@ import { PrintOrderResumeService } from './services/print-order-resume.service';
       Romaneio,
       Transportadora,
       SaidaEstoque,
+      Montagem,
     ]),
     HttpModule,
     CustomersModule,
@@ -60,6 +63,7 @@ import { PrintOrderResumeService } from './services/print-order-resume.service';
     TinyTokenService,
     RomaneioService,
     PrintOrderResumeService,
+    OrderAssemblyService,
     { provide: 'ITinyAuthRepository', useClass: TinyAuthService },
     { provide: 'ITinyTokenRepository', useClass: TinyTokenService },
     { provide: 'ISellsRepository', useClass: SellsService },

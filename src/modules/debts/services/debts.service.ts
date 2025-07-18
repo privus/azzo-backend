@@ -337,7 +337,7 @@ export class DebtsService implements IDebtsRepository {
       .where('accountCompany.company_id = :companyId', { companyId });
   
     if (fromDate) {
-      query.andWhere('debito.vencimento >= :fromDate', { fromDate: new Date(fromDate) });
+      query.andWhere('debito.data_competencia >= :fromDate', { fromDate: new Date(fromDate) });
     }
   
     return await query.getMany();
@@ -362,9 +362,9 @@ export class DebtsService implements IDebtsRepository {
       const end = new Date(toDate);
       end.setHours(23, 59, 59, 999);
   
-      query.andWhere('debito.vencimento BETWEEN :start AND :end', { start, end });
+      query.andWhere('debito.data_competencia BETWEEN :start AND :end', { start, end });
     } else if (fromDate) {
-      query.andWhere('DATE(debito.vencimento) = :fromDate', { fromDate });
+      query.andWhere('DATE(debito.data_competencia) = :fromDate', { fromDate });
     }
   
     return await query.getMany();

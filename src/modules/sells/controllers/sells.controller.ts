@@ -2,12 +2,13 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Res, Uploaded
 import { Response } from 'express';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SellsService } from '../services/sells.service';
-import { RomaneioDto, UpdateSellStatusDto } from '../dto';
+import { OrderAssemblyDto, RomaneioDto, UpdateSellStatusDto } from '../dto';
 import { LabelService } from '../services/label.service';
 import { PrintOrderService } from '../services/print-order.service';
 import { RomaneioService } from '../services/romaneio.service';
 import { PrintOrderResumeService } from '../services/print-order-resume.service';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { OrderAssemblyService } from '../services/order-assembly.service';
 
 @ApiTags('sells')
 @Controller('sells')
@@ -18,6 +19,7 @@ export class SellsController {
     private readonly printOrderService: PrintOrderService,
     private readonly romaneioService: RomaneioService,
     private readonly printOrderResumeService: PrintOrderResumeService,
+    private readonly montagemService: OrderAssemblyService,
   ) {}
 
   @ApiOperation({ summary: 'Vendas por data' })
@@ -222,5 +224,12 @@ export class SellsController {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'inline; filename=' + fileName);
     return res.send(pdfBuffer);
-  }   
+  }
+  
+  @ApiOperation({ summary: 'Gerar romaneio' })
+  @Post('assembly')
+  async startAssembly(@Body() assemblyDto: OrderAssemblyDto) {
+    const resultMessage = await this.montagemService.startAssembly(assemblyDto)
+    return { message: resultMessage };
+  }
 }

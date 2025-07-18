@@ -339,6 +339,7 @@ export class ProductsService implements IProductsRepository {
     produto.ativo = 1;
     await this.produtoRepository.save(produto);
     const url = `${this.apiUrl}${this.apiTag}/${sellent_id}`;
+    console.log(`Ativando produto id-${sellent_id} na API: ${url}`);
     try {
       return this.httpService.axiosRef.put(url, { "is_active": 1 }, {
         headers: {
