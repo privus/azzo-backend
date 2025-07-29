@@ -17,6 +17,7 @@ import {
   Transportadora,
   SaidaEstoque,
   Montagem,
+  ItensMontagem,
 } from '../../infrastructure/database/entities';
 import { SellsController } from './controllers/sells.controller';
 import { HttpModule } from '@nestjs/axios';
@@ -30,6 +31,7 @@ import { PrintOrderService } from './services/print-order.service';
 import { RomaneioService } from './services/romaneio.service';
 import { PrintOrderResumeService } from './services/print-order-resume.service';
 import { OrderAssemblyService } from './services/order-assembly.service';
+import { AssemblyController } from './controllers/assembly.controller';
 
 @Module({
   imports: [
@@ -48,13 +50,14 @@ import { OrderAssemblyService } from './services/order-assembly.service';
       Transportadora,
       SaidaEstoque,
       Montagem,
+      ItensMontagem
     ]),
     HttpModule,
     CustomersModule,
     SellersModule,
     RegionsModule,
   ],
-  controllers: [SellsController, TinyAuthController],
+  controllers: [SellsController, TinyAuthController, AssemblyController],
   providers: [
     LabelService,
     PrintOrderService,

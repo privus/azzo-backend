@@ -75,11 +75,11 @@ export class SellsService implements ISellsRepository {
         for (const sell of sellsData) {
           const result = await this.processSell(sell);
   
-          if (result?.includes('Atualizada')) {
-            updatedSales.push(result.split(' ')[1]);
-          } else if (result?.includes('Recebida')) {
-            syncedSales.push(result.split(' ')[2]);
-          }
+          if (result?.startsWith('Atualizada')) {
+            updatedSales.push(result.replace('Atualizada', '').trim());
+          } else if (result?.startsWith('Recebida')) {
+            syncedSales.push(result.replace('Recebida', '').trim());
+          }          
         }
   
         currentPage++;
@@ -238,6 +238,7 @@ export class SellsService implements ISellsRepository {
           if (existingSell.valor_final != sell.amount_final || sell.installment_qty != existingSell.numero_parcelas) {
             await this.revertSaleStock(existingSell);
             console.log('Venda já existente e atualizando carrinho =>', sell.code);
+            existingSell.itens_atualizacao = new Date();
             const productCodes = sell.products.map((item) => item.code);
             const produtosEncontrados = await this.produtoRepository.find({
               where: { codigo: In(productCodes) },
@@ -300,15 +301,17 @@ export class SellsService implements ISellsRepository {
             await this.vendaRepository.save(existingSell);
             await this.clienteService.saveCustomer(cliente);
             await this.decrementStockSell(existingSell.codigo);
+            const carrinho = existingSell.itens_atualizacao ? ' 🛒' : ''
           
-            return `Venda ${sell.code} Atualizada`;
+            return `Atualizada ${sell.code + carrinho}`;
           } else {
           console.log(`Venda já existente e atualizada => ${sell.code}`);
           }
           
       await this.vendaRepository.save(existingSell);
       await this.clienteService.saveCustomer(cliente);
-      return `Venda ${sell.code} Atualizada`;
+      return `Atualizada ${sell.code}`;
+
     }
 
     // Se a venda não existir, crie-a
@@ -401,7 +404,7 @@ export class SellsService implements ISellsRepository {
 
     await this.vendaRepository.save(novaVenda);
     await this.decrementStockSell(novaVenda.codigo);
-    return `Venda código ${sell.code} foi Recebida`;
+    return `Recebida ${sell.code}`;
   }
 
   private async decrementStockSell(code:number): Promise<void> {
