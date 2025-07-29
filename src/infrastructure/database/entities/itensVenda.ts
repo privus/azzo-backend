@@ -25,8 +25,4 @@ export class ItensVenda {
   @ManyToOne(() => Produto)
   @JoinColumn({ name: 'produto_id' })
   produto: Produto;
-
-  @ManyToOne(() => Montagem , (montagem) => montagem.itensVenda, { onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'montagem_id' })
-  montagem: Montagem;
 }
