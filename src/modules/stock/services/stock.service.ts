@@ -64,6 +64,7 @@ export class StockService implements IStockRepository {
   
     for (const item of itens) {
       const { prod } = item;
+      const { nItem } = item;
       let produtos: Produto[] | undefined;
   
       switch (dist_type) {
@@ -86,6 +87,20 @@ export class StockService implements IStockRepository {
         case 6: // ALL BRANDS
           produtos = await this.productRepository.findByEan(prod.cBarraTrib);
           break;
+          case 8: // TEK SUL 
+          const eanTek = Number(prod.cProd);
+
+          if (nItem === 1) {
+            const p = await this.productRepository.findProductById(492);
+            produtos = p ? [p] : [];
+          } else if (nItem === 2) {
+            const p = await this.productRepository.findProductById(501);
+            produtos = p ? [p] : [];
+          } else { 
+            produtos = await this.productRepository.findByEan(eanTek) || [];
+          }
+          break;
+
         default:
           continue;
       }
@@ -244,7 +259,7 @@ export class StockService implements IStockRepository {
   }
   
   async updateStockFromJson(): Promise<string> {
-    const jsonFilePath = 'src/utils/contagem-estoque-junho.json';
+    const jsonFilePath = 'src/utils/contagem-estoque-julho.json';
     if (!fs.existsSync(jsonFilePath)) {
       console.error(`❌ Arquivo '${jsonFilePath}' não encontrado.`);
       return;
