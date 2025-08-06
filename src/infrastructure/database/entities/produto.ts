@@ -83,4 +83,7 @@ export class Produto {
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   comprimento: number;
+
+  @Column({ type: 'varchar', length: 40, nullable: true })
+  cest: string;
 }
