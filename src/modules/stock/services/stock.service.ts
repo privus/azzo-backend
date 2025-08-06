@@ -325,31 +325,35 @@ export class StockService implements IStockRepository {
     const xml = buffer.toString('utf-8');
     const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '' });
     const json = parser.parse(xml);
-
+  
     const itensNFe = json.nfeProc?.NFe?.infNFe?.det;
     const itens = Array.isArray(itensNFe) ? itensNFe : [itensNFe];
-
+  
     let updated = 0;
     const notFound: string[] = [];
-
+  
     for (const item of itens) {
       const { prod } = item;
       if (!prod?.cEAN || !prod?.CEST) continue;
+  
       const produtos = await this.productRepository.findByEan(prod.cEAN);
-      const produto = produtos?.[0];
-      if (produto) {
-        produto.cest = prod.CEST;
-        await this.productRepository.saveProduct(produto);
-        updated++;
+  
+      if (produtos && produtos.length > 0) {
+        for (const produto of produtos) {
+          produto.cest = prod.CEST;
+          await this.productRepository.saveProduct(produto);
+          updated++;
+        }
       } else {
         notFound.push(prod.cEAN);
       }
     }
-
+  
     return {
       message: `CEST atualizado em ${updated} produto(s).`,
       updated,
       notFound,
     };
   }
+  
 }
