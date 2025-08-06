@@ -63,4 +63,11 @@ export class StockController {
   async findProductOut(@Param('id') id: number): Promise<SaidaEstoque[]> {
     return this.stockService.findProductOut(id);
   }
+
+  @ApiOperation({ summary: 'Atualiza o CEST dos produtos via XML NF-e (buffer, sem salvar)' })
+  @Post('cest')
+  @UseInterceptors(FileInterceptor('file'))
+  async updateCestByXml(@UploadedFile() file: Express.Multer.File): Promise<{ message: string, updated: number, notFound: string[] }> {
+    return this.stockService.getCestByXmlBuffer(file.buffer);
+  }
 }
