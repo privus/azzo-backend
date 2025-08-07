@@ -110,7 +110,7 @@ export class ProductsService implements IProductsRepository {
       ativo: item.is_active,
       preco_venda: item.price.default,
       ncm: Number(item.ncm),
-      ean: Number(item.ean),
+      ean: item.ean,
       preco_custo: item.price_cost,
       peso_grs: item.average_weight,
       categoria: categoria,
@@ -249,7 +249,7 @@ export class ProductsService implements IProductsRepository {
     return this.produtoRepository.findOne({ where: param });
   }
 
-  async findByEan(ean: number): Promise<Produto[] | null> { 
+  async findByEan(ean: string): Promise<Produto[] | null> { 
     const produtos = await this.produtoRepository.find({
       where: { ean },
       relations: ['categoria', 'fornecedor', 'unidade'],

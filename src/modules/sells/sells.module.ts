@@ -32,6 +32,7 @@ import { RomaneioService } from './services/romaneio.service';
 import { PrintOrderResumeService } from './services/print-order-resume.service';
 import { OrderAssemblyService } from './services/order-assembly.service';
 import { AssemblyController } from './controllers/assembly.controller';
+import { OmieService } from './services/omie.service';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { AssemblyController } from './controllers/assembly.controller';
     LabelService,
     PrintOrderService,
     SellsService,
+    OmieService,
     TinyAuthService,
     TinyTokenService,
     RomaneioService,

@@ -1,6 +1,6 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, In, MoreThanOrEqual, Repository } from 'typeorm';
+import { Between, In, MoreThanOrEqual, Raw, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda, SaidaEstoque } from '../../../infrastructure/database/entities';
 import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto, ProjectStockDto } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository } from '../../../domain/repositories';
@@ -486,35 +486,33 @@ export class SellsService implements ISellsRepository {
   }
 
   async sellsBetweenDates(fromDate: string, toDate?: string): Promise<Venda[]> {
-    const start = new Date(fromDate);
-    start.setHours(21, 0, 0, 0);
+    let where: any = {};
   
-    let end: Date;
     if (toDate) {
-      end = new Date(toDate);
-      end.setHours(44, 59, 59, 999);
+      where.data_criacao = Raw(
+        alias => `DATE(${alias}) BETWEEN :from AND :to`,
+        { from: fromDate, to: toDate }
+      );
     } else {
-      end = new Date(fromDate);
-      end.setHours(48, 59, 59, 999);
+      where.data_criacao = Raw(
+        alias => `DATE(${alias}) = :from`,
+        { from: fromDate }
+      );
     }
-    console.log('Start END ===============>', start, end);
   
     return this.vendaRepository.find({
-      where: {
-        data_criacao: Between(start, end)
-      },
+      where,
       relations: [
         'cliente.cidade.estado',
         'vendedor',
         'status_pagamento',
         'status_venda',
         'itensVenda.produto',
-        'itensVenda.produto',
         'itensVenda.produto.fornecedor', 
         'tipo_pedido'
       ],
     });
-  }  
+  }
 
   async getSellByCode(id: number): Promise<Venda> {
     return this.vendaRepository.findOne({

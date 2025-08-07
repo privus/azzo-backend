@@ -76,7 +76,7 @@ export class StockService implements IStockRepository {
         case 3: // VICEROY / ABSOLUTA
         case 4: // NEW BLACK: busca por EAN se possível, senão usa código parcial
           const cod = String(prod.cProd).split(',')[0];
-          const ean = Number(prod.cBarra || prod.cEAN);
+          const ean = prod.cBarra || prod.cEAN;
           produtos = isNaN(ean)
             ? await this.productRepository.findProductByPartialCode(cod)
             : await this.productRepository.findByEan(ean);
@@ -88,7 +88,7 @@ export class StockService implements IStockRepository {
           produtos = await this.productRepository.findByEan(prod.cBarraTrib);
           break;
           case 8: // TEK SUL 
-          const eanTek = Number(prod.cProd);
+          const eanTek = prod.cProd;
 
           if (nItem === 1) {
             const p = await this.productRepository.findProductById(492);
