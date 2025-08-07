@@ -33,6 +33,7 @@ import { PrintOrderResumeService } from './services/print-order-resume.service';
 import { OrderAssemblyService } from './services/order-assembly.service';
 import { AssemblyController } from './controllers/assembly.controller';
 import { OmieService } from './services/omie.service';
+import { OmieController } from './controllers/omie.controller';
 
 @Module({
   imports: [
@@ -58,7 +59,7 @@ import { OmieService } from './services/omie.service';
     SellersModule,
     RegionsModule,
   ],
-  controllers: [SellsController, TinyAuthController, AssemblyController],
+  controllers: [SellsController, TinyAuthController, AssemblyController, OmieController],
   providers: [
     LabelService,
     PrintOrderService,

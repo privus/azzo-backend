@@ -9,6 +9,7 @@ import { RomaneioService } from '../services/romaneio.service';
 import { PrintOrderResumeService } from '../services/print-order-resume.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 
+
 @ApiTags('sells')
 @Controller('sells')
 export class SellsController {
@@ -196,7 +197,7 @@ export class SellsController {
   async getSellById(@Param('id') id: number) {
     return this.sellsService.getSellByCode(id);
   }
-  
+
   @ApiOperation({ summary: 'Gerar etiquetas para um pedido específico via POST' })
   @Post(':id/label')
   async postLabel(

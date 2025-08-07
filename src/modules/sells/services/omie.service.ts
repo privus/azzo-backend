@@ -10,7 +10,7 @@ export class OmieService {
     private readonly clientKey: string;
     private readonly clientSecret: string;
     private readonly endpoint: string;
-    private readonly tag = 'produtos'
+    private readonly tag = 'produtos/'
     
     constructor(
         private readonly httpService: HttpService,
@@ -29,28 +29,31 @@ export class OmieService {
         return parte.trim();
       }
 
-      private montarBodyOmie(produto: Produto): any {
-        const codigoOmie = this.extrairCodigoOmie(produto.codigo);
-      
-        return {
-          call: "IncluirProduto",
-          param: [
-            {
-              codigo_produto_integracao: produto.codigo,
-              codigo: codigoOmie,
-              descricao: produto.nome,
-              unidade: "UN",
-              ncm: produto.ncm,
-              ean: produto.ean,
-              recomendacoes_fiscais: produto.cest ? [{ id_cest: produto.cest }] : [],
-            }
-          ],
-          app_key: this.clientKey,
-          app_secret: this.clientSecret,
-        };
-      }
-      
+    private montarBodyOmie(produto: Produto): any {
+      const codigoOmie = this.extrairCodigoOmie(produto.codigo);
     
+      return {
+        call: "IncluirProduto",
+        param: [
+          {
+            codigo_produto_integracao: produto.codigo,
+            codigo: codigoOmie,
+            descricao: produto.nome,
+            unidade: "UN",
+            ncm: produto.ncm ? produto.ncm.toString() : "",
+            ean: produto.ean ? produto.ean.toString() : "",
+            peso_bruto: produto.peso_grs ? Number((produto.peso_grs / 1000).toFixed(3)) : undefined,
+            marca: produto.fornecedor?.nome || undefined,
+            recomendacoes_fiscais: produto.cest ? [{ id_cest: produto.cest }] : [],
+            valor_unitario: produto.preco_venda,
+          }
+        ],
+        app_key: this.clientKey,
+        app_secret: this.clientSecret,
+      };
+    }
+      
+      
       async cadastrarProduto(produto: Produto): Promise<any> {
         const body = this.montarBodyOmie(produto);
         try {
@@ -66,21 +69,22 @@ export class OmieService {
         }
     }
 
-    async cadastrarTodosProdutosUnidade(): Promise<void> {
-        // Busca todos os produtos com unidade_id null
-        const produtos = await this.produtoRepository.find({ where: { unidade: null } });
-    
-        this.logger.log(`Encontrados ${produtos.length} produtos sem unidade_id.`);
-    
-        for (const produto of produtos) {
-          try {
-            await this.cadastrarProduto(produto);
-            // Respeite o rate limit da Omie! (um delay simples)
-            await new Promise((res) => setTimeout(res, 250)); // 240/min
-          } catch (e) {
-            this.logger.error(`Falha ao cadastrar produto código: ${produto.codigo}`, e?.response?.data || e.message);
-          }
+    async cadastrarTodosProdutosUnidade(): Promise<any> {
+      const produtos = await this.produtoRepository.find({ where: { unidade: null }, relations: ['fornecedor'], take: 5 });
+      this.logger.log(`Encontrados ${produtos.length} produtos sem unidade_id.`);
+      const resultados = [];
+  
+      for (const produto of produtos) {
+        try {
+          const res = await this.cadastrarProduto(produto);
+          resultados.push({ codigo: produto.codigo, status: 'OK', omie: res });
+          await new Promise((res) => setTimeout(res, 250)); // rate limit
+        } catch (e) {
+          this.logger.error(`Falha ao cadastrar produto código: ${produto.codigo}`, e?.response?.data || e.message);
+          resultados.push({ codigo: produto.codigo, status: 'ERRO', erro: e?.response?.data || e.message });
         }
       }
-    
+      return resultados;
+  }
+  
 }
