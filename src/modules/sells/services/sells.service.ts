@@ -693,30 +693,32 @@ export class SellsService implements ISellsRepository {
     await this.saidaRepository.delete({ venda });
   }
   
-  
   async getDailyRakingSells(): Promise<RakingSellsResponse> {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Ajuste de datas para considerar só o dia
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
   
-    const yesterday = new Date(today);
-    const tempYesterday = new Date(today);
-    tempYesterday.setDate(today.getDate() - 1);
-    if (tempYesterday.getDay() === 0) {
-      yesterday.setDate(today.getDate() - 4);
+    const ontem = new Date(hoje);
+    // Segunda-feira (1): busca sexta (hoje - 3 dias). Demais dias: busca ontem
+    if (hoje.getDay() === 1) {
+      ontem.setDate(hoje.getDate() - 3);
     } else {
-      yesterday.setDate(today.getDate() - 2);
+      ontem.setDate(hoje.getDate() - 1);
     }
   
-    const todaySales = await this.sellsByDate(today.toISOString());
-    const yesterdaySales = await this.sellsBetweenDates(yesterday.toISOString());
+    const hojeStr = hoje.toISOString().slice(0, 10);   // 'YYYY-MM-DD'
+    const ontemStr = ontem.toISOString().slice(0, 10); // 'YYYY-MM-DD'
+  
+    // Busca as vendas só pela data (ignorando horário)
+    const todaySales = await this.sellsBetweenDates(hojeStr);
+    const yesterdaySales = await this.sellsBetweenDates(ontemStr);
   
     const allSellers = (await this.sellersSevice.findAllSellers())
       .filter(v => v.ativo && v.vendedor_id !== 12);
   
-    const buildRanking = (sells: Venda[], date: Date) => {
+    const buildRanking = (sells: Venda[]) => {
       const rankingMap: Record<number, RankingItem> = {};
   
-      // Inicializa todos os vendedores ativos
       for (const seller of allSellers) {
         rankingMap[seller.vendedor_id] = {
           id: seller.vendedor_id,
@@ -757,11 +759,10 @@ export class SellsService implements ISellsRepository {
     };
   
     return {
-      today: buildRanking(todaySales, today),
-      yesterday: buildRanking(yesterdaySales, yesterday),
+      today: buildRanking(todaySales),
+      yesterday: buildRanking(yesterdaySales),
     };
   }
-  
   
   async reportBrandSalesBySeller(fromDate: string, toDate?: string): Promise<BrandSales> {
     const vendas = await this.sellsBetweenDates(fromDate, toDate);
