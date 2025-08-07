@@ -9,6 +9,6 @@ export class OmieController {
   @ApiOperation({ summary: 'Cadastrar produto no Omie' })
   @Get('cadastrar')
   async cadastrarProduto() {
-    return this.omieService.cadastrarTodosProdutosUnidade();
+    return this.omieService.cadastraProdutosOmie();
   }
 }
