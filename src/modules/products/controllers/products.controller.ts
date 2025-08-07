@@ -13,6 +13,12 @@ export class ProductsController {
     return this.productsService.syncroProducts();
   }
 
+  @ApiOperation({ summary: 'Atualizar preços por json' })
+  @Get('updatePrices')
+  async updatePricesFromJson() {
+    return this.productsService.updatePricesFromJson();
+  }
+
   @ApiOperation({ summary: 'Subir estoque minimo' })
   @Get('syncroMinStock')
   async syncroMinStock() {

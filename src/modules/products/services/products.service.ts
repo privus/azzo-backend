@@ -7,6 +7,7 @@ import { ProdutoAPIResponse } from '../dto/products.dto';
 import { IProductsRepository } from '../../../domain/repositories';
 import * as fs from 'fs';
 import { UpdateProductDto } from '../dto/update-product.dto';
+import { CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class ProductsService implements IProductsRepository {
@@ -355,4 +356,42 @@ export class ProductsService implements IProductsRepository {
       throw new BadRequestException({ message: error.message });
     }
   }
+
+  async updatePricesFromJson(): Promise<void> {
+    const jsonFilePath = 'src/utils/tabela-padrao.json';
+    if (!fs.existsSync(jsonFilePath)) {
+      console.error(`❌ Arquivo '${jsonFilePath}' não encontrado.`);
+      return;
+    }
+  
+    const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
+    const priceData = JSON.parse(jsonData);
+  
+    console.log(`🔄 Processando ${priceData.length} produtos para atualização de preços...`);
+  
+    for (const item of priceData) {
+      const codigo = item['Código do Produto'];
+      const preco = item['Preço ($)'];
+  
+      if (!codigo || preco === undefined) {
+        console.warn(`⚠️ Registro inválido: ${JSON.stringify(item)}`);
+        continue;
+      }
+  
+      const produto = await this.produtoRepository.findOne({ where: { codigo } });
+  
+      if (!produto) {
+        console.warn(`⚠️ Produto com código ${codigo} não encontrado.`);
+        continue;
+      }
+  
+      produto.preco_venda = Number(preco);
+  
+      await this.produtoRepository.save(produto);
+      console.log(`✅ Produto ${produto.codigo} atualizado com novo preço: R$${produto.preco_venda}`);
+    }
+  
+    console.log('🚀 Atualização de preços concluída com sucesso!');
+  }
+  
 }
