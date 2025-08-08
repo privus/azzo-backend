@@ -71,9 +71,12 @@ export class OmieService {
 
     async cadastraProdutosOmie(): Promise<any> {
       const produtos = await this.produtoRepository.find({
-        where: { unidade: null, ativo: 1 },
+        where: [
+          { unidade: null, ativo: 1 }
+        ],
         relations: ['fornecedor', 'unidade'],
       });
+      
       this.logger.log(`Encontrados ${produtos.length} produtos sem unidade_id.`);
       const resultados = [];
     
