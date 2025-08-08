@@ -71,23 +71,48 @@ export class OmieService {
 
     async cadastraProdutosOmie(): Promise<any> {
       const produtos = await this.produtoRepository.find({
-        where: { unidade: null },
+        where: { unidade: null, ativo: 1 },
         relations: ['fornecedor', 'unidade'],
-      });      
+      });
       this.logger.log(`Encontrados ${produtos.length} produtos sem unidade_id.`);
       const resultados = [];
-  
+    
       for (const produto of produtos) {
         try {
           const res = await this.cadastrarProduto(produto);
           resultados.push({ codigo: produto.codigo, status: 'OK', omie: res });
-          await new Promise((res) => setTimeout(res, 250)); // rate limit
+          // Respeite o rate limit, use um delay conservador:
+          await new Promise((resolve) => setTimeout(resolve, 350)); // aprox. 170/min
         } catch (e) {
-          this.logger.error(`Falha ao cadastrar produto código: ${produto.codigo}`, e?.response?.data || e.message);
-          resultados.push({ codigo: produto.codigo, status: 'ERRO', erro: e?.response?.data || e.message });
+          const faultcode = e?.response?.data?.faultcode;
+          const faultstring = e?.response?.data?.faultstring || '';
+          resultados.push({
+            codigo: produto.codigo,
+            status: 'ERRO',
+            erro: faultstring || e.message,
+          });
+          this.logger.error(`Falha ao cadastrar produto código: ${produto.codigo}`, faultstring || e.message);
+    
+          // Se detectou bloqueio por uso indevido, pause o loop pelo tempo sugerido pela Omie
+          if (faultcode === 'MISUSE_API_PROCESS') {
+            const seconds = this.extractSecondsFromFaultstring(faultstring);
+            const wait = (seconds ? Number(seconds) : 1800) * 1000; // Default 1800s (30min) se não conseguir extrair
+            this.logger.warn(`API OMIE bloqueada. Aguardando ${wait / 1000} segundos antes de continuar...`);
+            await new Promise((resolve) => setTimeout(resolve, wait));
+            // Opcional: break/return para sair e não rodar os próximos produtos já que está bloqueado
+            break;
+          }
         }
       }
       return resultados;
-  }
+    }
+    
+    /**
+     * Extrai número de segundos do faultstring da Omie, exemplo: "Tente novamente em 1792 segundos."
+     */
+    private extractSecondsFromFaultstring(faultstring: string): number | undefined {
+      const match = faultstring.match(/em (\d+) segundos/);
+      return match ? parseInt(match[1], 10) : undefined;
+    }    
   
 }
