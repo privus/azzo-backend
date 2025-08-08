@@ -85,7 +85,7 @@ export class OmieService {
           const res = await this.cadastrarProduto(produto);
           resultados.push({ codigo: produto.codigo, status: 'OK', omie: res });
           // Respeite o rate limit, use um delay conservador:
-          await new Promise((resolve) => setTimeout(resolve, 350)); // aprox. 170/min
+          await new Promise((resolve) => setTimeout(resolve, 2000));
         } catch (e) {
           const faultcode = e?.response?.data?.faultcode;
           const faultstring = e?.response?.data?.faultstring || '';
