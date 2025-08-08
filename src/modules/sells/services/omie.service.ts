@@ -70,12 +70,12 @@ export class OmieService {
     }
 
     async cadastraProdutosOmie(): Promise<any> {
-      const produtos = await this.produtoRepository.find({
-        where: [
-          { unidade: null, ativo: 1 }
-        ],
-        relations: ['fornecedor', 'unidade'],
-      });
+      const produtos = await this.produtoRepository.createQueryBuilder('produto')
+      .leftJoinAndSelect('produto.fornecedor', 'fornecedor')
+      .leftJoinAndSelect('produto.unidade', 'unidade')
+      .where('produto.unidade_id IS NULL')
+      .andWhere('produto.ativo = :ativo', { ativo: 1 })
+      .getMany();    
       
       this.logger.log(`Encontrados ${produtos.length} produtos sem unidade_id.`);
       const resultados = [];
