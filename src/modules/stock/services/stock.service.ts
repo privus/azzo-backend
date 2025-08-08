@@ -164,13 +164,6 @@ export class StockService implements IStockRepository {
        
       await this.productRepository.incrementStock(produtoFinal.produto_id, quantidade);
 
-      // ATIVAR UNIDADE E CAIXA (se existirem)
-      if (unidade) {
-        await this.productRepository.activeProducts(unidade.sellent_id);
-      }
-      if (caixa) {
-        await this.productRepository.activeProducts(caixa.sellent_id);
-      }
       quantidadeImportada++;
     }
 
