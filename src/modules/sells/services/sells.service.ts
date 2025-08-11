@@ -535,10 +535,11 @@ export class SellsService implements ISellsRepository {
   async updateSellStatus(UpdateSellStatusDto: UpdateSellStatusDto): Promise<string> {
     const { codigo, status_venda_id, numero_nfe, valor_frete } = UpdateSellStatusDto;
 
-    const venda = await this.vendaRepository.findOne({
-      where: { codigo },
-      relations: ['status_venda'],
-    });
+    const venda = await this.getSellByCode(codigo);
+
+    if (status_venda_id === 11468) {
+      this.revertSaleStock(venda);
+    }
 
     if (!venda) {
       throw new Error(`Venda com ID ${codigo} não encontrada.`);
