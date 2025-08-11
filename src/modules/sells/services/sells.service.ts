@@ -539,10 +539,7 @@ export class SellsService implements ISellsRepository {
 
     if (status_venda_id === 11468) {
       await this.revertSaleStock(venda);
-    
-      if (venda.parcela_credito) {
-        await this.parcelaRepository.remove(venda.parcela_credito);
-      }
+      await this.parcelaRepository.delete({ venda: { venda_id: venda.venda_id } });
     }
 
     if (!venda) {
