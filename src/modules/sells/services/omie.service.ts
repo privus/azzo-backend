@@ -75,8 +75,9 @@ export class OmieService {
       .leftJoinAndSelect('produto.unidade', 'unidade')
       .where('produto.unidade_id IS NULL')
       .andWhere('produto.ativo = :ativo', { ativo: 1 })
-      .getMany();    
-      
+      .andWhere('produto.ncm = :ncm', { ncm: '96162000' })
+      .getMany();
+    
       this.logger.log(`Encontrados ${produtos.length} produtos sem unidade_id.`);
       const resultados = [];
     
