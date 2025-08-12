@@ -1,6 +1,6 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, In, MoreThanOrEqual, Raw, Repository } from 'typeorm';
+import { Between, In, MoreThanOrEqual, Not, Raw, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda, SaidaEstoque } from '../../../infrastructure/database/entities';
 import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto, ProjectStockDto } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository } from '../../../domain/repositories';
@@ -487,6 +487,7 @@ export class SellsService implements ISellsRepository {
 
   async sellsBetweenDates(fromDate: string, toDate?: string): Promise<Venda[]> {
     let where: any = {};
+    console.log('fromDate==========================>', fromDate, 'toDate =============================>', toDate);
   
     if (toDate) {
       where.data_criacao = Raw(
@@ -1562,5 +1563,31 @@ export class SellsService implements ISellsRepository {
     await this.vendaRepository.save(venda);
 
     return `✅ Dados da Nf-e da venda #${code} foram limpos com sucesso.`;
+  }
+
+  async deleteParcelasNao10438Orm(): Promise<string> {
+    const vendas = await this.vendaRepository.find({
+      select: ['venda_id'],
+      where: { tipo_pedido: { tipo_pedido_id: Not(10438) } },
+      relations: ['tipo_pedido'],
+    });
+  
+    const ids = vendas.map(v => v.venda_id);
+    if (!ids.length) return 'Nenhuma parcela para deletar.';
+  
+    // delete em lotes para não estourar placeholders
+    const chunk = 1000;
+    let deletadas = 0;
+    for (let i = 0; i < ids.length; i += chunk) {
+      const slice = ids.slice(i, i + chunk);
+      const res = await this.parcelaRepository
+        .createQueryBuilder()
+        .delete()
+        .from(ParcelaCredito)
+        .where('venda_id IN (:...ids)', { ids: slice })
+        .execute();
+      deletadas += res.affected ?? 0;
+    }
+    return `✅ ${deletadas} parcelas deletadas (tipo_pedido_id != 10438).`;
   }
 }
