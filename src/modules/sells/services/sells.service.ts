@@ -322,7 +322,7 @@ export class SellsService implements ISellsRepository {
     let datas_vencimento = [];
     let parcela_credito = [];
 
-    if (sell.status.id !== 11468) {
+    if (sell.order_type_id === 10438) {
       const paymentTerms = sell.payment_term_text ? sell.payment_term_text.match(/\d+/g) : null;
       const paymentDays = paymentTerms ? paymentTerms.map(Number) : [];
       const numberOfInstallments = sell.installment_qty;
@@ -537,13 +537,14 @@ export class SellsService implements ISellsRepository {
 
     const venda = await this.getSellByCode(codigo);
 
+    if (!venda) {
+      throw new Error(`Venda com ID ${codigo} não encontrada.`);
+    }
+
+
     if (status_venda_id === 11468) {
       await this.revertSaleStock(venda);
       await this.parcelaRepository.delete({ venda: { venda_id: venda.venda_id } });
-    }
-
-    if (!venda) {
-      throw new Error(`Venda com ID ${codigo} não encontrada.`);
     }
 
     const novoStatus = await this.statusVendaRepository.findOne({ where: { status_venda_id } });
@@ -553,6 +554,7 @@ export class SellsService implements ISellsRepository {
     }
 
     await this.updateStatus(codigo, status_venda_id);
+    venda.parcela_credito = [];
     venda.numero_nfe = numero_nfe;
     venda.valor_frete = valor_frete;
     venda.status_venda = novoStatus;
@@ -1005,7 +1007,7 @@ export class SellsService implements ISellsRepository {
     const vendedorMap = new Map<number, Commissions>();
   
     for (const venda of vendasMes) {
-      if (venda.tipo_pedido.tipo_pedido_id !== 10438) continue;
+      if (venda.tipo_pedido.tipo_pedido_id !== 10438 || venda.status_venda.status_venda_id == 11468) continue;
   
       const vendedorId = venda.vendedor.vendedor_id;
   
