@@ -1001,7 +1001,6 @@ export class SellsService implements ISellsRepository {
       marcas,
     };
   }
-  
 
   async commissionBySeller(fromDate: string, toDate?: string): Promise<Commissions[]> {
     const vendasMes = await this.sellsBetweenDates(fromDate, toDate);
@@ -1125,7 +1124,7 @@ export class SellsService implements ISellsRepository {
 
     while (true) {
       try {
-        const url = `${apiUrl}${this.contasReceberTag}?dataInicialEmissao=2025-04-11&offset=${offset}&limit=${limit}`;
+        const url = `${apiUrl}${this.contasReceberTag}?dataInicialEmissao=2025-06-11&offset=${offset}&limit=${limit}`;
         const response = await this.httpService.axiosRef.get<{ itens: InvoiceTinyDto[] }>(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
