@@ -235,7 +235,7 @@ export class SellsService implements ISellsRepository {
           const link = await this.getNflink(existingSell.nfe_id, cliente.cidade.estado.sigla);
           existingSell.nfe_link = link;
         }
-          if (existingSell.valor_final != sell.amount_final || sell.installment_qty != existingSell.numero_parcelas) {
+          if (existingSell.valor_final != sell.amount_final || sell.installment_qty != existingSell.numero_parcelas || sell.installment_qty != existingSell.parcela_credito.length) {
             await this.revertSaleStock(existingSell);
             console.log('Venda já existente e atualizando carrinho =>', sell.code);
             existingSell.itens_atualizacao = new Date();
