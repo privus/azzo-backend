@@ -1620,6 +1620,7 @@ export class SellsService implements ISellsRepository {
             clienteNome: cliente.nome,
             totalValor: 0,
             pedidos: [],
+            linksNfe: [],
           });
         }
         const entry = porCliente.get(cliente.codigo)!;
@@ -1640,7 +1641,8 @@ export class SellsService implements ISellsRepository {
       .map(c => ({
         ...c,
         totalValor: Number(c.totalValor.toFixed(2)),
-        pedidos: c.pedidos.sort((a, b) => b - a), // opcional: ordena desc
+        pedidos: c.pedidos,
+        linksNfe: c.linksNfe,
       }))
       .sort((a, b) => b.totalValor - a.totalValor);
   
@@ -1649,5 +1651,5 @@ export class SellsService implements ISellsRepository {
       clientes,
     };
   }
-  
+
 }
