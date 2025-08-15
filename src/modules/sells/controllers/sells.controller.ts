@@ -35,7 +35,7 @@ export class SellsController {
 
   @ApiOperation({ summary: 'Relatorio de vendas por grupo clientes' })
   @Get('groupCustomers')
-  async sellsByGroupCustomers(@Query('groupId') groupId: number, @Query('supplierId') supplierId: number, @Query('fromDate') fromDate: string, @Query('toDate') toDate?: string) {
+  async sellsByGroupCustomers(@Query('groupId') groupId: number, @Query('supplierId') supplierId: number, @Query('fromDate') fromDate: string, @Query('toDate') toDate: string) {
     return this.sellsService.groupConsumption({ groupId, supplierId, fromDate, toDate })
   }
 

@@ -1598,14 +1598,14 @@ export class SellsService implements ISellsRepository {
   
     for (const venda of vendas) {
       const cliente = venda.cliente;
-      if (!cliente?.grupo || cliente.grupo.grupo_cliente_id !== groupId) continue;
+      if (!cliente?.grupo || cliente.grupo.grupo_cliente_id !== +groupId) continue;
   
       // soma apenas itens do supplierId
       let somaVendaFornecedor = 0;
   
       for (const item of venda.itensVenda || []) {
         const fornecedor = item.produto?.fornecedor;
-        if (fornecedor?.fornecedor_id !== supplierId) continue;
+        if (fornecedor?.fornecedor_id !== +supplierId) continue;
   
         const valor = Number(item.valor_total) || 0;
         somaVendaFornecedor += valor;
