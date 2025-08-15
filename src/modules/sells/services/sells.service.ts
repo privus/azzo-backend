@@ -1590,7 +1590,7 @@ export class SellsService implements ISellsRepository {
   }
   
   async groupConsumption(GroupSalesDto): Promise<GroupSalesResponse> {
-    const { fromDate, toDate, groupId, supplierId } = GroupSalesDto;
+    const { groupId, supplierId, fromDate, toDate } = GroupSalesDto;
     const vendas = await this.sellsBetweenDates(fromDate, toDate);
   
     const porCliente = new Map<number, CustomerGroupSalesDto>();
