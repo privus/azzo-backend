@@ -516,6 +516,31 @@ export class SellsService implements ISellsRepository {
     });
   }
 
+  async getSellsByDateRange(fromDate: Date, toDate: Date): Promise<Venda[]> {
+    return this.vendaRepository.find({
+      where: {
+        data_criacao: Raw(
+          alias => `${alias} BETWEEN :fromDate AND :toDate`,
+          { 
+            fromDate: fromDate.toISOString(), 
+            toDate: toDate.toISOString() 
+          }
+        ),
+      },
+      relations: [
+        'cliente.grupo',
+        'cliente.cidade.estado',
+        'vendedor',
+        'status_pagamento',
+        'status_venda',
+        'itensVenda.produto',
+        'itensVenda.produto.unidade',
+        'itensVenda.produto.fornecedor', 
+        'tipo_pedido'
+      ],
+    });
+  }
+
   async getSellByCode(id: number): Promise<Venda> {
     return this.vendaRepository.findOne({
       where: { codigo: id },

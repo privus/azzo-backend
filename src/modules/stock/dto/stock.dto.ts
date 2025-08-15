@@ -37,5 +37,16 @@ export interface Last10OutDto {
   };
 }
 
+export interface StockDurationDto {
+  produto_id: number;
+  codigo: string;
+  nome: string;
+  saldo_estoque: number;
+  consumo_medio_diario: number;
+  dias_duracao: number;
+  periodo_analise_dias: number;
+  data_calculo: string;
+}
+
 
 

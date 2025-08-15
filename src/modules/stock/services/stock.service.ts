@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { XMLParser } from 'fast-xml-parser';
 import * as fs from 'fs';
-import { StockImportResponse, StockLiquid } from '../dto';
+import { StockImportResponse, StockLiquid, StockDurationDto } from '../dto';
 import { StockOutDto } from '../dto/stock-out.dto';
 import { DebtsDto } from 'src/modules/debts/dto';
 
@@ -346,6 +346,59 @@ export class StockService implements IStockRepository {
       message: `CEST atualizado em ${updated} produto(s).`,
       updated,
       notFound,
+    };
+  }
+
+  async getStockDuration(produtoId: number, periodoAnalise: number = 30): Promise<StockDurationDto> {
+    // Busca o produto
+    const produto = await this.productRepository.findProductById(produtoId);
+    if (!produto) {
+      throw new Error(`Produto com ID ${produtoId} não encontrado.`);
+    }
+
+    // Data de início do período de análise
+    const dataInicio = new Date();
+    dataInicio.setDate(dataInicio.getDate() - periodoAnalise);
+
+    // Busca vendas do período para calcular consumo médio
+    const vendas = await this.sellRepository.getSellsByDateRange(dataInicio, new Date());
+
+    let quantidadeTotalVendida = 0;
+
+    for (const venda of vendas) {
+      for (const item of venda.itensVenda) {
+        const itemProduto = item.produto;
+        const baseProduto = itemProduto.unidade ?? itemProduto;
+        
+        // Verifica se é o mesmo produto (considerando produto base)
+        if (baseProduto.produto_id === produto.produto_id) {
+          // Calcula quantidade em unidades base
+          let qtVenda = itemProduto.unidade && itemProduto.qt_uni
+            ? item.quantidade * itemProduto.qt_uni
+            : item.quantidade;
+
+          quantidadeTotalVendida += qtVenda;
+        }
+      }
+    }
+
+    // Calcula consumo médio diário
+    const consumoMedioDiario = quantidadeTotalVendida / periodoAnalise;
+
+    // Calcula quantos dias o estoque irá durar
+    const diasDuracao = consumoMedioDiario > 0 
+      ? Math.floor(produto.saldo_estoque / consumoMedioDiario)
+      : Infinity;
+
+    return {
+      produto_id: produto.produto_id,
+      codigo: produto.codigo,
+      nome: produto.nome,
+      saldo_estoque: produto.saldo_estoque,
+      consumo_medio_diario: Math.round(consumoMedioDiario * 100) / 100, // Arredonda para 2 casas decimais
+      dias_duracao: diasDuracao === Infinity ? -1 : diasDuracao, // -1 indica que não há consumo histórico
+      periodo_analise_dias: periodoAnalise,
+      data_calculo: new Date().toISOString(),
     };
   }
   
