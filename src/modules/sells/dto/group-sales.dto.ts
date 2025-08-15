@@ -10,3 +10,10 @@ export interface CustomerGroupSalesDto {
     groupTotal: number;
     clientes: CustomerGroupSalesDto[];
   }
+
+export interface GroupSalesDto {
+  groupId: number;
+  supplierId: number;
+  fromDate: string;
+  toDate: string;
+}

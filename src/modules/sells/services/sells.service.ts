@@ -1589,11 +1589,9 @@ export class SellsService implements ISellsRepository {
     return `✅ ${deletadas} parcelas deletadas (tipo_pedido_id != 10438).`;
   }
   
-  async groupConsumption(
-    groupId = 1,
-    fornecedorId = 2,
-  ): Promise<GroupSalesResponse> {
-    const vendas = await this.sellsBetweenDates('2025-06-01', '2025-06-30');
+  async groupConsumption(GroupSalesDto): Promise<GroupSalesResponse> {
+    const { fromDate, toDate, groupId, fornecedorId } = GroupSalesDto;
+    const vendas = await this.sellsBetweenDates(fromDate, toDate);
   
     const porCliente = new Map<number, CustomerGroupSalesDto>();
     let groupTotal = 0;
@@ -1654,6 +1652,4 @@ export class SellsService implements ISellsRepository {
       clientes,
     };
   }
-  
-
 }
