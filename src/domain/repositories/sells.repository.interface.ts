@@ -14,7 +14,6 @@ export interface ISellsRepository {
   syncroStatusSells(): Promise<void>;
   sellsByDate(fromDate?: string): Promise<Venda[]>;
   sellsBetweenDates(fromDate: string, toDate?: string): Promise<Venda[]>;
-  getSellsByDateRange(fromDate: Date, toDate: Date): Promise<Venda[]>;
   getSellByCode(id: number): Promise<Venda>;
   exportTiny(id: number): Promise<string>;
   updateSellStatus(UpdateSellStatusDto: UpdateSellStatusDto): Promise<string>;

@@ -359,9 +359,14 @@ export class StockService implements IStockRepository {
     // Data de início do período de análise
     const dataInicio = new Date();
     dataInicio.setDate(dataInicio.getDate() - periodoAnalise);
+    const dataFim = new Date();
 
-    // Busca vendas do período para calcular consumo médio
-    const vendas = await this.sellRepository.getSellsByDateRange(dataInicio, new Date());
+    // Formata as datas para string (formato YYYY-MM-DD)
+    const fromDateStr = dataInicio.toISOString().split('T')[0];
+    const toDateStr = dataFim.toISOString().split('T')[0];
+
+    // Busca vendas do período usando método existente
+    const vendas = await this.sellRepository.sellsBetweenDates(fromDateStr, toDateStr);
 
     let quantidadeTotalVendida = 0;
 
