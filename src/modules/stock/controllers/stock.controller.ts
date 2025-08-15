@@ -1,10 +1,10 @@
-import { Body, Controller, Get, Param, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UploadedFile, UseInterceptors, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { StockService } from '../services/stock.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { Distribuidor, Produto, SaidaEstoque } from '../../../infrastructure/database/entities';
-import { StockImportResponse, StockLiquid, StockOutDto } from '../dto';
+import { StockImportResponse, StockLiquid, StockOutDto, StockDurationDto } from '../dto';
 
 ApiTags('stock')
 @Controller('stock')
@@ -69,5 +69,14 @@ export class StockController {
   @UseInterceptors(FileInterceptor('file'))
   async updateCestByXml(@UploadedFile() file: Express.Multer.File): Promise<{ message: string, updated: number, notFound: string[] }> {
     return this.stockService.getCestByXmlBuffer(file.buffer);
+  }
+
+  @ApiOperation({ summary: 'Calcular quantos dias o estoque de um produto irá durar' })
+  @Get('duration/:produtoId')
+  async getStockDuration(
+    @Param('produtoId') produtoId: number,
+    @Query('periodoAnalise') periodoAnalise?: number
+  ): Promise<StockDurationDto> {
+    return this.stockService.getStockDuration(produtoId, periodoAnalise || 30);
   }
 }
