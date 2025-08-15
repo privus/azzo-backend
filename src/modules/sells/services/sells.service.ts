@@ -1593,7 +1593,7 @@ export class SellsService implements ISellsRepository {
     groupId = 1,
     fornecedorId = 2,
   ): Promise<GroupSalesResponse> {
-    const vendas = await this.sellsBetweenDates('2025-07-01', '2025-07-31');
+    const vendas = await this.sellsBetweenDates('2025-06-01', '2025-06-30');
   
     const porCliente = new Map<number, CustomerGroupSalesDto>();
     let groupTotal = 0;
@@ -1653,6 +1653,7 @@ export class SellsService implements ISellsRepository {
       groupTotal: Number(groupTotal.toFixed(2)),
       clientes,
     };
-  } 
+  }
+  
 
 }
