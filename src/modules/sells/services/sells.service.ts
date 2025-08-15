@@ -1,8 +1,8 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, In, MoreThanOrEqual, Not, Raw, Repository } from 'typeorm';
+import { In, MoreThanOrEqual, Not, Raw, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda, SaidaEstoque } from '../../../infrastructure/database/entities';
-import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto, ProjectStockDto } from '../dto';
+import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto, ProjectStockDto, GroupSalesResponse, CustomerGroupSalesDto } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository } from '../../../domain/repositories';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { HttpService } from '@nestjs/axios';
@@ -504,6 +504,7 @@ export class SellsService implements ISellsRepository {
     return this.vendaRepository.find({
       where,
       relations: [
+        'cliente.grupo',
         'cliente.cidade.estado',
         'vendedor',
         'status_pagamento',
@@ -933,7 +934,6 @@ export class SellsService implements ISellsRepository {
     return relatorio;
   }
   
-  
   async getPositivityAzzo(fromDate: string, toDate: string): Promise<PositivityResponse> {
     const vendas = await this.sellsBetweenDates(fromDate, toDate);
     const clientes = await this.clienteService.findAllCustomers();
@@ -1094,7 +1094,6 @@ export class SellsService implements ISellsRepository {
       faturamentoPorMarcaMesAtual
     };
   }
-  
 
   @Cron(CronExpression.EVERY_DAY_AT_9AM)
   async syncroTinyInvoiceNf(): Promise<string> {
@@ -1589,4 +1588,66 @@ export class SellsService implements ISellsRepository {
     }
     return `✅ ${deletadas} parcelas deletadas (tipo_pedido_id != 10438).`;
   }
+  
+  async groupConsumption(
+    groupId = 1,
+    fornecedorId = 2,
+  ): Promise<GroupSalesResponse> {
+    // Monta cláusula de data (sem QueryBuilder)
+    const vendas = await this.sellsBetweenDates('2025-06-01', '2025-06-30')
+  
+    const porCliente = new Map<number, CustomerGroupSalesDto>();
+    let groupTotal = 0;
+  
+    for (const venda of vendas) {
+      const cliente = venda.cliente;
+      if (!cliente?.grupo || cliente.grupo.grupo_cliente_id !== groupId) continue;
+  
+      // some apenas itens do fornecedorId
+      let somaVendaFornecedor = 0;
+  
+      for (const item of venda.itensVenda || []) {
+        const fornecedor = item.produto?.fornecedor;
+        if (fornecedor?.fornecedor_id !== fornecedorId) continue;
+  
+        const valor = Number(item.valor_total) || 0;
+        somaVendaFornecedor += valor;
+  
+        // acumula por cliente
+        if (!porCliente.has(cliente.codigo)) {
+          porCliente.set(cliente.codigo, {
+            clienteCodigo: cliente.codigo,
+            clienteNome: cliente.nome,
+            totalValor: 0,
+            pedidos: [],
+          });
+        }
+        const entry = porCliente.get(cliente.codigo)!;
+        entry.totalValor += valor;
+  
+        // adiciona o código do pedido sem duplicar
+        const codigo = Number(venda.codigo);
+        if (!Number.isNaN(codigo) && !entry.pedidos.includes(codigo)) {
+          entry.pedidos.push(codigo);
+        }
+      }
+  
+      groupTotal += somaVendaFornecedor;
+    }
+  
+    // Normaliza saída
+    const clientes = Array.from(porCliente.values())
+      .map(c => ({
+        ...c,
+        totalValor: Number(c.totalValor.toFixed(2)),
+        pedidos: c.pedidos.sort((a, b) => b - a), // opcional: ordena desc
+      }))
+      .sort((a, b) => b.totalValor - a.totalValor);
+  
+    return {
+      groupTotal: Number(groupTotal.toFixed(2)),
+      clientes,
+    };
+  }
+  
 }

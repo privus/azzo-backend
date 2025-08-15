@@ -13,10 +13,16 @@ export class CustomersController {
     return this.customersService.syncroCustomers();
   }
 
-  @ApiOperation({ summary: 'Atualizar CLientes Inativos' })
+  @ApiOperation({ summary: 'Atualizar Clientes Inativos' })
   @Get('updateInactive')
   async updateInactiveCustomers() {
     return this.customersService.updateCustomersFromJsonFile();
+  }
+
+  @ApiOperation({ summary: 'Associa cliente a grupos' })
+  @Get('associateGroups')
+  async associateCustomersToGroups() {
+    return this.customersService.associateCustomersGrup();
   }
 
   @ApiOperation({ summary: 'Sincronizar todos tiny ids' })

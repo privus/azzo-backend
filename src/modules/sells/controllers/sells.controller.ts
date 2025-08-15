@@ -33,6 +33,12 @@ export class SellsController {
     return this.sellsService.sellsBetweenDates(fromDate, toDate);
   }
 
+  @ApiOperation({ summary: 'Relatorio de vendas por grupo clientes' })
+  @Get('groupCustomers')
+  async sellsByGroupCustomers() {
+    return this.sellsService.groupConsumption()
+  }
+
   @ApiOperation({ summary: 'Obter ranking de vendas do dia' })
   @Get('ranking')
   async getDailyRakingSells() {

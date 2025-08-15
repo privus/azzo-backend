@@ -1,10 +1,10 @@
 import { TinyAuthService } from './../../sells/services/tiny-auth.service';
-import { Body, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CustomerAPIResponse, TinyCustomerDto, TinyCustomerResponse } from '../dto';
-import { Regiao, StatusCliente, Cidade, Cliente, CategoriaCliente } from '../../../infrastructure/database/entities';
+import { Regiao, StatusCliente, Cidade, Cliente, CategoriaCliente, GrupoCliente } from '../../../infrastructure/database/entities';
 import { ICustomersRepository, ISellersRepository } from '../../../domain/repositories';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import * as fs from 'fs';
@@ -25,6 +25,7 @@ export class CustomersService implements ICustomersRepository{
     @InjectRepository(StatusCliente) private readonly statusClienteRepository: Repository<StatusCliente>,
     @InjectRepository(CategoriaCliente) private readonly categoriaRepository: Repository<CategoriaCliente>,
     @Inject('ISellersRepository') private readonly sellersSevice: ISellersRepository,
+    @InjectRepository(GrupoCliente) private readonly grupoClienteRepository: Repository<GrupoCliente>,
     private readonly tinyAuthService: TinyAuthService,  
     private readonly httpService: HttpService,
   ) {
@@ -578,5 +579,37 @@ export class CustomersService implements ICustomersRepository{
     }
   
     console.log('🏁 Atualização em massa finalizada.');
+  }
+
+  async associateCustomersGrup(): Promise<GrupoCliente> {
+    const grupo = await this.grupoClienteRepository.findOne({
+      where: { grupo_cliente_id: 1 }, // Ajuste o ID do grupo conforme necessário
+      relations: ['clientes'],
+    });
+
+    const codClientes = [445, 653, 914, 1117, 1204, 1341, 1527, 1866, 1995, 2071, 2099, 2246, 2513, 2906, 2909, 2911, 2915, 2918, 2919, 2920, 2922, 2923, 2925, 2926, 2928]
+
+    if (!grupo) {
+      console.error('Grupo não encontrado.');
+      return;
+    }
+    for (const cod of codClientes) {
+      this.clienteRepository.findOne({ where: { codigo: cod }, relations: ['grupo'] })
+        .then(cliente => {
+          if (cliente) {
+            cliente.grupo = grupo;
+            return this.clienteRepository.save(cliente);
+          } else {
+            console.warn(`Cliente com código ${cod} não encontrado.`);
+          }
+        })
+        .catch(err => console.error(`Erro ao associar cliente ${cod} ao grupo:`, err));
+    }
+    const grupoAtualizado = await this.grupoClienteRepository.findOne({
+      where: { grupo_cliente_id: 1 },
+      relations: ['clientes'],
+    });
+    
+    return grupoAtualizado
   }
 }
