@@ -1593,8 +1593,7 @@ export class SellsService implements ISellsRepository {
     groupId = 1,
     fornecedorId = 2,
   ): Promise<GroupSalesResponse> {
-    // Monta cláusula de data (sem QueryBuilder)
-    const vendas = await this.sellsBetweenDates('2025-06-01', '2025-06-30')
+    const vendas = await this.sellsBetweenDates('2025-06-01', '2025-06-30');
   
     const porCliente = new Map<number, CustomerGroupSalesDto>();
     let groupTotal = 0;
@@ -1603,7 +1602,7 @@ export class SellsService implements ISellsRepository {
       const cliente = venda.cliente;
       if (!cliente?.grupo || cliente.grupo.grupo_cliente_id !== groupId) continue;
   
-      // some apenas itens do fornecedorId
+      // soma apenas itens do fornecedorId
       let somaVendaFornecedor = 0;
   
       for (const item of venda.itensVenda || []) {
@@ -1613,7 +1612,7 @@ export class SellsService implements ISellsRepository {
         const valor = Number(item.valor_total) || 0;
         somaVendaFornecedor += valor;
   
-        // acumula por cliente
+        // cria cliente no mapa se não existir
         if (!porCliente.has(cliente.codigo)) {
           porCliente.set(cliente.codigo, {
             clienteCodigo: cliente.codigo,
@@ -1623,26 +1622,30 @@ export class SellsService implements ISellsRepository {
             linksNfe: [],
           });
         }
+  
         const entry = porCliente.get(cliente.codigo)!;
         entry.totalValor += valor;
   
-        // adiciona o código do pedido sem duplicar
+        // adiciona o código do pedido
         const codigo = Number(venda.codigo);
         if (!Number.isNaN(codigo) && !entry.pedidos.includes(codigo)) {
           entry.pedidos.push(codigo);
+        }
+  
+        // adiciona "codigo - link" da NFe (se existir)
+        if (venda.nfe_link && !entry.linksNfe.includes(`${codigo} - ${venda.nfe_link}`)) {
+          entry.linksNfe.push(`${codigo} - ${venda.nfe_link}`);
         }
       }
   
       groupTotal += somaVendaFornecedor;
     }
   
-    // Normaliza saída
+    // organiza resultado
     const clientes = Array.from(porCliente.values())
       .map(c => ({
         ...c,
         totalValor: Number(c.totalValor.toFixed(2)),
-        pedidos: c.pedidos,
-        linksNfe: c.linksNfe,
       }))
       .sort((a, b) => b.totalValor - a.totalValor);
   
@@ -1650,6 +1653,6 @@ export class SellsService implements ISellsRepository {
       groupTotal: Number(groupTotal.toFixed(2)),
       clientes,
     };
-  }
+  } 
 
 }
