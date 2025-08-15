@@ -1590,7 +1590,7 @@ export class SellsService implements ISellsRepository {
   }
   
   async groupConsumption(GroupSalesDto): Promise<GroupSalesResponse> {
-    const { fromDate, toDate, groupId, fornecedorId } = GroupSalesDto;
+    const { fromDate, toDate, groupId, supplierId } = GroupSalesDto;
     const vendas = await this.sellsBetweenDates(fromDate, toDate);
   
     const porCliente = new Map<number, CustomerGroupSalesDto>();
@@ -1600,12 +1600,12 @@ export class SellsService implements ISellsRepository {
       const cliente = venda.cliente;
       if (!cliente?.grupo || cliente.grupo.grupo_cliente_id !== groupId) continue;
   
-      // soma apenas itens do fornecedorId
+      // soma apenas itens do supplierId
       let somaVendaFornecedor = 0;
   
       for (const item of venda.itensVenda || []) {
         const fornecedor = item.produto?.fornecedor;
-        if (fornecedor?.fornecedor_id !== fornecedorId) continue;
+        if (fornecedor?.fornecedor_id !== supplierId) continue;
   
         const valor = Number(item.valor_total) || 0;
         somaVendaFornecedor += valor;
