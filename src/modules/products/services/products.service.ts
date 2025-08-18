@@ -89,13 +89,7 @@ export class ProductsService implements IProductsRepository {
       Object.assign(existingProduct, {
         nome: item.name,
         ativo: item.is_active,
-        preco_venda: item.price.default,
-        ncm: Number(item.ncm),
-        ean: Number(item.ean),
-        preco_custo: item.price_cost,
-        peso_grs: item.average_weight,
         fotoUrl: item.catalog.image,
-        categoria: categoria,
         data_atualizacao: new Date(item.updated_at),
         descricao_uni: item.description.html,
       });
