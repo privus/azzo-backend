@@ -348,7 +348,7 @@ export class StockService implements IStockRepository {
     };
   }
 
-    async stockDurationByProduct(): Promise<StockDuration[]> {
+  async stockDurationByProduct(): Promise<StockDuration[]> {
     // Busca todas as saídas registradas
     const saidas = await this.saidaRepository.find({
       relations: ['produto'],
@@ -396,10 +396,8 @@ export class StockService implements IStockRepository {
 
       const { total, primeiraData, ultimaData } = registro;
 
-      const dias = Math.max(
-        1,
-        Math.ceil((ultimaData.getTime() - primeiraData.getTime()) / (1000 * 60 * 60 * 24))
-      );
+      const dias = Math.max(1, this.businessDayOnly(primeiraData, ultimaData));
+
 
       const mediaDiaria = total / dias;
       const diasRestantes =
@@ -417,4 +415,16 @@ export class StockService implements IStockRepository {
     return resultados.sort((a, b) => a.diasRestantes - b.diasRestantes);
   }
   
+  businessDayOnly(inicio: Date, fim: Date): number {
+    let count = 0;
+    const current = new Date(inicio);
+    while (current <= fim) {
+      const diaSemana = current.getDay(); // 0 = domingo, 6 = sábado
+      if (diaSemana !== 0 && diaSemana !== 6) {
+        count++;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+    return count;
+  }
 }
