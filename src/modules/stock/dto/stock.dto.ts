@@ -37,5 +37,10 @@ export interface Last10OutDto {
   };
 }
 
+export interface StockDuration {
+  produto_id: string;
+  mediaDiaria: number;
+  diasRestantes: number;
+}
 
 

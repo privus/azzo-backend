@@ -4,7 +4,7 @@ import { StockService } from '../services/stock.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { Distribuidor, Produto, SaidaEstoque } from '../../../infrastructure/database/entities';
-import { StockImportResponse, StockLiquid, StockOutDto } from '../dto';
+import { StockDuration, StockImportResponse, StockLiquid, StockOutDto } from '../dto';
 
 ApiTags('stock')
 @Controller('stock')
@@ -23,6 +23,12 @@ export class StockController {
   @Get('updateStock')
   async updateStock(): Promise<string> {
     return this.stockService.updateStockFromJson();
+  }
+
+  @ApiOperation({ summary: 'Obter duração estoque' })
+  @Get('duration')
+  async getDurationStock(): Promise<StockDuration[]> {
+    return this.stockService.stockDurationByProduct();
   }
 
   @ApiOperation({ summary: 'Registrar saída estoque' })

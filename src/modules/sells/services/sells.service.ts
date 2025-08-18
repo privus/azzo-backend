@@ -1493,7 +1493,7 @@ export class SellsService implements ISellsRepository {
         },
     });
   }
-
+  
     async customersPureli(): Promise<
     Array<{ 
       codigo: number;

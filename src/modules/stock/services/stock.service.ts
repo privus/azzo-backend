@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { XMLParser } from 'fast-xml-parser';
 import * as fs from 'fs';
-import { StockImportResponse, StockLiquid } from '../dto';
+import { StockDuration, StockImportResponse, StockLiquid } from '../dto';
 import { StockOutDto } from '../dto/stock-out.dto';
 import { DebtsDto } from 'src/modules/debts/dto';
 
@@ -204,8 +204,7 @@ export class StockService implements IStockRepository {
           valor_total: p.valor,
         })),
         debito: debitoCriado ? { debito_id: debitoCriado.debito_id, nome: debitoCriado.nome, valor_total: debitoCriado.valor_total, numero_parcelas: debitoCriado.numero_parcelas } : null,
-      };
-         
+      }; 
   }
 
   async getStockLiquid(): Promise<StockLiquid[]> {
@@ -347,6 +346,74 @@ export class StockService implements IStockRepository {
       updated,
       notFound,
     };
+  }
+
+    async stockDurationByProduct(): Promise<StockDuration[]> {
+    // Busca todas as saídas registradas
+    const saidas = await this.saidaRepository.find({
+      relations: ['produto'],
+    });
+
+    if (!saidas.length) {
+      return [];
+    }
+
+    // Agrupa por produto_id
+    const totalVendasMap = new Map<number, { total: number; primeiraData: Date; ultimaData: Date }>();
+
+    for (const saida of saidas) {
+      const produto = saida.produto;
+      if (!produto || !saida.data_saida) continue;
+
+      const id = produto.produto_id;
+      const data = new Date(saida.data_saida);
+
+      if (!totalVendasMap.has(id)) {
+        totalVendasMap.set(id, {
+          total: Number(saida.quantidade),
+          primeiraData: data,
+          ultimaData: data,
+        });
+      } else {
+        const registro = totalVendasMap.get(id)!;
+        registro.total += Number(saida.quantidade);
+        if (data < registro.primeiraData) registro.primeiraData = data;
+        if (data > registro.ultimaData) registro.ultimaData = data;
+      }
+    }
+
+    const produtos = await this.produtoRepository
+      .createQueryBuilder('produto')
+      .where('produto.unidade_id IS NULL')
+      .getMany();
+
+    const resultados = [];
+
+    for (const produto of produtos) {
+      const registro = totalVendasMap.get(produto.produto_id);
+      if (!registro) continue;
+
+      const { total, primeiraData, ultimaData } = registro;
+
+      const dias = Math.max(
+        1,
+        Math.ceil((ultimaData.getTime() - primeiraData.getTime()) / (1000 * 60 * 60 * 24))
+      );
+
+      const mediaDiaria = total / dias;
+      const diasRestantes =
+        mediaDiaria > 0
+          ? Number((produto.saldo_estoque / mediaDiaria).toFixed(2))
+          : Infinity;
+
+      resultados.push({
+        produto_id: produto.produto_id,
+        mediaDiaria: Number(mediaDiaria.toFixed(2)),
+        diasRestantes,
+      });
+    }
+
+    return resultados.sort((a, b) => a.diasRestantes - b.diasRestantes);
   }
   
 }
