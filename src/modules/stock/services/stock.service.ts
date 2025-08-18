@@ -385,6 +385,7 @@ export class StockService implements IStockRepository {
     const produtos = await this.produtoRepository
       .createQueryBuilder('produto')
       .where('produto.unidade_id IS NULL')
+      .andWhere('produto.ativo = :ativo', { ativo: true })
       .getMany();
 
     const resultados = [];
