@@ -400,11 +400,10 @@ export class StockService implements IStockRepository {
 
 
       const mediaDiaria = total / dias;
-      const diasRestantes =
-        mediaDiaria > 0
-          ? Number((produto.saldo_estoque / mediaDiaria).toFixed(2))
-          : Infinity;
-
+      let diasRestantes = mediaDiaria > 0
+        ? Math.floor(produto.saldo_estoque / mediaDiaria)
+        : 0;
+      
       resultados.push({
         produto_id: produto.produto_id,
         mediaDiaria: Number(mediaDiaria.toFixed(2)),
