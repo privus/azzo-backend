@@ -398,11 +398,14 @@ export class StockService implements IStockRepository {
 
       const dias = Math.max(1, this.businessDayOnly(primeiraData, ultimaData));
 
-
       const mediaDiaria = total / dias;
       let diasRestantes = mediaDiaria > 0
-        ? Math.floor(produto.saldo_estoque / mediaDiaria)
-        : 0;
+      ? Math.floor(produto.saldo_estoque / mediaDiaria)
+      : 0;
+    
+    if (!Number.isFinite(diasRestantes) || diasRestantes < 0) {
+      diasRestantes = 0;
+    }   
       
       resultados.push({
         produto_id: produto.produto_id,
