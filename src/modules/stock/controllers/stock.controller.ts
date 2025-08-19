@@ -82,4 +82,10 @@ export class StockController {
   async getRetroValue(): Promise<StockValuePermancence[]> {
     return this.stockService.getHistoricalStockValue();
   }
+
+  @ApiOperation({ summary: 'Obter valor do estoque' })
+  @Get('value')
+  async getStockValue(): Promise<StockValue> {
+    return this.stockService.getStockValue();
+  }
 }
