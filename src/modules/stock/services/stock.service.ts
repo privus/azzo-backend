@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { XMLParser } from 'fast-xml-parser';
 import * as fs from 'fs';
-import { StockDuration, StockImportResponse, StockLiquid } from '../dto';
+import { StockDuration, StockImportResponse, StockLiquid, StockValue, StockValuePermancence } from '../dto';
 import { StockOutDto } from '../dto/stock-out.dto';
 import { DebtsDto } from 'src/modules/debts/dto';
 
@@ -425,4 +425,109 @@ export class StockService implements IStockRepository {
     }
     return count;
   }
+
+  async getStockValue(): Promise<StockValue> {
+    const produtos = await this.produtoRepository
+    .createQueryBuilder('produto')
+    .where('produto.unidade_id IS NULL')
+    .andWhere('produto.ativo = :ativo', { ativo: true })
+    .getMany();
+
+    let valor_venda = 0;
+    let valor_custo = 0;
+    for (const produto of produtos) {
+      valor_venda += produto.preco_venda * produto.saldo_estoque;
+      valor_custo += produto.preco_custo * produto.saldo_estoque;
+    }
+
+    return {
+      valor_venda: Number(valor_venda.toFixed(2)),
+      valor_custo: Number(valor_custo.toFixed(2)),
+    };
+  }
+
+  async getHistoricalStockValue(): Promise<StockValuePermancence[]> {
+    const diasIntervalo = 15;
+    const hoje = new Date();
+    const historico: StockValuePermancence[] = [];
+  
+    const totalDias = 90;
+  
+    const jsonFilePath = 'src/utils/contagem-estoque-junho.json';
+    if (!fs.existsSync(jsonFilePath)) {
+      console.error(`❌ Arquivo '${jsonFilePath}' não encontrado.`);
+      return;
+    }
+  
+    const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
+    const contagemData: { produto_id: number; saldo_estoque: number }[] = JSON.parse(jsonData);
+  
+    for (let diasAtras = totalDias; diasAtras >= 0; diasAtras -= diasIntervalo) {
+      const dataReferencia = new Date(hoje);
+      dataReferencia.setDate(hoje.getDate() - diasAtras);
+  
+      // Pega todas as entradas até a data
+      const entradas = await this.stockRepository
+        .createQueryBuilder('estoque')
+        .leftJoinAndSelect('estoque.produto', 'produto')
+        .where('estoque.data_entrada <= :data', { data: dataReferencia.toISOString() })
+        .getMany();
+  
+      // Pega todas as saídas até a data
+      const saidas = await this.saidaRepository
+        .createQueryBuilder('saida')
+        .leftJoinAndSelect('saida.produto', 'produto')
+        .where('saida.data_saida <= :data', { data: dataReferencia.toISOString() })
+        .getMany();
+  
+      // Inicia o saldoMap com os dados do JSON
+      const saldoMap = new Map<number, { quantidade: number; preco_custo: number }>();
+  
+      for (const item of contagemData) {
+        const produto = await this.productRepository.findProductById(item.produto_id);
+        if (!produto) continue;
+        saldoMap.set(item.produto_id, {
+          quantidade: item.saldo_estoque,
+          preco_custo: produto.preco_custo ?? 0,
+        });
+      }
+  
+      // Soma as entradas
+      for (const entrada of entradas) {
+        const produtoId = entrada.produto.produto_id;
+        const anterior = saldoMap.get(produtoId) || {
+          quantidade: 0,
+          preco_custo: entrada.produto.preco_custo,
+        };
+        anterior.quantidade += entrada.quantidade_total;
+        anterior.preco_custo = entrada.produto.preco_custo;
+        saldoMap.set(produtoId, anterior);
+      }
+  
+      // Subtrai as saídas
+      for (const saida of saidas) {
+        const produtoId = saida.produto.produto_id;
+        const anterior = saldoMap.get(produtoId) || {
+          quantidade: 0,
+          preco_custo: saida.produto.preco_custo,
+        };
+        anterior.quantidade -= Number(saida.quantidade);
+        saldoMap.set(produtoId, anterior);
+      }
+  
+      // Calcula o valor total do estoque nesta data
+      let valorTotal = 0;
+      for (const { quantidade, preco_custo } of saldoMap.values()) {
+        const quantidadeFinal = Math.max(0, quantidade);
+        valorTotal += quantidadeFinal * preco_custo;
+      }
+  
+      historico.push({
+        data: dataReferencia.toISOString().split('T')[0],
+        valor_custo: Number(valorTotal.toFixed(2)),
+      });
+    }  
+    return historico;
+  }
+  
 }

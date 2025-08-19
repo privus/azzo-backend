@@ -1,10 +1,10 @@
-import { Body, Controller, Get, Param, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { StockService } from '../services/stock.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { Distribuidor, Produto, SaidaEstoque } from '../../../infrastructure/database/entities';
-import { StockDuration, StockImportResponse, StockLiquid, StockOutDto } from '../dto';
+import { StockDuration, StockImportResponse, StockLiquid, StockOutDto, StockValue, StockValuePermancence } from '../dto';
 
 ApiTags('stock')
 @Controller('stock')
@@ -75,5 +75,11 @@ export class StockController {
   @UseInterceptors(FileInterceptor('file'))
   async updateCestByXml(@UploadedFile() file: Express.Multer.File): Promise<{ message: string, updated: number, notFound: string[] }> {
     return this.stockService.getCestByXmlBuffer(file.buffer);
+  }
+
+  @ApiOperation({ summary: 'Obter valor do estoque em data retroativa' })
+  @Get('value/retro')
+  async getRetroValue(): Promise<StockValuePermancence[]> {
+    return this.stockService.getHistoricalStockValue();
   }
 }

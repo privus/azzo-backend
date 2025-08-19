@@ -43,4 +43,12 @@ export interface StockDuration {
   diasRestantes: number;
 }
 
+export interface StockValue {
+  valor_venda: number;
+  valor_custo: number;
+}
 
+export interface StockValuePermancence {
+  valor_custo: number;
+  data: string;
+}
