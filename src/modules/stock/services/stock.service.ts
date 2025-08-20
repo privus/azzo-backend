@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { XMLParser } from 'fast-xml-parser';
 import * as fs from 'fs';
-import { StockDuration, StockImportResponse, StockLiquid, StockValue, StockValuePermancence } from '../dto';
+import { StockDuration, StockImportResponse, StockLiquid, StockOverview, StockValue, StockValuePermancence } from '../dto';
 import { StockOutDto } from '../dto/stock-out.dto';
 import { DebtsDto } from 'src/modules/debts/dto';
 
@@ -348,26 +348,27 @@ export class StockService implements IStockRepository {
     };
   }
 
-  async stockDurationByProduct(): Promise<StockDuration[]> {
-    // Busca todas as saídas registradas
+  async stockOverview(): Promise<StockOverview> {
     const saidas = await this.saidaRepository.find({
       relations: ['produto'],
     });
-
+  
     if (!saidas.length) {
-      return [];
+      return {
+        stockDuration: [],
+        stockValue: { valor_venda: 0, valor_custo: 0 }
+      };
     }
-
-    // Agrupa por produto_id
+  
     const totalVendasMap = new Map<number, { total: number; primeiraData: Date; ultimaData: Date }>();
-
+  
     for (const saida of saidas) {
       const produto = saida.produto;
       if (!produto || !saida.data_saida) continue;
-
+  
       const id = produto.produto_id;
       const data = new Date(saida.data_saida);
-
+  
       if (!totalVendasMap.has(id)) {
         totalVendasMap.set(id, {
           total: Number(saida.quantidade),
@@ -381,36 +382,47 @@ export class StockService implements IStockRepository {
         if (data > registro.ultimaData) registro.ultimaData = data;
       }
     }
-
+  
     const produtos = await this.produtoRepository
       .createQueryBuilder('produto')
       .where('produto.unidade_id IS NULL')
       .andWhere('produto.ativo = :ativo', { ativo: true })
       .getMany();
-
-    const resultados = [];
-
+  
+    const resultados: StockDuration[] = [];
+    let totalVenda = 0;
+    let totalCusto = 0;
+  
     for (const produto of produtos) {
       const registro = totalVendasMap.get(produto.produto_id);
       if (!registro) continue;
-
+  
       const { total, primeiraData, ultimaData } = registro;
-
       const dias = Math.max(1, this.businessDayOnly(primeiraData, ultimaData));
-
+  
       const mediaDiaria = total / dias;
-      let diasRestantes = mediaDiaria > 0
+      const diasRestantes = mediaDiaria > 0
         ? Math.floor(produto.saldo_estoque / mediaDiaria)
         : 0;
-      
+  
       resultados.push({
-        produto_id: produto.produto_id,
+        produto_id: produto.produto_id.toString(),
         mediaDiaria: Number(mediaDiaria.toFixed(2)),
         diasRestantes,
       });
+  
+      // Acumula os totais globais
+      totalVenda += produto.saldo_estoque * (produto.preco_venda ?? 0);
+      totalCusto += produto.saldo_estoque * (produto.preco_custo ?? 0);
     }
-
-    return resultados.sort((a, b) => a.diasRestantes - b.diasRestantes);
+  
+    return {
+      stockDuration: resultados.sort((a, b) => a.diasRestantes - b.diasRestantes),
+      stockValue: {
+        valor_venda: Number(totalVenda.toFixed(2)),
+        valor_custo: Number(totalCusto.toFixed(2))
+      }
+    };
   }
   
   businessDayOnly(inicio: Date, fim: Date): number {
@@ -452,6 +464,7 @@ export class StockService implements IStockRepository {
     const historico: StockValuePermancence[] = [];
   
     const totalDias = 90;
+  
     const jsonFilePath = 'src/utils/contagem-estoque-junho.json';
     if (!fs.existsSync(jsonFilePath)) {
       console.error(`❌ Arquivo '${jsonFilePath}' não encontrado.`);
@@ -461,73 +474,67 @@ export class StockService implements IStockRepository {
     const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
     const contagemData: { produto_id: number; saldo_estoque: number }[] = JSON.parse(jsonData);
   
-    // Contagem = estado inicial válido a partir de julho
-    const baselineDate = new Date('2025-07-01T00:00:00');
-  
-    // Construímos o snapshot com a contagem de junho
-    const baselineSaldo = new Map<number, { quantidade: number; preco_custo: number }>();
-    for (const item of contagemData) {
-      const produto = await this.productRepository.findProductById(item.produto_id);
-      if (!produto) continue;
-      baselineSaldo.set(item.produto_id, {
-        quantidade: item.saldo_estoque,
-        preco_custo: produto.preco_custo ?? 0,
-      });
-    }
+    const dataInicial = new Date('2025-07-01T00:00:00');
   
     for (let diasAtras = totalDias; diasAtras >= 0; diasAtras -= diasIntervalo) {
       const dataReferencia = new Date(hoje);
       dataReferencia.setDate(hoje.getDate() - diasAtras);
   
-      // Começamos SEMPRE do baseline do fim de junho
-      const saldoSnapshot = new Map(baselineSaldo);
+      // Entradas a partir de julho
+      const entradas = await this.stockRepository
+        .createQueryBuilder('estoque')
+        .leftJoinAndSelect('estoque.produto', 'produto')
+        .where('estoque.data_entrada >= :inicio', { inicio: dataInicial.toISOString() })
+        .andWhere('estoque.data_entrada <= :data', { data: dataReferencia.toISOString() })
+        .getMany();
   
-      // Só aplicamos movimentações se a data for >= 01/jul/2025
-      if (dataReferencia >= baselineDate) {
-        // Entradas acumuladas desde 01/jul até dataRef
-        const entradas = await this.stockRepository
-          .createQueryBuilder('estoque')
-          .leftJoinAndSelect('estoque.produto', 'produto')
-          .where('estoque.data_entrada >= :inicio', { inicio: baselineDate.toISOString() })
-          .andWhere('estoque.data_entrada <= :data', { data: dataReferencia.toISOString() })
-          .getMany();
+      // Saídas a partir de julho
+      const saidas = await this.saidaRepository
+        .createQueryBuilder('saida')
+        .leftJoinAndSelect('saida.produto', 'produto')
+        .where('saida.data_saida >= :inicio', { inicio: dataInicial.toISOString() })
+        .andWhere('saida.data_saida <= :data', { data: dataReferencia.toISOString() })
+        .getMany();
   
-        // Saídas acumuladas desde 01/jul até dataRef
-        const saidas = await this.saidaRepository
-          .createQueryBuilder('saida')
-          .leftJoinAndSelect('saida.produto', 'produto')
-          .where('saida.data_saida >= :inicio', { inicio: baselineDate.toISOString() })
-          .andWhere('saida.data_saida <= :data', { data: dataReferencia.toISOString() })
-          .getMany();
+      const saldoMap = new Map<number, { quantidade: number; preco_custo: number }>();
   
-        // Aplica entradas
-        for (const entrada of entradas) {
-          const produtoId = entrada.produto.produto_id;
-          const anterior = saldoSnapshot.get(produtoId) || {
-            quantidade: 0,
-            preco_custo: entrada.produto.preco_custo ?? 0,
-          };
-          anterior.quantidade += entrada.quantidade_total;
-          anterior.preco_custo = entrada.produto.preco_custo ?? anterior.preco_custo;
-          saldoSnapshot.set(produtoId, anterior);
-        }
+      for (const item of contagemData) {
+        const produto = await this.productRepository.findProductById(item.produto_id);
+        if (!produto) continue;
   
-        // Aplica saídas
-        for (const saida of saidas) {
-          const produtoId = saida.produto.produto_id;
-          const anterior = saldoSnapshot.get(produtoId) || {
-            quantidade: 0,
-            preco_custo: saida.produto.preco_custo ?? 0,
-          };
-          anterior.quantidade -= Number(saida.quantidade);
-          saldoSnapshot.set(produtoId, anterior);
-        }
+        saldoMap.set(item.produto_id, {
+          quantidade: item.saldo_estoque,
+          preco_custo: produto.preco_custo ?? 0,
+        });
       }
   
-      // Calcula valor final
+      for (const entrada of entradas) {
+        const produtoId = entrada.produto.produto_id;
+        const anterior = saldoMap.get(produtoId) || {
+          quantidade: 0,
+          preco_custo: entrada.produto.preco_custo ?? 0,
+        };
+  
+        anterior.quantidade += entrada.quantidade_total;
+        anterior.preco_custo = entrada.produto.preco_custo ?? 0;
+        saldoMap.set(produtoId, anterior);
+      }
+  
+      for (const saida of saidas) {
+        const produtoId = saida.produto.produto_id;
+        const anterior = saldoMap.get(produtoId) || {
+          quantidade: 0,
+          preco_custo: saida.produto.preco_custo ?? 0,
+        };
+  
+        anterior.quantidade -= Number(saida.quantidade);
+        saldoMap.set(produtoId, anterior);
+      }
+  
       let valorTotal = 0;
-      for (const { quantidade, preco_custo } of saldoSnapshot.values()) {
-        valorTotal += Math.max(0, quantidade) * preco_custo;
+      for (const { quantidade, preco_custo } of saldoMap.values()) {
+        const quantidadeFinal = Math.max(0, quantidade);
+        valorTotal += quantidadeFinal * preco_custo;
       }
   
       historico.push({
@@ -538,5 +545,5 @@ export class StockService implements IStockRepository {
   
     return historico;
   }
-  
+
 }

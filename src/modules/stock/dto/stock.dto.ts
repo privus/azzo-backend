@@ -52,3 +52,8 @@ export interface StockValuePermancence {
   valor_custo: number;
   data: string;
 }
+
+export interface StockOverview {
+  stockDuration: StockDuration[];
+  stockValue: StockValue;
+}
