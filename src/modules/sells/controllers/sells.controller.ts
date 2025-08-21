@@ -75,6 +75,12 @@ export class SellsController {
     return this.sellsService.commissionBySeller(fromDate, toDate);
   }
 
+  @ApiOperation({ summary: 'Bonificação por vendedor' })
+  @Get('weeklyBonus')
+  async getBonus(@Query('fromDate') fromDate: string, @Query('toDate') toDate?: string) {
+    return this.sellsService.calculateWeeklyAid(fromDate, toDate)
+  }
+
   @ApiOperation({ summary: 'Projeção estoque por periodo' })
   @Get('projectStock')
   async getProjectStock() {

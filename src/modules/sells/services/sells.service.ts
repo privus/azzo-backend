@@ -2,7 +2,7 @@ import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, MoreThanOrEqual, Not, Raw, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda, SaidaEstoque } from '../../../infrastructure/database/entities';
-import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto, ProjectStockDto, GroupSalesResponse, CustomerGroupSalesDto } from '../dto';
+import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto, ProjectStockDto, GroupSalesResponse, CustomerGroupSalesDto, WeeklyAid } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository } from '../../../domain/repositories';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { HttpService } from '@nestjs/axios';
@@ -1652,4 +1652,62 @@ export class SellsService implements ISellsRepository {
       clientes,
     };
   }
+
+  async calculateWeeklyAid(fromDate: string, toDate: string): Promise<WeeklyAid> {
+    const vendas = await this.sellsBetweenDates(fromDate, toDate);
+    const tipoPedidoAlvo = 10438;
+  
+    const valorAntigo = 30;
+    const valorNovo = 50;
+  
+    const from = new Date(fromDate);
+    const to = new Date(toDate);
+  
+    // Buscar vendedores ativos
+    const vendedoresAtivos = await this.sellersSevice.findAllSellers();
+    const vendedoresMap = new Map(
+      vendedoresAtivos
+        .filter(v => v.ativo)
+        .map(v => [v.vendedor_id, v.nome])
+    );
+  
+    const result: WeeklyAid = {};
+  
+    for (const venda of vendas) {
+      const isPedidoValido =
+        venda.tipo_pedido?.tipo_pedido_id === tipoPedidoAlvo &&
+        venda.status_venda?.status_venda_id !== 11468;
+  
+      if (!isPedidoValido) continue;
+  
+      const vendedor = venda.vendedor;
+      if (!vendedor || !vendedoresMap.has(vendedor.vendedor_id)) continue; // Ignora inativos ou sem vendedor
+  
+      const vendedorNome = vendedoresMap.get(vendedor.vendedor_id)!;
+  
+      if (!result[vendedorNome]) {
+        result[vendedorNome] = {
+          valor_total: 0,
+          pedidos: 0,
+          clientes_novos: 0,
+        };
+      }
+  
+      result[vendedorNome].pedidos++;
+  
+      const clienteCriacao = new Date(venda.cliente?.data_criacao);
+      const isNovoCliente = clienteCriacao >= from && clienteCriacao <= to;
+  
+      if (isNovoCliente) {
+        result[vendedorNome].valor_total += valorNovo;
+        result[vendedorNome].clientes_novos++;
+      } else {
+        result[vendedorNome].valor_total += valorAntigo;
+      }
+    }
+  
+    return result;
+  }
+  
+  
 }
