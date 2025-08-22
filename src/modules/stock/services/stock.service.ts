@@ -446,19 +446,16 @@ export class StockService implements IStockRepository {
     const sessentaDiasAtras = new Date();
     sessentaDiasAtras.setDate(hoje.getDate() - 60);
 
-    // Formata as datas para 'YYYY-MM-DD' (sem hora)
+
     const dataFinal = hoje.toISOString().substring(0, 10);
     const dataInicial = sessentaDiasAtras.toISOString().substring(0, 10);
 
-    // Busca faturamento dos últimos 60 dias usando apenas a data (sem hora)
+
     const faturamento = await this.sellRepository.reportBrandSalesBySeller(
       dataInicial,
       dataFinal,
     );
-    
-    console.log('Faturamento Azzo =======>', faturamento.Azzo);
-  
-    // calcula percentual (em relação ao faturamento)
+
     const percentual = faturamento.Azzo.totalFaturado > 0
       ? (valor_venda / faturamento.Azzo.totalFaturado) * 100
       : 0;
@@ -559,7 +556,7 @@ export class StockService implements IStockRepository {
   }
 
   @Cron(CronExpression.EVERY_1ST_DAY_OF_MONTH_AT_NOON)
-  async salvarValorEstoque(): Promise<ValorEstoque> {
+  async saveStockValue(): Promise<ValorEstoque> {
     const { valor_custo, valor_venda, percentual_faturamento } = await this.getStockValue();
   
     const valorEstoque = this.valorEstoqueRepository.create({

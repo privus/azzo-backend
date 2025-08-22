@@ -5,6 +5,9 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { join } from 'path';
 import * as cors from 'cors';
 import * as express from 'express';
+import { GlobalBearerTokenGuard } from './modules/auth/guards/global-bearer-token.guard';
+import { ConfigService } from '@nestjs/config';
+import { Reflector } from '@nestjs/core';
 
 async function bootstrap() {
   process.env.TZ = 'America/Sao_Paulo';
@@ -30,6 +33,10 @@ async function bootstrap() {
   
 
   app.useGlobalPipes(new ValidationPipe());
+  
+  // Aplicar guard global de bearer token
+  app.useGlobalGuards(new GlobalBearerTokenGuard(app.get(ConfigService), app.get(Reflector)));
+  
   // Configuração do Swagger (opcional)
   const config = new DocumentBuilder()
     .setTitle('API Azzo')

@@ -283,7 +283,7 @@ export class ProductsService implements IProductsRepository {
   } 
 
   async updateStockMinimumFromJson(): Promise<void> {
-    const jsonFilePath = 'src/utils/estoque-minimo.json';
+    const jsonFilePath = 'src/utils/estoque-min-dias.json';
   
     // Verifica se o arquivo JSON existe
     if (!fs.existsSync(jsonFilePath)) {
@@ -311,12 +311,8 @@ export class ProductsService implements IProductsRepository {
         console.warn(`⚠️ Produto com ID ${item.produto_id} não encontrado.`);
         continue;
       }
-  
-      const novoEstoqueMinimo = !item.estoque_minimo || item.estoque_minimo === 0
-        ? 288
-        : Number(item.estoque_minimo);
-  
-      produto.estoque_minimo = novoEstoqueMinimo;
+
+      produto.estoque_minimo = Number(item.estoque_min_dias);
       await this.produtoRepository.save(produto);
   
       console.log(`✅ Produto ${produto.produto_id} atualizado com estoque_minimo: ${produto.estoque_minimo}`);
