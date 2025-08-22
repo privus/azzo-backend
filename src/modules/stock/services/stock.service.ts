@@ -445,14 +445,18 @@ export class StockService implements IStockRepository {
     const hoje = new Date();
     const sessentaDiasAtras = new Date();
     sessentaDiasAtras.setDate(hoje.getDate() - 60);
-  
-    // busca faturamento dos últimos 60 dias
+
+    // Formata as datas para 'YYYY-MM-DD' (sem hora)
+    const dataFinal = hoje.toISOString().substring(0, 10);
+    const dataInicial = sessentaDiasAtras.toISOString().substring(0, 10);
+
+    // Busca faturamento dos últimos 60 dias usando apenas a data (sem hora)
     const faturamento = await this.sellRepository.reportBrandSalesBySeller(
-      sessentaDiasAtras.toISOString(),
-      hoje.toISOString(),
+      dataInicial,
+      dataFinal,
     );
     
-    console.log('Faturamento Azzo:', faturamento.azzo);
+    console.log('Faturamento Azzo =======>', faturamento.azzo);
   
     // calcula percentual (em relação ao faturamento)
     const percentual = faturamento.azzo.totalFaturado > 0
