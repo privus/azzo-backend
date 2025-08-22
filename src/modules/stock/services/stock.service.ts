@@ -451,6 +451,8 @@ export class StockService implements IStockRepository {
       sessentaDiasAtras.toISOString(),
       hoje.toISOString(),
     );
+    
+    console.log('Faturamento Azzo:', faturamento.azzo);
   
     // calcula percentual (em relação ao faturamento)
     const percentual = faturamento.azzo.totalFaturado > 0
