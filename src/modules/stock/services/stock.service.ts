@@ -456,7 +456,7 @@ export class StockService implements IStockRepository {
       dataFinal,
     );
     
-    console.log('Faturamento Azzo =======>', faturamento.azzo);
+    console.log('Faturamento Azzo =======>', faturamento.Azzo);
   
     // calcula percentual (em relação ao faturamento)
     const percentual = faturamento.Azzo.totalFaturado > 0
