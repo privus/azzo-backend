@@ -1,5 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
-import { Distribuidor, Fornecedor, Produto, SaidaEstoque } from './';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Distribuidor, Fornecedor, Produto } from './';
   
 @Entity('estoque')
 export class Estoque {

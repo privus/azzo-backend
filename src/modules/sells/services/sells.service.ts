@@ -1681,7 +1681,7 @@ export class SellsService implements ISellsRepository {
       if (!isPedidoValido) continue;
   
       const vendedor = venda.vendedor;
-      if (!vendedor || !vendedoresMap.has(vendedor.vendedor_id)) continue; // Ignora inativos ou sem vendedor
+      if (!vendedor || !vendedoresMap.has(vendedor.vendedor_id)) continue;
   
       const vendedorNome = vendedoresMap.get(vendedor.vendedor_id)!;
   
@@ -1708,6 +1708,5 @@ export class SellsService implements ISellsRepository {
   
     return result;
   }
-  
   
 }

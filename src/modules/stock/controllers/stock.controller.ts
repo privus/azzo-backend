@@ -3,8 +3,8 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { StockService } from '../services/stock.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { Distribuidor, Produto, SaidaEstoque } from '../../../infrastructure/database/entities';
-import { StockDuration, StockImportResponse, StockLiquid, StockOutDto, StockOverview, StockValue, StockValuePermancence } from '../dto';
+import { Distribuidor, SaidaEstoque } from '../../../infrastructure/database/entities';
+import { StockImportResponse, StockLiquid, StockOutDto, StockOverview, StockValue, StockValuePermancence } from '../dto';
 
 ApiTags('stock')
 @Controller('stock')
@@ -83,4 +83,9 @@ export class StockController {
     return this.stockService.getHistoricalStockValue();
   }
 
+  @ApiOperation({ summary: 'Obter valor atual do estoque com percentual sobre faturamento' })
+  @Get('value')
+  async getStockValue(): Promise<StockValue> {
+    return this.stockService.getStockValue();
+  }
 }

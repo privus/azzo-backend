@@ -1,5 +1,5 @@
 import { Inject, Injectable, ConflictException } from '@nestjs/common';
-import { Distribuidor, Estoque, Fornecedor, Produto, SaidaEstoque } from '../../../infrastructure/database/entities';
+import { Distribuidor, Estoque, Fornecedor, Produto, SaidaEstoque, ValorEstoque } from '../../../infrastructure/database/entities';
 import { IDebtsRepository, IProductsRepository, ISellsRepository, IStockRepository } from '../../../domain/repositories';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import { StockDuration, StockImportResponse, StockLiquid, StockOverview, StockValue, StockValuePermancence } from '../dto';
 import { StockOutDto } from '../dto/stock-out.dto';
 import { DebtsDto } from 'src/modules/debts/dto';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 
 @Injectable()
@@ -21,6 +22,8 @@ export class StockService implements IStockRepository {
     @InjectRepository(SaidaEstoque) private readonly saidaRepository: Repository<SaidaEstoque>,
     @InjectRepository(Produto) private readonly produtoRepository: Repository<Produto>,
     @Inject('IDebtsRepository') private readonly debtsService: IDebtsRepository,
+    @InjectRepository(ValorEstoque)private readonly valorEstoqueRepository: Repository<ValorEstoque>,
+
   ) {}
 
   async getStock(): Promise<Estoque[]> {
@@ -349,14 +352,12 @@ export class StockService implements IStockRepository {
   }
 
   async stockOverview(): Promise<StockOverview> {
-    const saidas = await this.saidaRepository.find({
-      relations: ['produto'],
-    });
+    const saidas = await this.saidaRepository.find({ relations: ['produto'] });
   
     if (!saidas.length) {
       return {
         stockDuration: [],
-        stockValue: { valor_venda: 0, valor_custo: 0 }
+        stockValue: { valor_venda: 0, valor_custo: 0, percentual_faturamento: 0 },
       };
     }
   
@@ -370,11 +371,7 @@ export class StockService implements IStockRepository {
       const data = new Date(saida.data_saida);
   
       if (!totalVendasMap.has(id)) {
-        totalVendasMap.set(id, {
-          total: Number(saida.quantidade),
-          primeiraData: data,
-          ultimaData: data,
-        });
+        totalVendasMap.set(id, { total: Number(saida.quantidade), primeiraData: data, ultimaData: data });
       } else {
         const registro = totalVendasMap.get(id)!;
         registro.total += Number(saida.quantidade);
@@ -390,8 +387,6 @@ export class StockService implements IStockRepository {
       .getMany();
   
     const resultados: StockDuration[] = [];
-    let totalVenda = 0;
-    let totalCusto = 0;
   
     for (const produto of produtos) {
       const registro = totalVendasMap.get(produto.produto_id);
@@ -410,20 +405,16 @@ export class StockService implements IStockRepository {
         mediaDiaria: Number(mediaDiaria.toFixed(2)),
         diasRestantes,
       });
-  
-      // Acumula os totais globais
-      totalVenda += produto.saldo_estoque * (produto.preco_venda ?? 0);
-      totalCusto += produto.saldo_estoque * (produto.preco_custo ?? 0);
     }
+  
+    const stockValue = await this.getStockValue();
   
     return {
       stockDuration: resultados.sort((a, b) => a.diasRestantes - b.diasRestantes),
-      stockValue: {
-        valor_venda: Number(totalVenda.toFixed(2)),
-        valor_custo: Number(totalCusto.toFixed(2))
-      }
+      stockValue,
     };
   }
+  
   
   businessDayOnly(inicio: Date, fim: Date): number {
     let count = 0;
@@ -451,10 +442,25 @@ export class StockService implements IStockRepository {
       valor_venda += produto.preco_venda * produto.saldo_estoque;
       valor_custo += produto.preco_custo * produto.saldo_estoque;
     }
+    const hoje = new Date();
+    const sessentaDiasAtras = new Date();
+    sessentaDiasAtras.setDate(hoje.getDate() - 60);
+  
+    // busca faturamento dos últimos 60 dias
+    const faturamento = await this.sellRepository.reportBrandSalesBySeller(
+      sessentaDiasAtras.toISOString(),
+      hoje.toISOString(),
+    );
+  
+    // calcula percentual (em relação ao faturamento)
+    const percentual = faturamento.azzo.totalFaturado > 0
+      ? (valor_venda / faturamento.azzo.totalFaturado) * 100
+      : 0;
 
     return {
       valor_venda: Number(valor_venda.toFixed(2)),
       valor_custo: Number(valor_custo.toFixed(2)),
+      percentual_faturamento: Number(percentual.toFixed(2))
     };
   }
 
@@ -546,4 +552,17 @@ export class StockService implements IStockRepository {
     return historico;
   }
 
+  @Cron(CronExpression.EVERY_1ST_DAY_OF_MONTH_AT_NOON)
+  async salvarValorEstoque(): Promise<ValorEstoque> {
+    const { valor_custo, valor_venda, percentual_faturamento } = await this.getStockValue();
+  
+    const valorEstoque = this.valorEstoqueRepository.create({
+      valor_custo,
+      valor_venda,
+      percentual_faturamento,
+    });
+  
+    return this.valorEstoqueRepository.save(valorEstoque);
+  }
+  
 }

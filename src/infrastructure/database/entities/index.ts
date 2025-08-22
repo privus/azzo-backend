@@ -49,3 +49,4 @@ export * from './pVendedor';
 export * from './montagem';
 export * from './itensMontagem';
 export * from './grupoCliente';
+export * from './valorEstoque';
