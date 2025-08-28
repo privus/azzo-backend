@@ -12,3 +12,5 @@ export * from './tinyToken.repository.interface';
 export * from './tinyAuth.repository.interface';
 export * from './stock.repository.interface';
 export * from './debts.repository.interface';
+export * from './blingToken.repository.interface';
+export * from './blingAuth.repository.interface';

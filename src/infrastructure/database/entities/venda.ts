@@ -18,7 +18,7 @@ export class Venda {
   @Column({ type: 'timestamp', nullable: true })
   itens_atualizacao: Date;
 
-  @Column({ type: 'varchar', length: 480, nullable: true })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   observacao: string;
 
   @Column({ type: 'int', nullable: true })
