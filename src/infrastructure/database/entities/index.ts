@@ -50,3 +50,5 @@ export * from './montagem';
 export * from './itensMontagem';
 export * from './grupoCliente';
 export * from './valorEstoque';
+export * from './blingTokens';
+export * from './historicoEstoque';

@@ -1,7 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
-@Entity('tiny_tokens')
-export class TinyTokens {
+@Entity('bling_tokens')
+export class BlingTokens {
     @PrimaryGeneratedColumn('increment')
     id: number;
 
@@ -11,8 +11,8 @@ export class TinyTokens {
     @Column('text')
     refresh_token: string;
 
-    @Column('varchar', { length: 5 })
-    uf: string;
+    @Column('varchar', { length: 10 })
+    company: string;
 
     @Column('timestamp')
     expires_at: Date;
