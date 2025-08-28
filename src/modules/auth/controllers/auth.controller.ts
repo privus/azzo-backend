@@ -32,7 +32,6 @@ export class AuthController {
   @ApiOperation({ summary: 'Obter token de acesso para Bling' })
   @Get('blingToken/:company')
   async getBlingToken(@Param('company') company: string) {
-    await this.blingAuthService.autoRefreshToken();
     const token = await this.blingTokenService.getLastToken(company);
     return token;
   }
