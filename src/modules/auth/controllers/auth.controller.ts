@@ -11,7 +11,6 @@ import { BlingAuthService } from '../services/bling-auth.service';
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly blingTokenService: BlingTokenService,
     private readonly blingAuthService: BlingAuthService,
   ) {}
 
@@ -32,7 +31,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Obter token de acesso para Bling' })
   @Get('blingToken/:company')
   async getBlingToken(@Param('company') company: string) {
-    const token = await this.blingTokenService.getLastToken(company);
+    const token = await this.blingAuthService.getAccessToken(company);
     return token;
   }
 }
