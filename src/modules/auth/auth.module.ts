@@ -4,15 +4,18 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Usuario } from '../..//infrastructure/database/entities';
+import { BlingTokens, Usuario } from '../../infrastructure/database/entities';
 import { AuthController } from './controllers/auth.controller';
 import { AuthService } from './services/auth.service';
 import { UsersModule } from '../users/users.module';
 import { SharedModule } from '../shared/shared.module';
+import { BlingTokenService } from '../auth/services/bling-token.service'; // ajuste o caminho conforme necessário
+import { BlingAuthService } from './services/bling-auth.service';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Usuario]),
+    TypeOrmModule.forFeature([Usuario, BlingTokens]),
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -24,9 +27,23 @@ import { SharedModule } from '../shared/shared.module';
     }),
     UsersModule,
     SharedModule,
+    HttpModule,
   ],
   controllers: [AuthController],
-  providers: [JwtStrategy, AuthService],
-  exports: [JwtModule, AuthModule, UsersModule],
+  providers: [
+    JwtStrategy,
+    AuthService,
+    BlingTokenService,
+    BlingAuthService,
+    {
+      provide: 'IBlingTokenRepository',
+      useClass: BlingTokenService,
+    },
+  ],
+  exports: [
+    JwtModule,
+    AuthService,
+    UsersModule,
+  ],
 })
 export class AuthModule {}

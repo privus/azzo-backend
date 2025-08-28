@@ -72,8 +72,9 @@ export class BlingAuthService {
             } as BlingTokens;
         }
 
-
         await this.refreshAccessToken(lastTokenPureli.refresh_token, pureli);
+        await this.refreshAccessToken(lastTokenAzzo.refresh_token, azzo);
+        await this.refreshAccessToken(lastTokenPersonizi.refresh_token, personizi);
     }
 
     async getAccessToken(company: string ): Promise<string> {
