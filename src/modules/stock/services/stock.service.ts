@@ -555,7 +555,7 @@ export class StockService implements IStockRepository {
     return historico;
   }
 
-  @Cron(CronExpression.EVERY_1ST_DAY_OF_MONTH_AT_NOON)
+  @Cron('0 30 9 1,15 * *')
   async saveStockValue(): Promise<ValorEstoque> {
     const { valor_custo, valor_venda, percentual_faturamento } = await this.getStockValue();
   
