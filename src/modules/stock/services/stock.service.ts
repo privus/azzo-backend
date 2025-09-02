@@ -1,5 +1,5 @@
 import { Inject, Injectable, ConflictException } from '@nestjs/common';
-import { Distribuidor, Estoque, Fornecedor, Produto, SaidaEstoque, ValorEstoque } from '../../../infrastructure/database/entities';
+import { Distribuidor, Estoque, Fornecedor, HistoricoEstoque, Produto, SaidaEstoque, ValorEstoque } from '../../../infrastructure/database/entities';
 import { IDebtsRepository, IProductsRepository, ISellsRepository, IStockRepository } from '../../../domain/repositories';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -23,6 +23,7 @@ export class StockService implements IStockRepository {
     @InjectRepository(Produto) private readonly produtoRepository: Repository<Produto>,
     @Inject('IDebtsRepository') private readonly debtsService: IDebtsRepository,
     @InjectRepository(ValorEstoque)private readonly valorEstoqueRepository: Repository<ValorEstoque>,
+    @InjectRepository(HistoricoEstoque) private readonly historicoEstoqueRepository: Repository<HistoricoEstoque>,
 
   ) {}
 
@@ -254,7 +255,7 @@ export class StockService implements IStockRepository {
   }
   
   async updateStockFromJson(): Promise<string> {
-    const jsonFilePath = 'src/utils/contagem-estoque-julho.json';
+    const jsonFilePath = 'src/utils/contagem-estoque-agosto.json';
     if (!fs.existsSync(jsonFilePath)) {
       console.error(`❌ Arquivo '${jsonFilePath}' não encontrado.`);
       return;
@@ -270,12 +271,21 @@ export class StockService implements IStockRepository {
         continue;
       }
   
+      // 👉 Salvar histórico do saldo atual
+      const historico = this.historicoEstoqueRepository.create({
+        produto_id: produto.produto_id,
+        quantidade: produto.saldo_estoque ?? 0,
+      });
+      await this.historicoEstoqueRepository.save(historico);
+  
+      // ✅ Atualizar com o novo saldo
       produto.saldo_estoque = item.saldo_estoque === null ? 0 : item.saldo_estoque;
       await this.productRepository.saveProduct(produto);
     }
   
     return '✅ Estoque atualizado com sucesso.';
   }
+  
 
   async getStockOut(out: StockOutDto): Promise<string> {
     const { produtos, observacao } = out;
