@@ -4,7 +4,7 @@ import { StockService } from '../services/stock.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { Distribuidor, SaidaEstoque } from '../../../infrastructure/database/entities';
-import { StockImportResponse, StockLiquid, StockOutDto, StockOverview, StockValue, StockValuePermancence } from '../dto';
+import { Discrepancy, StockImportResponse, StockLiquid, StockOutDto, StockOverview, StockValue, StockValuePermancence } from '../dto';
 
 ApiTags('stock')
 @Controller('stock')
@@ -87,5 +87,11 @@ export class StockController {
   @Get('value')
   async getStockValue(): Promise<StockValue> {
     return this.stockService.getStockValue();
+  }
+
+  @ApiOperation({ summary: 'Obter discrepâncias de estoque' })
+  @Get('discrepancies')
+  async getDiscrepancies(): Promise<Discrepancy[]> {
+    return this.stockService.getStockDiscrepancies();
   }
 }

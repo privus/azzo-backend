@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { XMLParser } from 'fast-xml-parser';
 import * as fs from 'fs';
-import { StockDuration, StockImportResponse, StockLiquid, StockOverview, StockValue, StockValuePermancence } from '../dto';
+import { Discrepancy, StockDuration, StockImportResponse, StockLiquid, StockOverview, StockValue, StockValuePermancence } from '../dto';
 import { StockOutDto } from '../dto/stock-out.dto';
 import { DebtsDto } from 'src/modules/debts/dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -578,4 +578,45 @@ export class StockService implements IStockRepository {
     return this.valorEstoqueRepository.save(valorEstoque);
   }
   
+
+    async getStockDiscrepancies(limit = 100): Promise<Discrepancy[]> {
+    // Buscar todos os produtos ativos e principais (sem unidade)
+    const produtos = await this.produtoRepository
+      .createQueryBuilder('produto')
+      .where('produto.unidade_id IS NULL')
+      .andWhere('produto.ativo = true')
+      .getMany();
+
+    const resultados = [];
+
+    for (const produto of produtos) {
+      const historico = await this.historicoEstoqueRepository.findOne({
+        where: { produto_id: produto.produto_id },
+        order: { data_contagem: 'DESC' }, // pega o último histórico
+      });
+
+      if (!historico) continue;
+
+      const saldoAtual = produto.saldo_estoque ?? 0;
+      const saldoHistorico = historico.quantidade ?? 0;
+      const diferenca = Math.abs(saldoAtual - saldoHistorico);
+
+      if (diferenca !== 0) {
+        resultados.push({
+          produto_id: produto.produto_id,
+          codigo: produto.codigo,
+          nome: produto.nome,
+          saldo_atual: saldoAtual,
+          saldo_historico: saldoHistorico,
+          diferenca,
+        });
+      }
+    }
+
+    // Ordenar por maior discrepância
+    resultados.sort((a, b) => b.diferenca - a.diferenca);
+
+    return resultados.slice(0, limit); // retorna os top N discrepantes
+  }
+
 }

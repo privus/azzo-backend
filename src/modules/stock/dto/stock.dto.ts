@@ -8,7 +8,6 @@ export interface StockLiquid {
   ean: number;
 }
 
-
 export interface StockImportResponse {
   numero_nf: string;
   data_emissao: string;
@@ -57,4 +56,13 @@ export interface StockValuePermancence {
 export interface StockOverview {
   stockDuration: StockDuration[];
   stockValue: StockValue;
+}
+
+export interface Discrepancy {
+  produto_id: number;
+  codigo: string;
+  nome: string;
+  saldo_atual: number;
+  saldo_historico: number;
+  diferenca: number;
 }
