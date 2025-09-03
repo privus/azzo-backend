@@ -580,7 +580,7 @@ export class StockService implements IStockRepository {
 
 
   async getStockDiscrepancies(limit = 100): Promise<Discrepancy[]> {
-    const jsonFilePath = 'src/utils/contagem-estoque-junho.json';
+    const jsonFilePath = 'src/utils/contagem-estoque-agosto.json';
   
     if (!fs.existsSync(jsonFilePath)) {
       throw new Error(`❌ Arquivo de contagem não encontrado em: ${jsonFilePath}`);
