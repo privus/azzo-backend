@@ -62,7 +62,8 @@ export interface Discrepancy {
   produto_id: number;
   codigo: string;
   nome: string;
-  saldo_atual: number;
-  saldo_historico: number;
+  historico: number;
+  contagem: number;
   diferenca: number;
+  percentual: number;
 }

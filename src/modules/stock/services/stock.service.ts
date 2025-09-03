@@ -577,46 +577,57 @@ export class StockService implements IStockRepository {
   
     return this.valorEstoqueRepository.save(valorEstoque);
   }
+
+
+  async getStockDiscrepancies(limit = 50): Promise<Discrepancy[]> {
+    const jsonFilePath = 'src/utils/contagem-estoque-junho.json';
   
-
-    async getStockDiscrepancies(limit = 100): Promise<Discrepancy[]> {
-    // Buscar todos os produtos ativos e principais (sem unidade)
-    const produtos = await this.produtoRepository
-      .createQueryBuilder('produto')
-      .where('produto.unidade_id IS NULL')
-      .andWhere('produto.ativo = true')
-      .getMany();
-
+    if (!fs.existsSync(jsonFilePath)) {
+      throw new Error(`❌ Arquivo de contagem não encontrado em: ${jsonFilePath}`);
+    }
+  
+    const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
+    const contagemData: { produto_id: number; saldo_estoque: number }[] = JSON.parse(jsonData);
+  
     const resultados = [];
-
-    for (const produto of produtos) {
+  
+    for (const item of contagemData) {
+      const produtoId = item.produto_id;
+  
+      const produto = await this.productRepository.findProductById(produtoId);
+      if (!produto) continue;
+  
       const historico = await this.historicoEstoqueRepository.findOne({
-        where: { produto_id: produto.produto_id },
-        order: { data_contagem: 'DESC' }, // pega o último histórico
+        where: { produto_id: produtoId },
+        order: { data_contagem: 'DESC' },
       });
-
+  
       if (!historico) continue;
-
-      const saldoAtual = produto.saldo_estoque ?? 0;
+  
       const saldoHistorico = historico.quantidade ?? 0;
-      const diferenca = Math.abs(saldoAtual - saldoHistorico);
-
+      const saldoContagem = item.saldo_estoque ?? 0;
+      const diferenca = saldoContagem - saldoHistorico;
+      const percentual = saldoHistorico > 0
+        ? Number(((diferenca / saldoHistorico) * 100).toFixed(2))
+        : 0;
+  
       if (diferenca !== 0) {
         resultados.push({
           produto_id: produto.produto_id,
           codigo: produto.codigo,
           nome: produto.nome,
-          saldo_atual: saldoAtual,
-          saldo_historico: saldoHistorico,
+          historico: saldoHistorico,
+          contagem: saldoContagem,
           diferenca,
+          percentual,
         });
       }
     }
-
-    // Ordenar por maior discrepância
-    resultados.sort((a, b) => b.diferenca - a.diferenca);
-
-    return resultados.slice(0, limit); // retorna os top N discrepantes
+  
+    resultados.sort((a, b) => Math.abs(b.diferenca) - Math.abs(a.diferenca));
+  
+    return resultados.slice(0, limit);
   }
+  
 
 }
