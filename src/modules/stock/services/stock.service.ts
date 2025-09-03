@@ -579,7 +579,7 @@ export class StockService implements IStockRepository {
   }
 
 
-  async getStockDiscrepancies(limit = 50): Promise<Discrepancy[]> {
+  async getStockDiscrepancies(limit = 100): Promise<Discrepancy[]> {
     const jsonFilePath = 'src/utils/contagem-estoque-junho.json';
   
     if (!fs.existsSync(jsonFilePath)) {
@@ -607,9 +607,6 @@ export class StockService implements IStockRepository {
       const saldoHistorico = historico.quantidade ?? 0;
       const saldoContagem = item.saldo_estoque ?? 0;
       const diferenca = saldoContagem - saldoHistorico;
-      const percentual = saldoHistorico > 0
-        ? Number(((diferenca / saldoHistorico) * 100).toFixed(2))
-        : 0;
   
       if (diferenca !== 0) {
         resultados.push({
@@ -619,7 +616,6 @@ export class StockService implements IStockRepository {
           historico: saldoHistorico,
           contagem: saldoContagem,
           diferenca,
-          percentual,
         });
       }
     }

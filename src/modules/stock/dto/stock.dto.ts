@@ -65,5 +65,4 @@ export interface Discrepancy {
   historico: number;
   contagem: number;
   diferenca: number;
-  percentual: number;
 }
