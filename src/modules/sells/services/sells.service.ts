@@ -1652,7 +1652,7 @@ export class SellsService implements ISellsRepository {
       clientes,
     };
   }
-
+  
   async calculateWeeklyAid(fromDate: string, toDate: string): Promise<WeeklyAid> {
     const vendas = await this.sellsBetweenDates(fromDate, toDate);
     const tipoPedidoAlvo = 10438;
@@ -1663,7 +1663,6 @@ export class SellsService implements ISellsRepository {
     const from = new Date(fromDate);
     const to = new Date(toDate);
   
-    // Buscar vendedores ativos
     const vendedoresAtivos = await this.sellersSevice.findAllSellers();
     const vendedoresMap = new Map(
       vendedoresAtivos
@@ -1683,7 +1682,12 @@ export class SellsService implements ISellsRepository {
       const vendedor = venda.vendedor;
       if (!vendedor || !vendedoresMap.has(vendedor.vendedor_id)) continue;
   
-      const vendedorNome = vendedoresMap.get(vendedor.vendedor_id)!;
+      const vendedorId = vendedor.vendedor_id as number;
+  
+      // ❌ Ignorar vendedor_id 9 e 12
+      if (vendedorId === 9 || vendedorId === 12) continue;
+  
+      const vendedorNome = vendedoresMap.get(vendedorId)!;
   
       if (!result[vendedorNome]) {
         result[vendedorNome] = {
@@ -1698,12 +1702,44 @@ export class SellsService implements ISellsRepository {
       const clienteCriacao = new Date(venda.cliente?.data_criacao);
       const isNovoCliente = clienteCriacao >= from && clienteCriacao <= to;
   
-      if (isNovoCliente) {
-        result[vendedorNome].valor_total += valorNovo;
-        result[vendedorNome].clientes_novos++;
-      } else {
-        result[vendedorNome].valor_total += valorAntigo;
+      let incrementoPedido = isNovoCliente ? valorNovo : valorAntigo;
+  
+      // Regra especial: vendedor_id 20 → sempre 10 por pedido
+      if (vendedorId === 20) {
+        incrementoPedido = 10;
       }
+  
+      if (isNovoCliente) {
+        result[vendedorNome].clientes_novos++;
+      }
+  
+      result[vendedorNome].valor_total += incrementoPedido;
+    }
+  
+    // Regra fixa: vendedor_id 19 recebe 250
+    const vendedor19Nome = vendedoresMap.get(19);
+    if (vendedor19Nome) {
+      if (!result[vendedor19Nome]) {
+        result[vendedor19Nome] = {
+          valor_total: 0,
+          pedidos: 0,
+          clientes_novos: 0,
+        };
+      }
+      result[vendedor19Nome].valor_total += 250;
+    }
+  
+    // Regra fixa: vendedor_id 20 recebe 125
+    const vendedor20Nome = vendedoresMap.get(20);
+    if (vendedor20Nome) {
+      if (!result[vendedor20Nome]) {
+        result[vendedor20Nome] = {
+          valor_total: 0,
+          pedidos: 0,
+          clientes_novos: 0,
+        };
+      }
+      result[vendedor20Nome].valor_total += 125;
     }
   
     return result;
