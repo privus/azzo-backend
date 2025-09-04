@@ -619,7 +619,7 @@ export class StockService implements IStockRepository {
         });
       }
     }
-  
+
     resultados.sort((a, b) => Math.abs(b.diferenca) - Math.abs(a.diferenca));
   
     return resultados.slice(0, limit);

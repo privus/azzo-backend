@@ -126,7 +126,7 @@ export class BlingAuthService {
             });
     
             const response = await this.httpService.axiosRef.post(
-                'https://api.bling.com.br/Api/v3/oauth/token?',
+                'https://api.bling.com.br/Api/v3/oauth/token',
                 data,
                 { headers }
             );
