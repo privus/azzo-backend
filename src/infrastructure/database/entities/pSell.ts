@@ -17,10 +17,10 @@ export class PSell {
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
   valor_desconto: number;
 
-  @Column({ type: 'varchar', length: 50, nullable: true })
+  @Column({ type: 'bigint', nullable: true })
   cod_omie: string;
 
-  @Column({ type: 'int', nullable: true })
+  @Column({ type: 'bigint', nullable: true })
   cod_bling: number;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
