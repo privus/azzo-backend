@@ -21,7 +21,7 @@ export class PSell {
   cod_omie: string;
 
   @Column({ type: 'int', nullable: true })
-  cod_bling: string;
+  cod_bling: number;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   cliente_nome: string;
