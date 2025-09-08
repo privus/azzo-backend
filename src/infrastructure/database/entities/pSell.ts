@@ -3,7 +3,7 @@ import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 @Entity('p_sell')
 export class PSell {  
   @PrimaryGeneratedColumn('increment')
-  bling_id: number;
+  p_venda_id: number;
 
   @Column({ type: 'date' })
   data_pedido: Date;
