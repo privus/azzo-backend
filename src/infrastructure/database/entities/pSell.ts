@@ -20,6 +20,9 @@ export class PSell {
   @Column({ type: 'varchar', length: 50, nullable: true })
   cod_omie: string;
 
+  @Column({ type: 'int', nullable: true })
+  cod_bling: string;
+
   @Column({ type: 'varchar', length: 255, nullable: true })
   cliente_nome: string;
 
