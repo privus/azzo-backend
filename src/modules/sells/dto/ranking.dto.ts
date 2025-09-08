@@ -11,3 +11,10 @@ export interface RankingItem {
     codigos_vendas: number[];
     pureli: number;
 }
+
+export interface customerRanking {
+    id: number;
+    nome: string;
+    total: number;
+    numero_vendas: number;
+}

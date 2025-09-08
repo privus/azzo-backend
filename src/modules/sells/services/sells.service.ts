@@ -1740,9 +1740,8 @@ export class SellsService implements ISellsRepository {
         };
       }
       result[vendedor20Nome].valor_total += 125;
-    }
-  
+    }  
     return result;
   }
-  
+
 }
