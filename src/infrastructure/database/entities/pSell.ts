@@ -23,6 +23,9 @@ export class PSell {
   @Column({ type: 'bigint', nullable: true })
   cod_bling: number;
 
+  @Column({ type: 'bigint', nullable: true })
+  cliente_cod_bling: number;
+
   @Column({ type: 'varchar', length: 255, nullable: true })
   cliente_nome: string;
 
