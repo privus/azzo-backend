@@ -253,12 +253,12 @@ export class StockService implements IStockRepository {
   findAllDistributors(): Promise<Distribuidor[]> {
     return this.distribuidorRepository.find();
   }
-  
+
   async updateStockFromJson(): Promise<string> {
-    const jsonFilePath = 'src/utils/contagem-estoque-agosto.json';
+    const jsonFilePath = 'src/utils/contagem-green-viceroy.json';
     if (!fs.existsSync(jsonFilePath)) {
       console.error(`❌ Arquivo '${jsonFilePath}' não encontrado.`);
-      return;
+      return '❌ Arquivo de estoque não encontrado.';
     }
   
     const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
@@ -267,24 +267,26 @@ export class StockService implements IStockRepository {
     for (const item of estoqueData) {
       const produto = await this.productRepository.findProductById(item.produto_id);
       if (!produto) {
-        console.warn(`Produto com ID ${item.produto_id} não encontrado.`);
+        console.warn(`⚠️ Produto com ID ${item.produto_id} não encontrado.`);
         continue;
       }
   
-      // 👉 Salvar histórico do saldo atual
-      const historico = this.historicoEstoqueRepository.create({
-        produto_id: produto.produto_id,
-        quantidade: produto.saldo_estoque ?? 0,
-      });
-      await this.historicoEstoqueRepository.save(historico);
+      // // Salvar histórico do saldo atual
+      // const historico = this.historicoEstoqueRepository.create({
+      //   produto_id: produto.produto_id,
+      //   quantidade: produto.saldo_estoque ?? 0,
+      // });
+      // await this.historicoEstoqueRepository.save(historico);
   
-      // ✅ Atualizar com o novo saldo
-      produto.saldo_estoque = item.saldo_estoque === null ? 0 : item.saldo_estoque;
+      // Atualizar saldo
+      produto.saldo_estoque = item.saldo_estoque;
       await this.productRepository.saveProduct(produto);
     }
   
+    console.log(`✅ Estoque atualizado para ${estoqueData.length} produtos.`);
     return '✅ Estoque atualizado com sucesso.';
   }
+  
   
 
   async getStockOut(out: StockOutDto): Promise<string> {
