@@ -5,6 +5,7 @@ import { Cidade, PCliente, PEcommerce, PFormaPagamento, PItensVenda, PParcelaCre
 import { HttpModule } from '@nestjs/axios';
 import { PSellsController } from './controllers/p-sells.controller';
 import { PSellsService } from './services/p-sell.service';
+import { OmieService } from './services/omie.service';
 
 @Module({
   imports: [
@@ -27,7 +28,7 @@ import { PSellsService } from './services/p-sell.service';
     HttpModule,
   ],
   controllers: [PSellsController],
-  providers: [PSellsService],
+  providers: [PSellsService, OmieService],
   exports: [PSellsService],
 })
 export class PSellsModule {}

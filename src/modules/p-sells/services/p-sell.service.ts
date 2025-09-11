@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, MoreThanOrEqual, Repository } from 'typeorm';
+import { MoreThanOrEqual, Repository } from 'typeorm';
 import {
   PSell,
   PVenda,
@@ -39,8 +39,6 @@ export class PSellsService {
 
   async createSells() {
     const orders = await this.pSellsRepository.find();
-    const statusPago = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 2 } });
-    const statusPendente = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 1 } });
     const statusAtivo = await this.statusClienteRepository.findOne({ where: { status_cliente_id: 1 } });
 
     for (const order of orders) {
@@ -71,9 +69,7 @@ export class PSellsService {
 
       if (vendaExistente) {
         vendaExistente.data_criacao = order.data_pedido;
-        vendaExistente.valor_pedido = order.total_produtos;
         vendaExistente.valor_final = order.total_pedido;
-        vendaExistente.desconto = order.valor_desconto || 0;
         vendaExistente.cliente = cliente;
         vendaExistente.status_venda = statusVenda;
 
@@ -84,9 +80,7 @@ export class PSellsService {
         vendaExistente = this.vendaRepository.create({
           venda_id: order.p_venda_id,
           data_criacao: order.data_pedido,
-          valor_pedido: order.total_produtos,
           valor_final: order.total_pedido || 0,
-          desconto: order.valor_desconto || 0,
           cliente,
           ecommerce,
           status_venda: statusVenda,

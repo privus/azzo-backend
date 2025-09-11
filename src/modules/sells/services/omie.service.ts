@@ -16,8 +16,8 @@ export class OmieService {
         private readonly httpService: HttpService,
         @InjectRepository(Produto) private readonly produtoRepository: Repository<Produto>,
     ) {
-        this.clientSecret = process.env.OMIE_APP_SECRET;
-        this.clientKey = process.env.OMIE_APP_KEY;
+        this.clientSecret = process.env.OMIE_APP_SECRET_AZZO;
+        this.clientKey = process.env.OMIE_APP_KEY_AZZO;
         this.endpoint = process.env.OMIE_API_URL;
     }
 
