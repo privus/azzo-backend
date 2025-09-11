@@ -10,7 +10,7 @@ export class OmieService {
     private readonly clientKey: string;
     private readonly clientSecret: string;
     private readonly endpoint: string;
-    private readonly tag = 'contareceber/'
+    private readonly tag = 'financas/contareceber/'
     
     constructor(
         private readonly httpService: HttpService,
