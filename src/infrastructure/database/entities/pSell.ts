@@ -5,7 +5,7 @@ export class PSell {
   @PrimaryGeneratedColumn('increment')
   p_venda_id: number;
 
-  @Column({ type: 'bigint', nullable: false })
+  @Column({ type: 'bigint', nullable: false, unique: true })
   codigo: number;
 
   @Column({ type: 'date' })
@@ -38,6 +38,6 @@ export class PSell {
   @Column({ type: 'int', nullable: true })
   n_ecommerce: number;
 
-  @Column({ type: 'tinyint', nullable: true })
+  @Column({ type: 'tinyint', nullable: true, default: 0 })
   boleto_faturado: number;
 }
