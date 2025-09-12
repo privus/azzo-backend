@@ -383,5 +383,15 @@ export class ProductsService implements IProductsRepository {
   
     console.log('🚀 Atualização de preços concluída com sucesso!');
   }
+
+  async findAllUni(): Promise<Produto[]> {
+    const produtos = await this.produtoRepository
+      .createQueryBuilder('produto')
+      .where('produto.unidade_id IS NULL')
+      .andWhere('produto.ativo = :ativo', { ativo: true })
+      .getMany();
+
+    return produtos;
+  }
   
 }

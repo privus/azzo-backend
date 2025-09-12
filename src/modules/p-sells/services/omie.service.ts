@@ -26,7 +26,7 @@ export class OmieService {
             call: "ListarContasReceber",
             param: [
             {
-                pagina: 1,
+                pagina: 2,
                 registros_por_pagina: 100,
                 apenas_importado_api: "S",
             }

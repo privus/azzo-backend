@@ -37,4 +37,7 @@ export class PSell {
 
   @Column({ type: 'int', nullable: true })
   n_ecommerce: number;
+
+  @Column({ type: 'tinyint', nullable: true })
+  boleto_faturado: number;
 }
