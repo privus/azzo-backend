@@ -18,9 +18,6 @@ export class PSell {
   cod_omie: number;
 
   @Column({ type: 'bigint', nullable: true, unique: true })
-  cod_ml: number;
-
-  @Column({ type: 'bigint', nullable: true, unique: true })
   cod_bling: number;
 
   @Column({ type: 'bigint', nullable: true })
