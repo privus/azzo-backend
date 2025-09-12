@@ -5,7 +5,7 @@ export class PSell {
   @PrimaryGeneratedColumn('increment')
   p_venda_id: number;
 
-  @Column({ type: 'bigint', nullable: false, unique: true })
+  @Column({ type: 'int', nullable: false, unique: true })
   codigo: number;
 
   @Column({ type: 'date' })
