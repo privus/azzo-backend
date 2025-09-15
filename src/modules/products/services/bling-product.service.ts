@@ -52,7 +52,7 @@ export class BlingProductService {
         const payload = this.mapProductToBling(produto);
         console.log('Payload gerado============>', payload);
   
-        await this.sleep(350);
+        await this.sleep(500);
         await this.sendProductToBling(payload, token.access_token);
       } catch (error) {
         const errorMsg = error?.response?.data;
