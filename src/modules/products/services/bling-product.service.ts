@@ -32,8 +32,6 @@ export class BlingProductService {
   
       this.logger.log(`📦 Total de produtos vindos da base: ${products.length}`);
   
-      this.logger.log(`🧹 Após filtro: ${products.length} produtos únicos.`);
-  
       for (const [index, produto] of products.entries()) {
         this.logger.log(`➡️ [${index + 1}/${products.length}] Processando: ${produto.nome} (${produto.codigo})`);
   
@@ -42,7 +40,6 @@ export class BlingProductService {
         try {
           await this.sendProductToBling(payload, token.access_token);
   
-          // ✅ Marca como sincronizado
           produto.bling = 1;
           await this.productRepository.saveProduct(produto);
           this.logger.log(`🔄 Produto ${produto.codigo} atualizado no banco (bling = 1)`);

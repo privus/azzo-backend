@@ -390,7 +390,7 @@ export class ProductsService implements IProductsRepository {
       .leftJoinAndSelect('produto.fornecedor', 'fornecedor')
       .where('produto.unidade_id IS NULL')
       .andWhere('produto.ativo = :ativo', { ativo: true })
-      .andWhere('produto.bling = :bling', { bling: 0 }) // ✅ antes do getMany
+      .andWhere('produto.bling = :bling', { bling: 0 })
       .getMany();
   
     return produtos;
