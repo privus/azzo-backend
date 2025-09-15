@@ -23,20 +23,39 @@ export class BlingProductService {
     registerProducts = async (): Promise<void> => {
       const products = await this.productRepository.findAllUni();
       const token = await this.blingTokenService.getLastToken('AZZO');
-
+    
+      const codigosDuplicados = new Set<string>(); // ✅ controle em memória
+    
       for (const produto of products) {
         try {
+          if (codigosDuplicados.has(produto.codigo)) {
+            this.logger.warn(`⏭️ Produto ${produto.codigo} já deu erro de duplicação. Pulando...`);
+            continue;
+          }
+    
           const payload = this.mapProductToBling(produto);
           console.log('Payload gerado============>', payload);
-      
-          await this.sleep(350); // 350ms respeita o limite de 3 req/s
-      
+    
+          await this.sleep(350);
+    
           await this.sendProductToBling(payload, token.access_token);
         } catch (error) {
-          this.logger.error('Erro ao registrar produto no Bling', error);
+          const errorMsg = error?.response?.data;
+    
+          const campos = errorMsg?.error?.fields;
+          const erroDuplicado = campos?.some(
+            (field) => field.element === 'codigo' && field.msg?.includes('já foi cadastrado')
+          );
+    
+          if (erroDuplicado) {
+            this.logger.warn(`🔁 Produto ${produto.codigo} já cadastrado no Bling.`);
+            codigosDuplicados.add(produto.codigo); // ✅ adiciona ao Set
+          } else {
+            this.logger.error(`❌ Erro ao registrar produto ${produto.codigo}`, errorMsg || error.message);
+          }
         }
-      }      
-    };    
+      }
+    };        
 
     private async sendProductToBling(payload: any, token: string): Promise<void> {
       try {
