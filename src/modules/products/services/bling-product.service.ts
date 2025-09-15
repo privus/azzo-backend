@@ -46,25 +46,26 @@ export class BlingProductService {
     this.logger.log(`🧹 Após filtro de duplicados: ${produtosFiltrados.length} produtos únicos.`);
   
     const chunkSize = 25;
-  
+
     for (let i = 0; i < produtosFiltrados.length; i += chunkSize) {
       const chunk = produtosFiltrados.slice(i, i + chunkSize);
       this.logger.log(`🚚 Enviando lote ${i / chunkSize + 1} (${chunk.length} produtos)`);
-  
-      for (const [index, produto] of produtosFiltrados.entries()) {
-        this.logger.log(`➡️ [${index + 1}/${produtosFiltrados.length}] Processando: ${produto.nome} (${produto.codigo})`);
-      
+    
+      for (const [index, produto] of chunk.entries()) {
+        const globalIndex = i + index + 1; // índice global
+        this.logger.log(`➡️ [${globalIndex}/${produtosFiltrados.length}] Processando: ${produto.nome} (${produto.codigo})`);
+    
         const payload = this.mapProductToBling(produto);
         console.log('Payload gerado============>', payload);
-      
+    
         await this.sleep(500);
         await this.sendProductToBling(payload, token.access_token);
       }
-      
-  
-      // Espera 5 segundos após cada lote
-      this.logger.log(`⏳ Aguardando 5 segundos antes do próximo lote...`);
-      await this.sleep(5000);
+    
+      if (i + chunkSize < produtosFiltrados.length) {
+        this.logger.log(`⏳ Aguardando 5 segundos antes do próximo lote...`);
+        await this.sleep(5000);
+      }
     }
   }  
 
