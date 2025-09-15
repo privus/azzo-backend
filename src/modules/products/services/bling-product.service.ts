@@ -2,16 +2,70 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { IBlingTokenRepository, IProductsRepository } from 'src/domain/repositories';
 import { Produto } from '../../../infrastructure/database/entities';
+import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class BlingProductService {
     private readonly logger = new Logger(BlingProductService.name);
+    private readonly productTag = 'produtos';
+    private readonly apiBlingUrl: string;
 
     constructor(
         private readonly httpService: HttpService,
         @Inject('IBlingTokenRepository') private readonly blingTokenService: IBlingTokenRepository,
         @Inject('IProductsRepository') private readonly productRepository: IProductsRepository,
-    ) {}
+    ) {
+      this.apiBlingUrl = process.env.API_BLING_URL;
+    }
+
+    private sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+    registerProducts = async (): Promise<void> => {
+      try {
+        const products = await this.productRepository.findAllUni();
+        const token = await this.blingTokenService.getLastToken('AZZO');
+    
+        if (!token) {
+          this.logger.error('Token do Bling não encontrado');
+          return;
+        }
+    
+        for (const [index, product] of products.entries()) {
+          const payload = this.mapProductToBling(product);
+    
+          // Aguarda um intervalo para não exceder limite de 3 req/s
+          await this.sleep(350); // 350ms garante até ~2.85 req/s
+    
+          await this.sendProductToBling(payload, token.access_token);
+        }
+      } catch (error) {
+        this.logger.error('Erro ao registrar produtos no Bling', error);
+      }
+    };    
+
+    private async sendProductToBling(payload: any, token: string): Promise<void> {
+      try {
+        const response = await lastValueFrom(
+          this.httpService.post(
+            this.apiBlingUrl + this.productTag,
+            payload,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          )
+        );
+    
+        this.logger.log(`Produto enviado com sucesso: ${payload.nome}`);
+      } catch (error) {
+        this.logger.error(
+          `Erro ao enviar produto ${payload.codigo} para o Bling`,
+          error?.response?.data || error.message
+        );
+      }
+    }   
 
     private mapProductToBling(product: Produto): any {
         return {
@@ -23,38 +77,18 @@ export class BlingProductService {
           preco: product.preco_venda,
           descricaoCurta: product.nome,
           unidade: 'UN',
-          pesoLiquido: product.peso_grs,
-          pesoBruto: product.peso_grs, // ou calcule com embalagem
+          pesoLiquido: product.peso_grs || 0,
+          pesoBruto: product.peso_grs || 0,
           gtin: product.ean,
-          gtinEmbalagem: product.ean,
-          tipoProducao: 'P',
-          condicao: 0,
-          freteGratis: false,
-          marca: product.fornecedor?.nome ?? '',
-          descricaoComplementar: '',
-          linkExterno: '',
-          observacoes: '',
-          descricaoEmbalagemDiscreta: '',
+          marca: product.fornecedor.nome,
           categoria: {
-            id: product.categoria?.categoria_id || 1
-          },
-          estoque: {
-            minimo: product.estoque_minimo ?? 1,
-            maximo: product.saldo_estoque ?? 100,
-            crossdocking: 1,
-            localizacao: '14A'
+            id: product.fornecedor.fornecedor_id
           },
           actionEstoque: 'T',
-          dimensoes: {
-            largura: product.largura || 1,
-            altura: product.altura || 1,
-            profundidade: product.comprimento || 1,
-            unidadeMedida: 1
-          },
           tributacao: {
             origem: 0,
-            ncm: product.ncm?.toString() ?? '',
-            cest: product.cest ?? ''
+            ncm: product.ncm.toString(),
+            cest: product.cest
           },
           midia: {
             imagens: {
@@ -65,5 +99,4 @@ export class BlingProductService {
           }
         };
       }
-      
 }

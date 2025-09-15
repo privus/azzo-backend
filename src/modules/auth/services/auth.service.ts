@@ -12,7 +12,6 @@ export class AuthService implements IAuthRepository {
   constructor(
     @Inject('IUserRepository') private readonly userRepository: IUserRepository,
     @Inject('ISharedRepository') private readonly sharedRepository: ISharedRepository,
-    private readonly configService: ConfigService,
   ) {}
 
   async login(loginDto: LoginUserDto): Promise<{ accessToken: string }> {

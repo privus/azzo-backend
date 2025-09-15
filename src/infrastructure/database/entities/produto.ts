@@ -25,7 +25,7 @@ export class Produto {
   ncm: number;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-   ean: string;
+  ean: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   preco_custo: number;

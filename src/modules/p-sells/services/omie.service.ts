@@ -9,7 +9,7 @@ export class OmieService {
     private readonly logger = new Logger(OmieService.name);
     private readonly clientKey: string;
     private readonly clientSecret: string;
-    private readonly endpoint: string;
+    private readonly apiOmieUrl: string;
     private readonly tag = 'financas/contareceber/'
     
     constructor(
@@ -18,7 +18,7 @@ export class OmieService {
     ) {
         this.clientSecret = process.env.OMIE_APP_SECRET_PERSONIZI;
         this.clientKey = process.env.OMIE_APP_KEY_PERSONIZI;
-        this.endpoint = process.env.OMIE_API_URL;
+        this.apiOmieUrl = process.env.OMIE_API_URL;
     }
 
     async getOrdersReceived() {
@@ -37,7 +37,7 @@ export class OmieService {
     
         try {
             const response = await this.httpService.axiosRef.post(
-                this.endpoint + this.tag,
+                this.apiOmieUrl + this.tag,
                 body,
             );
             return response.data;

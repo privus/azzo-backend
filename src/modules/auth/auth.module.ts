@@ -44,6 +44,7 @@ import { HttpModule } from '@nestjs/axios';
     JwtModule,
     AuthService,
     UsersModule,
+    'IBlingTokenRepository',
   ],
 })
 export class AuthModule {}

@@ -1,11 +1,12 @@
 import { Body, Controller, Get, Param, Patch } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ProductsService } from '../services/products.service';
+import { BlingProductService } from '../services/bling-product.service';
 
 @ApiTags('products')
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(private readonly productsService: ProductsService, private readonly blingService: BlingProductService) {}
 
   @ApiOperation({ summary: 'Sincronizar todos os produtos' })
   @Get('syncro')
@@ -35,6 +36,12 @@ export class ProductsController {
   @Get('syncroTiny')
   async syncroTiny() {
     return this.productsService.syncroTinyIds();
+  }
+
+  @ApiOperation({ summary: 'Sincronizar produtos Bling' })
+  @Get('syncroBling')
+  async syncroBling() {
+    return this.blingService.registerProducts();
   }
 
   @ApiOperation({ summary: 'Listar todos os produtos' })
