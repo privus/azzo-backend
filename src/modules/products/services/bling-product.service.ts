@@ -59,19 +59,23 @@ export class BlingProductService {
           this.logger.log(`🔄 Produto ${produto.codigo} atualizado no banco (bling = 1)`);
   
         } catch (error) {
-          this.logger.error(`Erro ao enviar produto ${produto.codigo}: ${error.message || error}`);
+          this.logger.error(`❌ Erro ao enviar produto ${produto.codigo}`, error?.response?.data || error.message);
+          // 🔴 Interrompe todo o processo
+          throw error;
         }  
+
         await this.sleep(600); // respeita limite de 3 req/s
       }
   
       this.logger.log(`🎉 Finalizado: todos os produtos pendentes foram processados.`);
     } catch (fatalError) {
       this.logger.error(`💥 Erro fatal no processo de sincronização`, fatalError);
+      throw fatalError; // 🔴 garante que a função também falhe para o chamador
     }
   }  
 
   private async sendProductToBling(payload: any, token: string): Promise<void> {
-    const response = await lastValueFrom(
+    await lastValueFrom(
       this.httpService.post(
         this.apiBlingUrl + this.productTag,
         payload,
