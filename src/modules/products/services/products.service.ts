@@ -387,11 +387,12 @@ export class ProductsService implements IProductsRepository {
   async findAllUni(): Promise<Produto[]> {
     const produtos = await this.produtoRepository
       .createQueryBuilder('produto')
+      .leftJoinAndSelect('produto.fornecedor', 'fornecedor')
       .where('produto.unidade_id IS NULL')
       .andWhere('produto.ativo = :ativo', { ativo: true })
       .getMany();
-
+  
     return produtos;
-  }
+  }  
   
 }

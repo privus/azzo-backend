@@ -31,7 +31,9 @@ export class BlingProductService {
         }
     
         for (const [index, product] of products.entries()) {
+          this.logger.log(`Processando produto ${index + 1} de ${products.length}: ${product.nome}`);
           const payload = this.mapProductToBling(product);
+          console.log('Payload gerado============>', payload);
     
           // Aguarda um intervalo para não exceder limite de 3 req/s
           await this.sleep(350); // 350ms garante até ~2.85 req/s
