@@ -72,11 +72,11 @@ export class BlingProductService {
             this.logger.error(`❌ Erro ao registrar produto ${produto.codigo}`, errorMsg || error.message);
           }
   
-          // ⚠️ Importante: continua o loop, sem dar "throw"
+          // continua o loop mesmo após erro
           continue;
         }
   
-        await this.sleep(500); // respeita o rate limit
+        await this.sleep(500); // respeita rate limit
       }
   
       if (i + chunkSize < produtosFiltrados.length) {
@@ -88,27 +88,20 @@ export class BlingProductService {
   
 
   private async sendProductToBling(payload: any, token: string): Promise<void> {
-    try {
-      const response = await lastValueFrom(
-        this.httpService.post(
-          this.apiBlingUrl + this.productTag,
-          payload,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
+    const response = await lastValueFrom(
+      this.httpService.post(
+        this.apiBlingUrl + this.productTag,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
-        )
-      );
+        }
+      )
+    );
   
-      this.logger.log(`✅ Produto enviado com sucesso: ${payload.nome}`);
-    } catch (error) {
-      this.logger.error(
-        `Erro ao enviar produto ${payload.codigo} para o Bling`,
-        error?.response?.data || error.message
-      );
-    }
+    this.logger.log(`✅ Produto enviado com sucesso: ${payload.nome}`);
   }
   
 
