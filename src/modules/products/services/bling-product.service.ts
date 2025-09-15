@@ -21,27 +21,21 @@ export class BlingProductService {
     private sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
     registerProducts = async (): Promise<void> => {
-      try {
-        const products = await this.productRepository.findAllUni();
-        const token = await this.blingTokenService.getLastToken('AZZO');
-    
-        if (!token) {
-          this.logger.error('Token do Bling não encontrado');
-          return;
-        }
-    
-        for (const [index, product] of products.entries()) {
-          const payload = this.mapProductToBling(product);
+      const products = await this.productRepository.findAllUni();
+      const token = await this.blingTokenService.getLastToken('AZZO');
+
+      for (const produto of products) {
+        try {
+          const payload = this.mapProductToBling(produto);
           console.log('Payload gerado============>', payload);
-    
-          // Aguarda um intervalo para não exceder limite de 3 req/s
-          await this.sleep(350); // 350ms garante até ~2.85 req/s
-    
+      
+          await this.sleep(350); // 350ms respeita o limite de 3 req/s
+      
           await this.sendProductToBling(payload, token.access_token);
+        } catch (error) {
+          this.logger.error('Erro ao registrar produto no Bling', error);
         }
-      } catch (error) {
-        this.logger.error('Erro ao registrar produtos no Bling', error);
-      }
+      }      
     };    
 
     private async sendProductToBling(payload: any, token: string): Promise<void> {
