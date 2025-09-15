@@ -29,19 +29,26 @@ export class BlingProductService {
       return;
     }
   
+    this.logger.log(`📦 Total de produtos vindos da base: ${products.length}`);
+  
     const produtosUnicos = new Map<string, Produto>();
   
     // ✅ Filtro local por código
     for (const produto of products) {
-      if (!produtosUnicos.has(produto.codigo)) {
-        produtosUnicos.set(produto.codigo, produto);
+      const codigoNormalizado = produto.codigo.trim().toUpperCase();
+      if (!produtosUnicos.has(codigoNormalizado)) {
+        produtosUnicos.set(codigoNormalizado, produto);
       } else {
-        this.logger.warn(`⚠️ Produto com código duplicado na base local: ${produto.codigo}. Ignorando um deles.`);
+        this.logger.warn(`⚠️ Produto com código duplicado na base local: ${codigoNormalizado}. Ignorando um deles.`);
       }
     }
   
-    for (const produto of produtosUnicos.values()) {
-      try {  
+    const produtosFiltrados = Array.from(produtosUnicos.values());
+    this.logger.log(`🧹 Após filtro de duplicados: ${produtosFiltrados.length} produtos únicos.`);
+  
+    for (const [index, produto] of produtosFiltrados.entries()) {
+      this.logger.log(`➡️ [${index + 1}/${produtosFiltrados.length}] Processando: ${produto.nome} (${produto.codigo})`);
+      try {
         const payload = this.mapProductToBling(produto);
         console.log('Payload gerado============>', payload);
   
@@ -49,8 +56,8 @@ export class BlingProductService {
         await this.sendProductToBling(payload, token.access_token);
       } catch (error) {
         const errorMsg = error?.response?.data;
-  
         const campos = errorMsg?.error?.fields;
+  
         const erroDuplicado = campos?.some(
           (field) => field.element === 'codigo' && field.msg?.includes('já foi cadastrado')
         );
