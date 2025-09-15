@@ -21,7 +21,7 @@ export class BlingProductService {
   private sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
   async registerProducts(): Promise<void> {
-    const products = await this.productRepository.findAllUni();
+    const products = await this.productRepository.findAllUni(1);
     const token = await this.blingTokenService.getLastToken('AZZO');
   
     if (!token) {
