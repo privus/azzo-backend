@@ -33,7 +33,6 @@ export class BlingProductService {
   
     const produtosUnicos = new Map<string, Produto>();
   
-    // ✅ Filtro local por código
     for (const produto of products) {
       const codigoNormalizado = produto.codigo.trim().toUpperCase();
       if (!produtosUnicos.has(codigoNormalizado)) {
@@ -46,31 +45,42 @@ export class BlingProductService {
     const produtosFiltrados = Array.from(produtosUnicos.values());
     this.logger.log(`🧹 Após filtro de duplicados: ${produtosFiltrados.length} produtos únicos.`);
   
-    for (const [index, produto] of produtosFiltrados.entries()) {
-      this.logger.log(`➡️ [${index + 1}/${produtosFiltrados.length}] Processando: ${produto.nome} (${produto.codigo})`);
-      try {
-        const payload = this.mapProductToBling(produto);
-        console.log('Payload gerado============>', payload);
+    const chunkSize = 25;
   
-        await this.sleep(500);
-        await this.sendProductToBling(payload, token.access_token);
-      } catch (error) {
-        const errorMsg = error?.response?.data;
-        const campos = errorMsg?.error?.fields;
+    for (let i = 0; i < produtosFiltrados.length; i += chunkSize) {
+      const chunk = produtosFiltrados.slice(i, i + chunkSize);
+      this.logger.log(`🚚 Enviando lote ${i / chunkSize + 1} (${chunk.length} produtos)`);
   
-        const erroDuplicado = campos?.some(
-          (field) => field.element === 'codigo' && field.msg?.includes('já foi cadastrado')
-        );
+      for (const [index, produto] of chunk.entries()) {
+        this.logger.log(`➡️ [${i + index + 1}/${produtosFiltrados.length}] Processando: ${produto.nome} (${produto.codigo})`);
   
-        if (erroDuplicado) {
-          this.logger.warn(`🔁 Produto ${produto.codigo} já cadastrado no Bling.`);
-        } else {
-          this.logger.error(`❌ Erro ao registrar produto ${produto.codigo}`, errorMsg || error.message);
+        try {
+          const payload = this.mapProductToBling(produto);
+          console.log('Payload gerado============>', payload);
+  
+          await this.sleep(500); // respeita o rate limit individual
+          await this.sendProductToBling(payload, token.access_token);
+        } catch (error) {
+          const errorMsg = error?.response?.data;
+          const campos = errorMsg?.error?.fields;
+  
+          const erroDuplicado = campos?.some(
+            (field) => field.element === 'codigo' && field.msg?.includes('já foi cadastrado')
+          );
+  
+          if (erroDuplicado) {
+            this.logger.warn(`🔁 Produto ${produto.codigo} já cadastrado no Bling.`);
+          } else {
+            this.logger.error(`❌ Erro ao registrar produto ${produto.codigo}`, errorMsg || error.message);
+          }
         }
       }
-    }
-  }
   
+      // Espera 5 segundos após cada lote
+      this.logger.log(`⏳ Aguardando 5 segundos antes do próximo lote...`);
+      await this.sleep(5000);
+    }
+  }  
 
   private async sendProductToBling(payload: any, token: string): Promise<void> {
     try {
@@ -110,6 +120,7 @@ export class BlingProductService {
       pesoLiquido: product.peso_grs || 0,
       pesoBruto: product.peso_grs || 0,
       gtin: product.ean,
+      tipoProducao: 'T',
       marca: product.fornecedor.nome,
       categoria: {
         id: product.fornecedor.fornecedor_id
