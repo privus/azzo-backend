@@ -24,11 +24,6 @@ export class BlingProductService {
     const products = await this.productRepository.findAllUni(fornecedor_id);
     const token = await this.blingTokenService.getLastToken('AZZO');
   
-    if (!token) {
-      this.logger.error('Token do Bling não encontrado');
-      return;
-    }
-  
     this.logger.log(`📦 Total de produtos vindos da base: ${products.length}`);
   
     const produtosUnicos = new Map<string, Produto>();
@@ -52,32 +47,31 @@ export class BlingProductService {
   
       for (const [index, produto] of chunk.entries()) {
         const globalIndex = i + index + 1;
-  
         this.logger.log(`➡️ [${globalIndex}/${produtosFiltrados.length}] Processando: ${produto.nome} (${produto.codigo})`);
+      
         const payload = this.mapProductToBling(produto);
-        console.log('Payload gerado============>', payload);
-  
+      
         try {
           await this.sendProductToBling(payload, token.access_token);
         } catch (error) {
           const errorMsg = error?.response?.data;
-          const campos = errorMsg?.error?.fields;
-          const erroDuplicado = campos?.some(
-            (field) => field.element === 'codigo' && field.msg?.includes('já foi cadastrado')
-          );
-  
-          if (erroDuplicado) {
-            this.logger.warn(`🔁 Produto ${produto.codigo} já cadastrado no Bling.`);
+      
+          if (errorMsg?.error?.type === 'TOO_MANY_REQUESTS') {
+            this.logger.warn(`⚠️ Rate limit atingido. Aguardando 3 segundos e tentando de novo...`);
+            await this.sleep(3000);
+            try {
+              await this.sendProductToBling(payload, token.access_token);
+            } catch (retryError) {
+              this.logger.error(`❌ Falha definitiva no produto ${produto.codigo}`, retryError?.response?.data || retryError.message);
+            }
           } else {
             this.logger.error(`❌ Erro ao registrar produto ${produto.codigo}`, errorMsg || error.message);
           }
-  
-          // continua o loop mesmo após erro
-          continue;
         }
-  
-        await this.sleep(500); // respeita rate limit
-      }
+      
+        // intervalo maior para evitar concorrência com queries extras do TypeORM
+        await this.sleep(600);
+      }      
   
       if (i + chunkSize < produtosFiltrados.length) {
         this.logger.log(`⏳ Aguardando 5 segundos antes do próximo lote...`);
