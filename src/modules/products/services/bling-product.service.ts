@@ -15,7 +15,7 @@ export class BlingProductService {
         @Inject('IBlingTokenRepository') private readonly blingTokenService: IBlingTokenRepository,
         @Inject('IProductsRepository') private readonly productRepository: IProductsRepository,
     ) {
-      this.apiBlingUrl = process.env.API_BLING_URL;
+      this.apiBlingUrl = process.env.BLING_API_URL;
     }
 
     private sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
