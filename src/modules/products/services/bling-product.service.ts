@@ -40,8 +40,8 @@ export class BlingProductService {
         try {
           await this.sendProductToBling(payload, token.access_token);
   
-          produto.bling = 1;
-          await this.productRepository.saveProduct(produto);
+          // produto.bling = 1;
+          // await this.productRepository.saveProduct(produto);
           this.logger.log(`🔄 Produto ${produto.codigo} atualizado no banco (bling = 1)`);
   
         } catch (error) {
