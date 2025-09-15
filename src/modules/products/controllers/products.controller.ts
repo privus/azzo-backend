@@ -39,9 +39,9 @@ export class ProductsController {
   }
 
   @ApiOperation({ summary: 'Sincronizar produtos Bling' })
-  @Get('syncroBling/:fornecedor_id')
-  async syncroBling(@Param('fornecedor_id') fornecedor_id: number) {
-    return this.blingService.registerProducts(fornecedor_id);
+  @Get('syncroBling')
+  async syncroBling() {
+    return this.blingService.registerProducts();
   }
 
   @ApiOperation({ summary: 'Listar todos os produtos' })

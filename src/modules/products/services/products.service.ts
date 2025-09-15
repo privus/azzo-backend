@@ -384,18 +384,15 @@ export class ProductsService implements IProductsRepository {
     console.log('🚀 Atualização de preços concluída com sucesso!');
   }
 
-  async findAllUni(fornecedorId?: number): Promise<Produto[]> {
-    const query = this.produtoRepository
+  async findAllUni(): Promise<Produto[]> {
+    const produtos = await this.produtoRepository
       .createQueryBuilder('produto')
       .leftJoinAndSelect('produto.fornecedor', 'fornecedor')
       .where('produto.unidade_id IS NULL')
       .andWhere('produto.ativo = :ativo', { ativo: true })
-      .andWhere('produto.bling = :bling', { bling: 0 }); // 🔹 só produtos ainda não enviados
+      .andWhere('produto.bling = :bling', { bling: 0 }) // ✅ antes do getMany
+      .getMany();
   
-    if (fornecedorId) {
-      query.andWhere('fornecedor.fornecedor_id = :fornecedorId', { fornecedorId });
-    }
-  
-    return await query.getMany();
+    return produtos;
   }  
 }
