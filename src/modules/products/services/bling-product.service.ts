@@ -26,6 +26,7 @@ export class BlingProductService {
   
     this.logger.log(`📦 Total de produtos vindos da base: ${products.length}`);
   
+    // 🔹 filtro local de duplicados
     const produtosUnicos = new Map<string, Produto>();
     for (const produto of products) {
       const codigoNormalizado = produto.codigo.trim().toUpperCase();
@@ -39,44 +40,32 @@ export class BlingProductService {
     const produtosFiltrados = Array.from(produtosUnicos.values());
     this.logger.log(`🧹 Após filtro: ${produtosFiltrados.length} produtos únicos.`);
   
-    const chunkSize = 25;
+    // 🔹 processa direto produto a produto
+    for (const [index, produto] of produtosFiltrados.entries()) {
+      this.logger.log(`➡️ [${index + 1}/${produtosFiltrados.length}] Processando: ${produto.nome} (${produto.codigo})`);
+      
+      const payload = this.mapProductToBling(produto);
   
-    for (let i = 0; i < produtosFiltrados.length; i += chunkSize) {
-      const chunk = produtosFiltrados.slice(i, i + chunkSize);
-      this.logger.log(`🚚 Enviando lote ${i / chunkSize + 1} (${chunk.length} produtos)`);
+      try {
+        await this.sendProductToBling(payload, token.access_token);
+      } catch (error) {
+        const errorMsg = error?.response?.data;
   
-      for (const [index, produto] of chunk.entries()) {
-        const globalIndex = i + index + 1;
-        this.logger.log(`➡️ [${globalIndex}/${produtosFiltrados.length}] Processando: ${produto.nome} (${produto.codigo})`);
-      
-        const payload = this.mapProductToBling(produto);
-      
-        try {
-          await this.sendProductToBling(payload, token.access_token);
-        } catch (error) {
-          const errorMsg = error?.response?.data;
-      
-          if (errorMsg?.error?.type === 'TOO_MANY_REQUESTS') {
-            this.logger.warn(`⚠️ Rate limit atingido. Aguardando 3 segundos e tentando de novo...`);
-            await this.sleep(3000);
-            try {
-              await this.sendProductToBling(payload, token.access_token);
-            } catch (retryError) {
-              this.logger.error(`❌ Falha definitiva no produto ${produto.codigo}`, retryError?.response?.data || retryError.message);
-            }
-          } else {
-            this.logger.error(`❌ Erro ao registrar produto ${produto.codigo}`, errorMsg || error.message);
+        if (errorMsg?.error?.type === 'TOO_MANY_REQUESTS') {
+          this.logger.warn(`⚠️ Rate limit atingido. Aguardando 3 segundos e tentando de novo...`);
+          await this.sleep(3000);
+          try {
+            await this.sendProductToBling(payload, token.access_token);
+          } catch (retryError) {
+            this.logger.error(`❌ Falha definitiva no produto ${produto.codigo}`, retryError?.response?.data || retryError.message);
           }
+        } else {
+          this.logger.error(`❌ Erro ao registrar produto ${produto.codigo}`, errorMsg || error.message);
         }
-      
-        // intervalo maior para evitar concorrência com queries extras do TypeORM
-        await this.sleep(600);
-      }      
-  
-      if (i + chunkSize < produtosFiltrados.length) {
-        this.logger.log(`⏳ Aguardando 5 segundos antes do próximo lote...`);
-        await this.sleep(5000);
       }
+  
+      // 🔹 respeita limite do Bling (máx. 3 req/s → intervalo 600ms é seguro)
+      await this.sleep(600);
     }
   }
   
