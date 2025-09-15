@@ -31,7 +31,6 @@ export class BlingProductService {
         }
     
         for (const [index, product] of products.entries()) {
-          this.logger.log(`Processando produto ${index + 1} de ${products.length}: ${product.nome}`);
           const payload = this.mapProductToBling(product);
           console.log('Payload gerado============>', payload);
     
@@ -59,24 +58,17 @@ export class BlingProductService {
             }
           )
         );
+        console.log('url enviada============>', this.apiBlingUrl + this.productTag);
     
-        this.logger.log(`✅ Produto enviado com sucesso: ${payload.nome}`);
+        this.logger.log(`Produto enviado com sucesso: ${payload.nome}`);
       } catch (error) {
-        const response = error?.response;
-    
-        this.logger.error(
-          `❌ Erro ao enviar produto ${payload.codigo} para o Bling`,
+        this.logger.error(          
+          `Erro ao enviar produto ${payload.codigo} para o Bling`,
+          error?.response?.data || error.message
         );
-    
-        if (response) {
-          this.logger.error(`Status: ${response.status} - ${response.statusText}`);
-          this.logger.error(`Resposta da API: ${JSON.stringify(response.data, null, 2)}`);
-        } else {
-          this.logger.error(`Erro inesperado: ${error.message}`);
-        }
       }
-    }
-    
+    }   
+
     private mapProductToBling(product: Produto): any {
         return {
           nome: product.nome,
