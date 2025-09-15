@@ -46,6 +46,7 @@ export class BlingProductService {
 
     private async sendProductToBling(payload: any, token: string): Promise<void> {
       try {
+        console.log('url enviada============>', this.apiBlingUrl + this.productTag);
         const response = await lastValueFrom(
           this.httpService.post(
             this.apiBlingUrl + this.productTag,
@@ -58,7 +59,6 @@ export class BlingProductService {
             }
           )
         );
-        console.log('url enviada============>', this.apiBlingUrl + this.productTag);
     
         this.logger.log(`Produto enviado com sucesso: ${payload.nome}`);
       } catch (error) {
