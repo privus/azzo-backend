@@ -32,21 +32,10 @@ export class BlingProductService {
   
       this.logger.log(`📦 Total de produtos vindos da base: ${products.length}`);
   
-      const produtosUnicos = new Map<string, Produto>();
-      for (const produto of products) {
-        const codigoNormalizado = produto.codigo.trim().toUpperCase();
-        if (!produtosUnicos.has(codigoNormalizado)) {
-          produtosUnicos.set(codigoNormalizado, produto);
-        } else {
-          this.logger.warn(`⚠️ Produto duplicado na base local: ${codigoNormalizado}. Ignorando um deles.`);
-        }
-      }
+      this.logger.log(`🧹 Após filtro: ${products.length} produtos únicos.`);
   
-      const produtosFiltrados = Array.from(produtosUnicos.values());
-      this.logger.log(`🧹 Após filtro: ${produtosFiltrados.length} produtos únicos.`);
-  
-      for (const [index, produto] of produtosFiltrados.entries()) {
-        this.logger.log(`➡️ [${index + 1}/${produtosFiltrados.length}] Processando: ${produto.nome} (${produto.codigo})`);
+      for (const [index, produto] of products.entries()) {
+        this.logger.log(`➡️ [${index + 1}/${products.length}] Processando: ${produto.nome} (${produto.codigo})`);
   
         const payload = this.mapProductToBling(produto);
   
