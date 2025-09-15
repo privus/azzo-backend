@@ -389,7 +389,8 @@ export class ProductsService implements IProductsRepository {
       .createQueryBuilder('produto')
       .leftJoinAndSelect('produto.fornecedor', 'fornecedor')
       .where('produto.unidade_id IS NULL')
-      .andWhere('produto.ativo = :ativo', { ativo: true });
+      .andWhere('produto.ativo = :ativo', { ativo: true })
+      .andWhere('produto.bling = :bling', { bling: 0 }); // 🔹 só produtos ainda não enviados
   
     if (fornecedorId) {
       query.andWhere('fornecedor.fornecedor_id = :fornecedorId', { fornecedorId });

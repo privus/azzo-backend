@@ -21,54 +21,54 @@ export class BlingProductService {
   private sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
   async registerProducts(fornecedor_id: number): Promise<void> {
-    const products = await this.productRepository.findAllUni(fornecedor_id);
-    const token = await this.blingTokenService.getLastToken('AZZO');
+    try {
+      const products = await this.productRepository.findAllUni(fornecedor_id);
+      const token = await this.blingTokenService.getLastToken('AZZO');
   
-    this.logger.log(`📦 Total de produtos vindos da base: ${products.length}`);
-  
-    // 🔹 filtro local de duplicados
-    const produtosUnicos = new Map<string, Produto>();
-    for (const produto of products) {
-      const codigoNormalizado = produto.codigo.trim().toUpperCase();
-      if (!produtosUnicos.has(codigoNormalizado)) {
-        produtosUnicos.set(codigoNormalizado, produto);
-      } else {
-        this.logger.warn(`⚠️ Produto duplicado na base local: ${codigoNormalizado}. Ignorando um deles.`);
+      if (!products.length) {
+        this.logger.log(`✅ Nenhum produto pendente para sincronizar.`);
+        return;
       }
-    }
   
-    const produtosFiltrados = Array.from(produtosUnicos.values());
-    this.logger.log(`🧹 Após filtro: ${produtosFiltrados.length} produtos únicos.`);
+      this.logger.log(`📦 Total de produtos vindos da base: ${products.length}`);
   
-    // 🔹 processa direto produto a produto
-    for (const [index, produto] of produtosFiltrados.entries()) {
-      this.logger.log(`➡️ [${index + 1}/${produtosFiltrados.length}] Processando: ${produto.nome} (${produto.codigo})`);
-      
-      const payload = this.mapProductToBling(produto);
-  
-      try {
-        await this.sendProductToBling(payload, token.access_token);
-      } catch (error) {
-        const errorMsg = error?.response?.data;
-  
-        if (errorMsg?.error?.type === 'TOO_MANY_REQUESTS') {
-          this.logger.warn(`⚠️ Rate limit atingido. Aguardando 3 segundos e tentando de novo...`);
-          await this.sleep(3000);
-          try {
-            await this.sendProductToBling(payload, token.access_token);
-          } catch (retryError) {
-            this.logger.error(`❌ Falha definitiva no produto ${produto.codigo}`, retryError?.response?.data || retryError.message);
-          }
+      const produtosUnicos = new Map<string, Produto>();
+      for (const produto of products) {
+        const codigoNormalizado = produto.codigo.trim().toUpperCase();
+        if (!produtosUnicos.has(codigoNormalizado)) {
+          produtosUnicos.set(codigoNormalizado, produto);
         } else {
-          this.logger.error(`❌ Erro ao registrar produto ${produto.codigo}`, errorMsg || error.message);
+          this.logger.warn(`⚠️ Produto duplicado na base local: ${codigoNormalizado}. Ignorando um deles.`);
         }
       }
   
-      // 🔹 respeita limite do Bling (máx. 3 req/s → intervalo 600ms é seguro)
-      await this.sleep(600);
-    }
-  }
+      const produtosFiltrados = Array.from(produtosUnicos.values());
+      this.logger.log(`🧹 Após filtro: ${produtosFiltrados.length} produtos únicos.`);
   
+      for (const [index, produto] of produtosFiltrados.entries()) {
+        this.logger.log(`➡️ [${index + 1}/${produtosFiltrados.length}] Processando: ${produto.nome} (${produto.codigo})`);
+  
+        const payload = this.mapProductToBling(produto);
+  
+        try {
+          await this.sendProductToBling(payload, token.access_token);
+  
+          // ✅ Marca como sincronizado
+          produto.bling = 1;
+          await this.productRepository.saveProduct(produto);
+          this.logger.log(`🔄 Produto ${produto.codigo} atualizado no banco (bling = 1)`);
+  
+        } catch (error) {
+          this.logger.error(`Erro ao enviar produto ${produto.codigo}: ${error.message || error}`);
+        }  
+        await this.sleep(600); // respeita limite de 3 req/s
+      }
+  
+      this.logger.log(`🎉 Finalizado: todos os produtos pendentes foram processados.`);
+    } catch (fatalError) {
+      this.logger.error(`💥 Erro fatal no processo de sincronização`, fatalError);
+    }
+  }  
 
   private async sendProductToBling(payload: any, token: string): Promise<void> {
     const response = await lastValueFrom(
@@ -82,11 +82,9 @@ export class BlingProductService {
           }
         }
       )
-    );
-  
+    );  
     this.logger.log(`✅ Produto enviado com sucesso: ${payload.nome}`);
-  }
-  
+  } 
 
   private mapProductToBling(product: Produto): any {
     return {
@@ -109,7 +107,7 @@ export class BlingProductService {
       actionEstoque: 'T',
       tributacao: {
         origem: 0,
-        ncm: product.ncm.toString(),
+        ncm: product.ncm?.toString(),
         cest: product.cest
       },
       midia: {
