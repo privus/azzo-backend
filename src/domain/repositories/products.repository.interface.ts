@@ -16,5 +16,5 @@ export interface IProductsRepository {
   saveProduct(product: Produto): Promise<Produto>;
   updateStockMinimumFromJson(): Promise<void>;
   activeProducts(product_id: number): Promise<void>;
-  findAllUni(fornecedor_id: number): Promise<Produto[]>;
+  findAllUni(): Promise<Produto[]>;
 }
