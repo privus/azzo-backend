@@ -87,6 +87,6 @@ export class Produto {
   @Column({ type: 'varchar', length: 40, nullable: true })
   cest: string;
 
-  @Column({ type: 'int', nullable: true })
+  @Column({ type: 'bigint', nullable: true })
   bling_id: number;
 }
