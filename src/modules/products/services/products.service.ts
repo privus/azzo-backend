@@ -3,11 +3,9 @@ import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Like, Repository } from 'typeorm';
 import { CategoriaProduto, Fornecedor, Produto } from '../../../infrastructure/database/entities';
-import { ProdutoAPIResponse } from '../dto/products.dto';
+import { ProdutoAPIResponse, UpdateProductDto } from '../dto';
 import { IProductsRepository } from '../../../domain/repositories';
 import * as fs from 'fs';
-import { UpdateProductDto } from '../dto/update-product.dto';
-import { CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class ProductsService implements IProductsRepository {
@@ -85,16 +83,7 @@ export class ProductsService implements IProductsRepository {
     });
 
     if (existingProduct) {
-      console.log(`Produto com código ${item.code} já existe. Atualizando...`);
-      Object.assign(existingProduct, {
-        nome: item.name,
-        ativo: item.is_active,
-        fotoUrl: item.catalog.image,
-        data_atualizacao: new Date(item.updated_at),
-        descricao_uni: item.description.html,
-      });
-      await this.produtoRepository.save(existingProduct);
-      console.log(`Produto ${existingProduct.nome} atualizado com sucesso!`);
+      console.log(`Produto com código ${item.code} já existe. Pulando...`);
       return;
     }
 
@@ -389,8 +378,8 @@ export class ProductsService implements IProductsRepository {
       .createQueryBuilder('produto')
       .leftJoinAndSelect('produto.fornecedor', 'fornecedor')
       .where('produto.unidade_id IS NULL')
+      .andWhere('produto.bling_id = IS NULL')
       .andWhere('produto.ativo = :ativo', { ativo: true })
-      .andWhere('produto.bling = :bling', { bling: 0 })
       .getMany();
   
     return produtos;

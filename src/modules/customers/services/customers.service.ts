@@ -3,9 +3,9 @@ import { Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CustomerAPIResponse, TinyCustomerDto, TinyCustomerResponse } from '../dto';
+import { CustomerAPIResponse, CustomerBlingDto, TinyCustomerDto, TinyCustomerResponse } from '../dto';
 import { Regiao, StatusCliente, Cidade, Cliente, CategoriaCliente, GrupoCliente } from '../../../infrastructure/database/entities';
-import { ICustomersRepository, ISellersRepository } from '../../../domain/repositories';
+import { IBlingTokenRepository, ICustomersRepository, ISellersRepository } from '../../../domain/repositories';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import * as fs from 'fs';
 
@@ -17,6 +17,7 @@ export class CustomersService implements ICustomersRepository{
   private readonly storeTag = 'stores';
   private readonly contactTag = 'contatos';
   private readonly sellerTag = 'seller';
+  private readonly apiBlingUrl: string;
 
   constructor(
     @InjectRepository(Cliente) private readonly clienteRepository: Repository<Cliente>,
@@ -26,12 +27,15 @@ export class CustomersService implements ICustomersRepository{
     @InjectRepository(CategoriaCliente) private readonly categoriaRepository: Repository<CategoriaCliente>,
     @Inject('ISellersRepository') private readonly sellersSevice: ISellersRepository,
     @InjectRepository(GrupoCliente) private readonly grupoClienteRepository: Repository<GrupoCliente>,
+    @Inject('IBlingTokenRepository') private readonly blingTokenService: IBlingTokenRepository,
     private readonly tinyAuthService: TinyAuthService,  
     private readonly httpService: HttpService,
   ) {
     this.tokenSellentt = process.env.SELLENTT_API_TOKEN;
     this.apiUrlSellentt = process.env.SELLENTT_API_URL;
     this.apiUrlTiny = process.env.TINY_API_URL;
+    this.apiBlingUrl = process.env.BLING_API_URL;
+
   }
 
   async syncroCustomers(): Promise<void> {
@@ -593,6 +597,7 @@ export class CustomersService implements ICustomersRepository{
       console.error('Grupo não encontrado.');
       return;
     }
+
     for (const cod of codClientes) {
       this.clienteRepository.findOne({ where: { codigo: cod }, relations: ['grupo'] })
         .then(cliente => {
@@ -611,5 +616,64 @@ export class CustomersService implements ICustomersRepository{
     });
     
     return grupoAtualizado
+  }
+
+  async registerBling(codigo: number): Promise<number> {
+    try {
+      const customer = await this.findCustomerByCode(codigo);
+      if (!customer) {
+        throw new Error(`🚨 Cliente com código ${codigo} não encontrado.`);
+      }
+      const token = this.blingTokenService.getLastToken('AZZO')
+      if (!token) {
+        throw new Error("🚨 Não foi possível obter um token válido para exportação.");
+      }
+
+      const body: CustomerBlingDto = {
+        nome: customer.nome_empresa || customer.nome,
+        codigo: customer.codigo.toString(),
+        situacao: 'Ativo',
+        numeroDocumento: customer.numero_doc,
+        celular: customer.celular,
+        fantasia: customer.nome || customer.nome_empresa,
+        tipo: customer.tipo_doc === 'cnpj' ? 'J' : 'F',
+        ie: customer.ie,
+        email: customer.email,
+        endereco: {
+          geral: {
+            endereco: customer.endereco,
+            cep: customer.cep,
+            bairro: customer.bairro,
+            municipio: customer.cidade_string,
+            uf: customer.cidade.estado.sigla,
+            numero: customer.num_endereco,
+            complemento: customer.complemento || '',
+          },
+          cobranca: {
+            endereco: customer.endereco,
+            cep: customer.cep,
+            bairro: customer.bairro,
+            municipio: customer.cidade_string,
+            uf: customer.cidade.estado.sigla,
+            numero: customer.num_endereco,
+            complemento: customer.complemento || '',
+          },
+        },
+      };
+      const apiUrl = this.apiBlingUrl + this.contactTag;
+
+      const response = await this.httpService.axiosRef.post(apiUrl, body, {
+        headers: { Authorization: `Bearer ${(await token).access_token}` },
+      });
+      console.log('body =========>', body)
+      console.log(`✅ Cliente ${codigo} registrado no Bling com sucesso!`);
+      customer.bling_id = response.data.id
+      await this.clienteRepository.save(customer);
+      return response.data.id;
+    }
+    catch (error) {
+      console.error(`❌ Erro ao registrar cliente ${codigo} no Bling:`, error.message);
+      throw error;
+    }
   }
 }

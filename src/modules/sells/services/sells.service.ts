@@ -1744,4 +1744,22 @@ export class SellsService implements ISellsRepository {
     return result;
   }
 
+  // async exportBling(id: number): Promise<string> {
+  //   try {
+  //     const order = await this.vendaRepository.findOne({
+  //       where: { venda_id: id },
+  //       relations: ['cliente.cidade.estado', 'itensVenda.produto', 'parcela_credito', 'tipo_pedido'],
+  //     });
+
+  //     if (!order) {
+  //       throw new BadRequestException({ message: `🚨 Pedido com ID ${id} não encontrado.` });
+  //     }
+
+  //     if (!order.cliente) {
+  //         throw new BadRequestException({ message: `🚨 Cliente não encontrado para o pedido ${id}.` });
+  //     }
+
+
+
+  //   }
 }
