@@ -98,4 +98,7 @@ export class Cliente {
   @ManyToOne(() => GrupoCliente, { nullable: true })
   @JoinColumn({ name: 'grupo_cliente_id' })
   grupo: GrupoCliente;
+
+  @Column({ type: 'bigint', nullable: true })
+  bling_id: number;  
 }

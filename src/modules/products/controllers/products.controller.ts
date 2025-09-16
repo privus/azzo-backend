@@ -44,6 +44,12 @@ export class ProductsController {
     return this.blingService.registerProducts();
   }
 
+  @ApiOperation({ summary: 'Sincronizar id produtos Bling' })
+  @Get('syncroIdBling')
+  async syncroIdBling() {
+    return this.blingService.getIdsBling();
+  }
+
   @ApiOperation({ summary: 'Listar todos os produtos' })
   @Get()
   async findAllProducts() {
