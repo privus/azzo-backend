@@ -34,6 +34,7 @@ import { OrderAssemblyService } from './services/order-assembly.service';
 import { AssemblyController } from './controllers/assembly.controller';
 import { OmieService } from './services/omie.service';
 import { OmieController } from './controllers/omie.controller';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -52,8 +53,9 @@ import { OmieController } from './controllers/omie.controller';
       Transportadora,
       SaidaEstoque,
       Montagem,
-      ItensMontagem
+      ItensMontagem,
     ]),
+    AuthModule,
     HttpModule,
     CustomersModule,
     SellersModule,

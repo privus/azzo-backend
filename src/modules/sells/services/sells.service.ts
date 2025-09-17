@@ -1,21 +1,25 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, MoreThanOrEqual, Not, Raw, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda, SaidaEstoque } from '../../../infrastructure/database/entities';
-import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto, ProjectStockDto, GroupSalesResponse, CustomerGroupSalesDto, WeeklyAid } from '../dto';
-import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository } from '../../../domain/repositories';
+import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto, ProjectStockDto, GroupSalesResponse, CustomerGroupSalesDto, WeeklyAid, OrdeBlingDto } from '../dto';
+import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository, IBlingAuthRepository } from '../../../domain/repositories';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { HttpService } from '@nestjs/axios';
 
 @Injectable()
 export class SellsService implements ISellsRepository {
+  private readonly logger = new Logger(SellsService.name);
+
   private readonly apiUrlSellentt: string;
   private readonly apiUrlTiny: string;
   private readonly tokenSellentt: string;
   private readonly apiTagSellentt = 'orders';
   private readonly orderTag = 'pedidos';
+  private readonly orderTagBling = 'pedidos/vendas';
   private readonly nfeTag = 'notas';
   private readonly contasReceberTag = 'contas-receber';  
+  private readonly apiBlingUrl: string;
 
   constructor(
     @Inject('ICustomersRepository') private readonly clienteService: ICustomersRepository,
@@ -32,10 +36,12 @@ export class SellsService implements ISellsRepository {
     @Inject('ITinyAuthRepository') private readonly tinyAuthService: ITinyAuthRepository,
     @InjectRepository(SaidaEstoque) private readonly saidaRepository: Repository<SaidaEstoque>,
     private readonly httpService: HttpService,
+    @Inject('IBlingAuthRepository') private readonly blingAuthService: IBlingAuthRepository,
   ) {
     this.tokenSellentt = process.env.SELLENTT_API_TOKEN;
     this.apiUrlSellentt = process.env.SELLENTT_API_URL;
     this.apiUrlTiny = process.env.TINY_API_URL;
+    this.apiBlingUrl = process.env.BLING_API_URL;
   }
 
   async syncroSells(): Promise<string> {
@@ -578,51 +584,51 @@ export class SellsService implements ISellsRepository {
 
   async exportTiny(id: number): Promise<string> {
     try {
-        const order = await this.vendaRepository.findOne({
-            where: { venda_id: id },
-            relations: ['cliente.cidade.estado', 'itensVenda.produto', 'parcela_credito', 'tipo_pedido'],
-        });
+          const order = await this.vendaRepository.findOne({
+              where: { venda_id: id },
+              relations: ['cliente.cidade.estado', 'itensVenda.produto', 'parcela_credito', 'tipo_pedido'],
+          });
 
-        if (!order) {
-            throw new BadRequestException({ message: `🚨 Pedido com ID ${id} não encontrado.` });
-        }
+          if (!order) {
+              throw new BadRequestException({ message: `🚨 Pedido com ID ${id} não encontrado.` });
+          }
 
-        if (!order.cliente) {
-            throw new BadRequestException({ message: `🚨 Cliente não encontrado para o pedido ${id}.` });
-        }
+          if (!order.cliente) {
+              throw new BadRequestException({ message: `🚨 Cliente não encontrado para o pedido ${id}.` });
+          }
 
-        const itensComErro = order.itensVenda.filter(item => !item.produto.tiny_mg || !item.produto.tiny_sp);
+          const itensComErro = order.itensVenda.filter(item => !item.produto.tiny_mg || !item.produto.tiny_sp);
 
-        if (itensComErro.length > 0) {
-            let errorMessage = "Os seguintes produtos não possuem ID:\n\n";
+          if (itensComErro.length > 0) {
+              let errorMessage = "Os seguintes produtos não possuem ID:\n\n";
 
-            itensComErro.forEach(item => {
-                const nomeProduto = item.produto.nome || 'NOME DESCONHECIDO';
-                console.error(`❌ Produto: ${nomeProduto}`);
-                errorMessage += `• ${nomeProduto}\n`;
-            });
+              itensComErro.forEach(item => {
+                  const nomeProduto = item.produto.nome || 'NOME DESCONHECIDO';
+                  console.error(`❌ Produto: ${nomeProduto}`);
+                  errorMessage += `• ${nomeProduto}\n`;
+              });
 
-            throw new BadRequestException({ message: errorMessage });
-        }
+              throw new BadRequestException({ message: errorMessage });
+          }
 
-        let idContato = order.cliente.tiny_id || 0;
-        if (!idContato) {
-            idContato = await this.clienteService.registerCustomerTiny(order.cliente.codigo);
-        }
+          let idContato = order.cliente.tiny_id || 0;
+          if (!idContato) {
+              idContato = await this.clienteService.registerCustomerTiny(order.cliente.codigo);
+          }
 
-        if (!order.cliente.cidade?.estado?.sigla) {
-            throw new BadRequestException({ message: `🚨 Estado não definido para o cliente ${order.cliente.codigo}.` });
-        }
-        const uf = order.cliente.cidade.estado.sigla === 'MG' || order.cliente.cidade.estado.sigla === 'SP' 
-          ? order.cliente.cidade.estado.sigla 
-          : 'MG';
-        const accessToken = await this.tinyAuthService.getAccessToken(uf);
+          if (!order.cliente.cidade?.estado?.sigla) {
+              throw new BadRequestException({ message: `🚨 Estado não definido para o cliente ${order.cliente.codigo}.` });
+          }
+          const uf = order.cliente.cidade.estado.sigla === 'MG' || order.cliente.cidade.estado.sigla === 'SP' 
+            ? order.cliente.cidade.estado.sigla 
+            : 'MG';
+          const accessToken = await this.tinyAuthService.getAccessToken(uf);
 
-        if (!accessToken) {
-            throw new BadRequestException({ message: "🚨 Não foi possível obter um token válido para exportação." });
-        }
+          if (!accessToken) {
+              throw new BadRequestException({ message: "🚨 Não foi possível obter um token válido para exportação." });
+          }
 
-        const body: OrderTinyDto = {
+          const body: OrderTinyDto = {
             idContato: idContato,
             numeroOrdemCompra: `${order.codigo}_sell`,
             data: (order.data_criacao ? new Date(order.data_criacao).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
@@ -641,28 +647,28 @@ export class SellsService implements ISellsRepository {
                 quantidade: item.quantidade,
                 valorUnitario: item.valor_unitario,
             })) || [],
-        };
+          };
 
-        order.exportado = 1;
-        await this.vendaRepository.save(order);
+          order.exportado = 1;
+          await this.vendaRepository.save(order);
 
-        const apiUrl = this.apiUrlTiny + this.orderTag;
+          const apiUrl = this.apiUrlTiny + this.orderTag;
 
-        console.log('Body ===========>', body);
+          console.log('Body ===========>', body);
 
-        await this.httpService.axiosRef.post(apiUrl, body, {
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-                'Content-Type': 'application/json',
-            },
-        });
+          await this.httpService.axiosRef.post(apiUrl, body, {
+              headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                  'Content-Type': 'application/json',
+              },
+          });
 
-        return `Pedido ${order.codigo} exportado com sucesso para o Tiny ${uf}`;
-    } catch (error) {
-        console.error("Erro ao exportar pedido:", error.response?.data || error.message);
-        throw new BadRequestException({ message: error.message || 'Erro desconhecido ao exportar pedido' });
+          return `Pedido ${order.codigo} exportado com sucesso para o Tiny ${uf}`;
+      } catch (error) {
+          console.error("Erro ao exportar pedido:", error.response?.data || error.message);
+          throw new BadRequestException({ message: error.message || 'Erro desconhecido ao exportar pedido' });
     }
-}
+  }
 
   async deleteSell(code: number): Promise<string> {
     // Verifica se a venda existe
@@ -1744,22 +1750,82 @@ export class SellsService implements ISellsRepository {
     return result;
   }
 
-  // async exportBling(id: number): Promise<string> {
-  //   try {
-  //     const order = await this.vendaRepository.findOne({
-  //       where: { venda_id: id },
-  //       relations: ['cliente.cidade.estado', 'itensVenda.produto', 'parcela_credito', 'tipo_pedido'],
-  //     });
-
-  //     if (!order) {
-  //       throw new BadRequestException({ message: `🚨 Pedido com ID ${id} não encontrado.` });
-  //     }
-
-  //     if (!order.cliente) {
-  //         throw new BadRequestException({ message: `🚨 Cliente não encontrado para o pedido ${id}.` });
-  //     }
-
-
-
-  //   }
+  async exportBling(id: number): Promise<string> {
+    try {
+      const order = await this.vendaRepository.findOne({
+        where: { venda_id: id },
+        relations: ['cliente.cidade.estado', 'itensVenda.produto', 'parcela_credito', 'tipo_pedido', 'status_venda', 'vendedor'],
+      });
+  
+      if (!order) {
+        throw new BadRequestException({ message: `🚨 Pedido com ID ${id} não encontrado.` });
+      }
+  
+      if (!order.cliente) {
+        throw new BadRequestException({ message: `🚨 Cliente não encontrado para o pedido ${id}.` });
+      }
+  
+      let idContato = order.cliente.bling_id;
+  
+      if (!idContato) {
+        idContato = await this.clienteService.registerBling(order.cliente.codigo);
+      }
+  
+      const token = await this.blingAuthService.getAccessToken('AZZO'); 
+  
+      if (!token) {
+        throw new BadRequestException({ message: "🚨 Não foi possível obter um token válido para exportação." });
+      }
+  
+      const body: OrdeBlingDto = {
+        data: new Date(order.data_criacao).toISOString(),
+        contato: {
+          id: idContato,
+        },
+        situacao: {
+          id: 9,
+        },
+        categoria: {
+          id: order.tipo_pedido.tipo_pedido_id,
+        },
+        numeroPedidoCompra: order.codigo.toString(),
+        observacoes: order.observacao || '',
+        itens: order.itensVenda.map(item => ({
+          codigo: item.produto.codigo,
+          unidade: 'UNI',
+          descricao: item.produto.nome,
+          quantidade: item.quantidade,
+          desconto: 0,
+          valor: item.valor_unitario,
+          produto: {
+            id: item.produto.bling_id,
+          },
+        })),
+        transporte: {
+          quantidadeVolumes: order.volume
+        },
+      };
+  
+      const apiUrl = this.apiBlingUrl + this.orderTagBling;
+      console.log('apiUrl =====', apiUrl)
+  
+      this.logger.log('📤 Enviando pedido para o Bling:', body);
+  
+      await this.httpService.axiosRef.post(apiUrl, body, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      order.exportado = 1;
+      await this.vendaRepository.save(order);
+  
+      return `✅ Pedido ${order.codigo} exportado com sucesso para o Bling.`;
+    } catch (error) {
+      this.logger.error('❌ Erro ao exportar pedido para o Bling:', error?.response?.data || error.message);
+      throw new BadRequestException({ message: `🚨 Erro ao exportar pedido para o Bling: ${error.message}` });
+    }
+  }
+  
 }
