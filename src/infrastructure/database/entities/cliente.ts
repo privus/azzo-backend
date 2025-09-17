@@ -100,5 +100,5 @@ export class Cliente {
   grupo: GrupoCliente;
 
   @Column({ type: 'bigint', nullable: true })
-  bling_id: number;  
+  bling_id: number;
 }

@@ -9,4 +9,5 @@ export interface ICustomersRepository {
   registerCustomerTiny(id: number): Promise<number>;
   saveCustomer(customer: Cliente): Promise<void>;
   syncroLastPageCustomers(): Promise<void>;
+  registerBling(codigo: number): Promise<number>;
 }

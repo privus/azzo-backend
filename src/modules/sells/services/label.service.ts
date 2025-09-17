@@ -60,7 +60,8 @@ export class LabelService {
     const complemento = order.cliente.complemento ? order.cliente.complemento : '';
     const estado = order.cliente.cidade ? order.cliente.cidade.estado.sigla : '';
     const cidade = order.cliente.cidade_string + ' - ' + estado + ' - ' + order.cliente.cep;
-    const telefoneFixo = '(35) 99877 - 0626';
+    const telefoneFixo = '(35) 99877 - 0726';
+    const categoriaCliente = order.cliente.categoria_cliente.nome;
 
     return {
       stack: [
@@ -80,9 +81,13 @@ export class LabelService {
           ],
         },
         // Pedido e Cliente
-        { text: `Pedido: ${order.codigo}`, fontSize: 5, bold: true, alignment: 'left' },
-        { text: `Cliente: ${order.cliente.nome_empresa}`, fontSize: 5, alignment: 'left', margin: [0, 2, 0, 2] },
-
+        {
+          columns: [
+            { text: `Pedido: ${order.codigo}`, fontSize: 5, bold: true, alignment: 'left' },
+            { text: `${categoriaCliente}`, fontSize: 5, bold: true, alignment: 'right' },
+          ],
+        },        
+        { text: `Cliente: ${order.cliente.nome_empresa}`, fontSize: 5, alignment: 'left', margin: [0, 10, 0, 2] },
         // Endereço
         { text: `Endereço: ${endereco} ${complemento}`, fontSize: 5, alignment: 'left', margin: [0, 2, 0, 2]},
         { text: `Bairro: ${order.cliente.bairro}`, fontSize: 5, alignment: 'left', margin: [0, 2, 0, 2]},

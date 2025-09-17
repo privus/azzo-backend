@@ -12,3 +12,4 @@ export * from './project-stock.dto';
 export * from './romaneio.dto';
 export * from './order-assembly.dto';
 export * from './group-sales.dto';
+export * from './export-bling.dto';

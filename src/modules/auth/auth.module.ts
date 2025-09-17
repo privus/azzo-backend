@@ -39,12 +39,17 @@ import { HttpModule } from '@nestjs/axios';
       provide: 'IBlingTokenRepository',
       useClass: BlingTokenService,
     },
+    {
+      provide: 'IBlingAuthRepository',
+      useClass: BlingAuthService,
+    },
   ],
   exports: [
     JwtModule,
     AuthService,
     UsersModule,
-    'IBlingTokenRepository',
+    'IBlingAuthRepository',
+    'IBlingTokenRepository', 
   ],
 })
 export class AuthModule {}

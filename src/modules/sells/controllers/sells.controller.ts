@@ -156,6 +156,13 @@ export class SellsController {
     return { message: resultMessage };
   }
 
+  @ApiOperation({ summary: 'Exportar pedido para o Tiny'})
+  @Get('exportBling/:id')
+  async exportToBling(@Param('id') id: number) {
+    const resultMessage = await this.sellsService.exportBling(id);
+    return { message: resultMessage };
+  }
+
   @ApiOperation({ summary: 'Adiciona Volume no pedido'})
   @Get('vol/:id')
   async volumeSell(@Param('id') id: number, @Query('volume') volume: number) {  

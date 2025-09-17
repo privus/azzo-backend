@@ -1,8 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { IBlingTokenRepository, IProductsRepository } from 'src/domain/repositories';
-import { Produto } from '../../../infrastructure/database/entities';
-import { BlingProductApiResponse, BlingProductDto, BlingProductResponse } from '../dto';
+import { IBlingAuthRepository, IProductsRepository } from '../../../domain/repositories';
+import { BlingProductApiResponse, BlingProductDto } from '../dto';
 
 @Injectable()
 export class BlingProductService {
@@ -12,7 +11,7 @@ export class BlingProductService {
 
   constructor(
     private readonly httpService: HttpService,
-    @Inject('IBlingTokenRepository') private readonly blingTokenService: IBlingTokenRepository,
+    @Inject('IBlingAuthRepository') private readonly blingAuthRepository: IBlingAuthRepository,
     @Inject('IProductsRepository') private readonly productRepository: IProductsRepository,
   ) {
     this.apiBlingUrl = process.env.BLING_API_URL;
@@ -23,7 +22,7 @@ export class BlingProductService {
   async registerProducts(): Promise<void> {
     try {
       const products = await this.productRepository.findAllUni();
-      const token = await this.blingTokenService.getLastToken('AZZO');
+      const token = await this.blingAuthRepository.getAccessToken('AZZO');
   
       if (!products.length) {
         this.logger.log(`✅ Nenhum produto pendente para sincronizar.`);
@@ -68,7 +67,7 @@ export class BlingProductService {
             }
           };
   
-          const blingId = await this.sendProductToBling(body, token.access_token);
+          const blingId = await this.sendProductToBling(body, token);
   
           produto.bling_id = blingId;
           await this.productRepository.saveProduct(produto);
@@ -123,7 +122,7 @@ export class BlingProductService {
   async getIdsBling(): Promise<string> {
     let pagina = 1;
 
-    const token = await this.blingTokenService.getLastToken('AZZO');
+    const token = await this.blingAuthRepository.getAccessToken('AZZO');
 
     if (!token) {
       console.error(`❌ Erro ao obter token, pulando sincronização.`);
@@ -135,7 +134,7 @@ export class BlingProductService {
         const url = `${this.apiBlingUrl}${this.productTag}?pagina=${pagina}`;
         
         const response = await this.httpService.axiosRef.get<BlingProductApiResponse>(url, {
-          headers: { Authorization: `Bearer ${token.access_token}` },
+          headers: { Authorization: `Bearer ${token}` },
         });        
 
         const products = response.data.data;
