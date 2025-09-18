@@ -281,9 +281,7 @@ export class CustomersService implements ICustomersRepository{
         if (!customer) {
           throw new Error(`🚨 Cliente com código ${codigo} não encontrado.`);
         }
-        const uf = customer.cidade.estado.sigla === 'MG' || customer.cidade.estado.sigla === 'SP' 
-          ? customer.cidade.estado.sigla 
-          : 'MG';
+        const uf = 'SP'
         const accessToken = await this.tinyAuthService.getAccessToken(uf);
 
         if (!accessToken) {
