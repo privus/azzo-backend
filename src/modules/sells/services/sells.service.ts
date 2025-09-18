@@ -611,7 +611,7 @@ export class SellsService implements ISellsRepository {
               throw new BadRequestException({ message: errorMessage });
           }
 
-          let idContato = order.cliente.tiny_id || 0;
+          let idContato = order.cliente.tiny_id2 || 0;
           if (!idContato) {
               idContato = await this.clienteService.registerCustomerTiny(order.cliente.codigo);
           }

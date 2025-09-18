@@ -101,4 +101,7 @@ export class Cliente {
 
   @Column({ type: 'bigint', nullable: true })
   bling_id: number;
+
+  @Column({ type: 'int', nullable: true })
+  tiny_id2: number;
 }
