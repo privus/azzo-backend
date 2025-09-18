@@ -616,13 +616,13 @@ export class SellsService implements ISellsRepository {
               idContato = await this.clienteService.registerCustomerTiny(order.cliente.codigo);
           }
 
-          if (!order.cliente.cidade?.estado?.sigla) {
-              throw new BadRequestException({ message: `🚨 Estado não definido para o cliente ${order.cliente.codigo}.` });
-          }
-          const uf = order.cliente.cidade.estado.sigla === 'MG' || order.cliente.cidade.estado.sigla === 'SP' 
-            ? order.cliente.cidade.estado.sigla 
-            : 'MG';
-          const accessToken = await this.tinyAuthService.getAccessToken(uf);
+          // if (!order.cliente.cidade?.estado?.sigla) {
+          //     throw new BadRequestException({ message: `🚨 Estado não definido para o cliente ${order.cliente.codigo}.` });
+          // }
+          // const uf = order.cliente.cidade.estado.sigla === 'MG' || order.cliente.cidade.estado.sigla === 'SP' 
+          //   ? order.cliente.cidade.estado.sigla 
+          //   : 'MG';
+          const accessToken = await this.tinyAuthService.getAccessToken('SP');
 
           if (!accessToken) {
               throw new BadRequestException({ message: "🚨 Não foi possível obter um token válido para exportação." });
@@ -642,7 +642,7 @@ export class SellsService implements ISellsRepository {
             })),
             itens: order.itensVenda?.map(item => ({
                 produto: {
-                    id: uf === 'MG' ? item.produto.tiny_mg : item.produto.tiny_sp,
+                    id: item.produto.tiny_sp,
                 },
                 quantidade: item.quantidade,
                 valorUnitario: item.valor_unitario,
@@ -663,7 +663,7 @@ export class SellsService implements ISellsRepository {
               },
           });
 
-          return `Pedido ${order.codigo} exportado com sucesso para o Tiny ${uf}`;
+          return `Pedido ${order.codigo} exportado com sucesso para o Tiny`;
       } catch (error) {
           console.error("Erro ao exportar pedido:", error.response?.data || error.message);
           throw new BadRequestException({ message: error.message || 'Erro desconhecido ao exportar pedido' });
