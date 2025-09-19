@@ -89,4 +89,7 @@ export class Produto {
 
   @Column({ type: 'bigint', nullable: true })
   bling_id: number;
+
+  @Column({ type: 'bigint', nullable: true })
+  bling_id_p: number;
 }

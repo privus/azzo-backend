@@ -22,7 +22,7 @@ export class BlingProductService {
   async registerProducts(): Promise<void> {
     try {
       const products = await this.productRepository.findAllUni();
-      const token = await this.blingAuthRepository.getAccessToken('AZZO');
+      const token = await this.blingAuthRepository.getAccessToken('PURELI');
   
       if (!products.length) {
         this.logger.log(`✅ Nenhum produto pendente para sincronizar.`);
@@ -69,7 +69,7 @@ export class BlingProductService {
   
           const blingId = await this.sendProductToBling(body, token);
   
-          produto.bling_id = blingId;
+          produto.bling_id_p = blingId;
           await this.productRepository.saveProduct(produto);
   
           this.logger.log(`🔄 Produto ${produto.codigo} atualizado no banco com bling_id ${blingId}`);
@@ -122,7 +122,7 @@ export class BlingProductService {
   async getIdsBling(): Promise<string> {
     let pagina = 1;
 
-    const token = await this.blingAuthRepository.getAccessToken('AZZO');
+    const token = await this.blingAuthRepository.getAccessToken('PURELI');
 
     if (!token) {
       console.error(`❌ Erro ao obter token, pulando sincronização.`);
@@ -142,7 +142,7 @@ export class BlingProductService {
         for (const product of products) {
           const existingProduct = await this.productRepository.findBy({codigo: product.codigo});
           if (existingProduct) {
-            existingProduct.bling_id = product.id;
+            existingProduct.bling_id_p = product.id;
             await this.productRepository.saveProduct(existingProduct);
             this.logger.log(`🔄 Produto ${product.codigo} atualizado no banco com bling_id ${product.id}`);
           } else {
