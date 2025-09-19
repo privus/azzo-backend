@@ -378,10 +378,10 @@ export class ProductsService implements IProductsRepository {
       .createQueryBuilder('produto')
       .leftJoinAndSelect('produto.fornecedor', 'fornecedor')
       .where('produto.unidade_id IS NULL')
-      .andWhere('produto.bling_id_p = IS NULL')
-      .andWhere('produto.ativo = :ativo', { ativo: true })
+      .andWhere('produto.bling_id_p IS NULL')
+      .andWhere('produto.ativo = :ativo', { ativo: 1 })
       .getMany();
-  
+
     return produtos;
   }  
 }
