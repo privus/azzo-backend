@@ -50,7 +50,7 @@ export class BlingProductService {
             tipoProducao: 'T',
             marca: produto.fornecedor.nome,
             categoria: {
-              id: produto.categoria.categoria_id,
+              id: produto.fornecedor.fornecedor_id
             },
             actionEstoque: 'T',
             tributacao: {
