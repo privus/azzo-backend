@@ -1798,7 +1798,7 @@ export class SellsService implements ISellsRepository {
           desconto: 0,
           valor: item.valor_unitario,
           produto: {
-            id: item.produto.bling_id,
+            id: item.produto.bling_id_p,
           },
         })),
         transporte: {
