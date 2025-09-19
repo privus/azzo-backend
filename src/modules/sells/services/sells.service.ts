@@ -1754,7 +1754,15 @@ export class SellsService implements ISellsRepository {
     try {
       const order = await this.vendaRepository.findOne({
         where: { venda_id: id },
-        relations: ['cliente.cidade.estado', 'itensVenda.produto', 'parcela_credito', 'tipo_pedido', 'status_venda', 'vendedor'],
+        relations: [
+          'cliente.cidade.estado',
+          'itensVenda.produto',
+          'parcela_credito',
+          'tipo_pedido',
+          'status_venda',
+          'vendedor',
+          'itensVenda.produto.unidade',
+        ],
       });
   
       if (!order) {
@@ -1766,48 +1774,50 @@ export class SellsService implements ISellsRepository {
       }
   
       let idContato = order.cliente.bling_id_p;
-  
       if (!idContato) {
         idContato = await this.clienteService.registerBling(order.cliente.codigo);
       }
   
-      const token = await this.blingAuthService.getAccessToken('PURELI'); 
-  
+      const token = await this.blingAuthService.getAccessToken('PURELI');
       if (!token) {
         throw new BadRequestException({ message: "🚨 Não foi possível obter um token válido para exportação." });
       }
   
       const body: OrdeBlingDto = {
         data: new Date(order.data_criacao).toISOString(),
-        contato: {
-          id: idContato,
-        },
-        situacao: {
-          id: 9,
-        },
-        categoria: {
-          id: order.tipo_pedido.tipo_pedido_id,
-        },
+        contato: { id: idContato },
+        situacao: { id: 9 },
+        categoria: { id: order.tipo_pedido.tipo_pedido_id },
         numeroPedidoCompra: order.codigo.toString(),
         observacoes: order.observacao || '',
-        itens: order.itensVenda.map(item => ({
-          codigo: item.produto.codigo,
-          unidade: 'UNI',
-          descricao: item.produto.nome,
-          quantidade: item.quantidade,
-          desconto: 0,
-          valor: item.valor_unitario,
-          produto: {
-            id: item.produto.bling_id_p,
-          },
-        })),
+        itens: order.itensVenda.map(item => {
+          const produto = item.produto;
+          const unidadeBase = produto.unidade || produto;
+  
+          let quantidadeUnidade = Number(item.quantidade);
+          if (produto.qt_uni && produto.unidade) {
+            quantidadeUnidade *= produto.qt_uni;
+          }
+  
+          return {
+            codigo: unidadeBase.codigo,
+            unidade: 'UNI',
+            descricao: unidadeBase.nome,
+            quantidade: quantidadeUnidade,
+            desconto: 0,
+            valor: item.valor_unitario,
+            produto: {
+              id: unidadeBase.bling_id_p,
+            },
+          };
+        }),
         transporte: {
-          quantidadeVolumes: order.volume
+          quantidadeVolumes: order.volume,
         },
       };
   
       const apiUrl = this.apiBlingUrl + this.orderTagBling;
-      console.log('apiUrl =====', apiUrl)
+      console.log('apiUrl =====', apiUrl);
   
       this.logger.log('📤 Enviando pedido para o Bling:', body);
   
@@ -1827,5 +1837,6 @@ export class SellsService implements ISellsRepository {
       throw new BadRequestException({ message: `🚨 Erro ao exportar pedido para o Bling: ${error.message}` });
     }
   }
+  
   
 }
