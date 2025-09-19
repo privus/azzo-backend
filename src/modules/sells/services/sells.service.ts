@@ -1805,7 +1805,7 @@ export class SellsService implements ISellsRepository {
             descricao: unidadeBase.nome,
             quantidade: quantidadeUnidade,
             desconto: 0,
-            valor: item.valor_unitario,
+            valor: item.valor_total / quantidadeUnidade,
             produto: {
               id: unidadeBase.bling_id_p,
             },
@@ -1837,6 +1837,4 @@ export class SellsService implements ISellsRepository {
       throw new BadRequestException({ message: `🚨 Erro ao exportar pedido para o Bling: ${error.message}` });
     }
   }
-  
-  
 }
