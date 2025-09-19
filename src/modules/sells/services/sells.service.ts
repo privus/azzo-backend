@@ -1765,13 +1765,13 @@ export class SellsService implements ISellsRepository {
         throw new BadRequestException({ message: `🚨 Cliente não encontrado para o pedido ${id}.` });
       }
   
-      let idContato = order.cliente.bling_id;
+      let idContato = order.cliente.bling_id_p;
   
       if (!idContato) {
         idContato = await this.clienteService.registerBling(order.cliente.codigo);
       }
   
-      const token = await this.blingAuthService.getAccessToken('AZZO'); 
+      const token = await this.blingAuthService.getAccessToken('PURELI'); 
   
       if (!token) {
         throw new BadRequestException({ message: "🚨 Não foi possível obter um token válido para exportação." });
