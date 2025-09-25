@@ -18,7 +18,6 @@ export interface CustomerBlingDto {
   codigo: string;
   situacao: string;
   numeroDocumento: string;
-  celular: string;
   fantasia: string;
   tipo: string;
   ie: string;

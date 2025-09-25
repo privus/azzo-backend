@@ -635,7 +635,6 @@ export class CustomersService implements ICustomersRepository{
         codigo: customer.codigo.toString(),
         situacao: 'A',
         numeroDocumento: customer.numero_doc,
-        celular: customer.celular,
         fantasia: customer.nome || customer.nome_empresa,
         tipo: customer.tipo_doc === 'cnpj' ? 'J' : 'F',
         ie: customer.ie,
