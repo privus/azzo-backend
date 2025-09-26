@@ -123,4 +123,7 @@ export class Venda {
 
   @Column({ type: 'int', nullable: true })
   associado: number;
+
+  @Column({ type: 'bigint', nullable: true })
+  bling_id: number;
 }

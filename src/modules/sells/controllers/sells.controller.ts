@@ -175,7 +175,14 @@ export class SellsController {
   async syncroAllInvoiceNfs() {
     const resultMessage = await this.sellsService.syncroTinyInvoiceNf();
     return { message: resultMessage };
-  }  
+  }
+
+  @ApiOperation({ summary: 'Sincronizar nfs Bling' })
+  @Get('syncroNfeBling')
+  async syncroAllNfsBling() {
+    const resultMessage = await this.sellsService.syncroBlingNfe();
+    return { message: resultMessage };
+  }
 
   @ApiOperation({ summary: 'Sincronizar todas as vendas' })
   @Get('syncro')

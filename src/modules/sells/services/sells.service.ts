@@ -2,7 +2,7 @@ import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, MoreThanOrEqual, Not, Raw, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda, SaidaEstoque } from '../../../infrastructure/database/entities';
-import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto, ProjectStockDto, GroupSalesResponse, CustomerGroupSalesDto, WeeklyAid, OrdeBlingDto } from '../dto';
+import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto, ProjectStockDto, GroupSalesResponse, CustomerGroupSalesDto, WeeklyAid, OrdeBlingDto, NfeBlingDTO } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository, IBlingAuthRepository } from '../../../domain/repositories';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { HttpService } from '@nestjs/axios';
@@ -17,8 +17,9 @@ export class SellsService implements ISellsRepository {
   private readonly apiTagSellentt = 'orders';
   private readonly orderTag = 'pedidos';
   private readonly orderTagBling = 'pedidos/vendas';
-  private readonly nfeTag = 'notas';
-  private readonly contasReceberTag = 'contas-receber';  
+  private readonly nfeTagTiny = 'notas';
+  private readonly contasReceberTag = 'contas-receber';
+  private readonly nfeTagBling = 'nfe';
   private readonly apiBlingUrl: string;
 
   constructor(
@@ -1211,7 +1212,7 @@ export class SellsService implements ISellsRepository {
 
     while (true) {
       try {
-        const url = `${apiUrl}${this.nfeTag}?dataInicial=${data}&offset=${offset}&limit=${limit}`;
+        const url = `${apiUrl}${this.nfeTagTiny}?dataInicial=${data}&offset=${offset}&limit=${limit}`;
         const response = await this.httpService.axiosRef.get<{ itens: NfeDto[] }>(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -1252,7 +1253,7 @@ export class SellsService implements ISellsRepository {
 
   private async getNflink(id: number, uf: string): Promise<string | null> {
     const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-    const url = `${this.apiUrlTiny}${this.nfeTag}/${id}/link`;
+    const url = `${this.apiUrlTiny}${this.nfeTagTiny}/${id}/link`;
     const token = await this.tinyAuthService.getAccessToken(uf);
 
     try {
@@ -1821,7 +1822,7 @@ export class SellsService implements ISellsRepository {
   
       this.logger.log('📤 Enviando pedido para o Bling:', body);
   
-      await this.httpService.axiosRef.post(apiUrl, body, {
+      const resp = await this.httpService.axiosRef.post(apiUrl, body, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -1829,6 +1830,7 @@ export class SellsService implements ISellsRepository {
       });
   
       order.exportado = 1;
+      order.bling_id = resp.data.data.id;
       await this.vendaRepository.save(order);
   
       return `✅ Pedido ${order.codigo} exportado com sucesso para o Bling.`;
@@ -1836,5 +1838,71 @@ export class SellsService implements ISellsRepository {
       this.logger.error('❌ Erro ao exportar pedido para o Bling:', error?.response?.data || error.message);
       throw new BadRequestException({ message: `🚨 Erro ao exportar pedido para o Bling: ${error.message}` });
     }
+  }
+
+  async syncroBlingNfe(): Promise<string> {
+    let pagina = 1;
+    const updatedSales: string[] = [];
+  
+    const token = await this.blingAuthService.getAccessToken('PURELI');
+    if (!token) {
+      throw new BadRequestException({ message: "🚨 Não foi possível obter um token válido para exportação." });
+    }
+  
+    while (true) {
+      try {
+        const url = `${this.apiBlingUrl}${this.nfeTagBling}?dataEmissaoInicial=2025-09-18&pagina=${pagina}`;
+        const response = await this.httpService.axiosRef.get<{ itens: NfeBlingDTO[] }>(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+  
+        const nfData = response.data.itens;
+        if (!nfData || nfData.length === 0) {
+          this.logger.log(`🚫 Nenhuma nota fiscal encontrada na página ${pagina}. Encerrando...`);
+          break;
+        }
+  
+        for (const nf of nfData) {
+          const dataEmissao = new Date(nf.dataEmissao);
+          const numeroNota = nf.numero;
+          const chaveAcesso = nf.chaveAcesso;
+          const linkDanfe = `https://www.bling.com.br/relatorios/danfe.php?idNota1=${nf.id}`;
+          const clienteBlingId = nf.contato.id;
+  
+          // Buscar venda pela data de emissão + cliente vinculado ao mesmo bling_id_p
+          const venda = await this.vendaRepository.findOne({
+            where: {
+              cliente: { bling_id_p: clienteBlingId },
+              data_criacao: Raw(alias => `DATE(${alias}) = :data`, { data: dataEmissao.toISOString().split('T')[0] }),
+            },
+            relations: ['cliente'],
+          });
+  
+          if (!venda) {
+            this.logger.warn(`⚠️ Nenhuma venda encontrada para NF ${numeroNota}, cliente_bling_id ${clienteBlingId}, data ${dataEmissao}`);
+            continue;
+          }
+  
+          venda.numero_nfe = Number(numeroNota);
+          venda.chave_acesso = chaveAcesso;
+          venda.nfe_link = linkDanfe;
+          venda.nfe_emitida = 1;
+          venda.data_emissao_nfe = dataEmissao;
+          venda.nfe_id = nf.id;
+  
+          await this.vendaRepository.save(venda);
+          updatedSales.push(venda.codigo.toString());
+  
+          this.logger.log(`✅ Nota fiscal ${numeroNota} vinculada à venda ${venda.codigo} (cliente ${venda.cliente?.nome})`);
+        }
+  
+        pagina++;
+      } catch (error) {
+        this.logger.error(`❌ Erro ao buscar notas na página ${pagina}`, error?.response?.data || error.message);
+        break;
+      }
+    }
+  
+    return `🎉 Sincronização concluída. Vendas atualizadas: ${updatedSales.join(', ')}`;
   }
 }
