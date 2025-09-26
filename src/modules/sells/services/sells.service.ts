@@ -1855,6 +1855,7 @@ export class SellsService implements ISellsRepository {
         const response = await this.httpService.axiosRef.get<{ itens: NfeBlingDTO[] }>(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
+        console.log('url =====', url);
   
         const nfData = response.data.itens;
         if (!nfData || nfData.length === 0) {
