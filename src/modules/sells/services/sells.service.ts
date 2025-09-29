@@ -1691,7 +1691,6 @@ export class SellsService implements ISellsRepository {
   
       const vendedorId = vendedor.vendedor_id as number;
   
-      // ❌ Ignorar vendedor_id 9 e 12
       if (vendedorId === 9 || vendedorId === 12) continue;
   
       const vendedorNome = vendedoresMap.get(vendedorId)!;
@@ -1710,11 +1709,6 @@ export class SellsService implements ISellsRepository {
       const isNovoCliente = clienteCriacao >= from && clienteCriacao <= to;
   
       let incrementoPedido = isNovoCliente ? valorNovo : valorAntigo;
-  
-      // Regra especial: vendedor_id 20 → sempre 10 por pedido
-      if (vendedorId === 20) {
-        incrementoPedido = 10;
-      }
   
       if (isNovoCliente) {
         result[vendedorNome].clientes_novos++;
@@ -1906,4 +1900,5 @@ export class SellsService implements ISellsRepository {
   
     return `🎉 Sincronização concluída. Vendas atualizadas: ${updatedSales.join(', ')}`;
   }
+
 }
