@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, MoreThanOrEqual, Not, Raw, Repository } from 'typeorm';
-import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda, SaidaEstoque } from '../../../infrastructure/database/entities';
+import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda, SaidaEstoque, MetaVendedor } from '../../../infrastructure/database/entities';
 import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto, ProjectStockDto, GroupSalesResponse, CustomerGroupSalesDto, WeeklyAid, OrdeBlingDto, NfeBlingDTO } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository, IBlingAuthRepository } from '../../../domain/repositories';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -38,6 +38,7 @@ export class SellsService implements ISellsRepository {
     @InjectRepository(SaidaEstoque) private readonly saidaRepository: Repository<SaidaEstoque>,
     private readonly httpService: HttpService,
     @Inject('IBlingAuthRepository') private readonly blingAuthService: IBlingAuthRepository,
+    @InjectRepository(MetaVendedor) private readonly metaRepository: Repository<MetaVendedor>,
   ) {
     this.tokenSellentt = process.env.SELLENTT_API_TOKEN;
     this.apiUrlSellentt = process.env.SELLENTT_API_URL;
@@ -321,7 +322,6 @@ export class SellsService implements ISellsRepository {
 
     }
 
-    // Se a venda não existir, crie-a
     console.log('Criando nova venda =>', sell.code);
 
     const regiao = await this.regiaoService.getRegionByCode(sell.region);
@@ -1011,30 +1011,55 @@ export class SellsService implements ISellsRepository {
 
   async commissionBySeller(fromDate: string, toDate?: string): Promise<Commissions[]> {
     const vendasMes = await this.sellsBetweenDates(fromDate, toDate);
-    const vendedorMap = new Map<number, Commissions>();
+    const tipoId = 10438;
+  
+    const vendedorMap = new Map<number, Commissions & { vendedor_id: number }>();
   
     for (const venda of vendasMes) {
-      if (venda.tipo_pedido.tipo_pedido_id !== 10438 || venda.status_venda.status_venda_id == 11468) continue;
+      if (venda.tipo_pedido?.tipo_pedido_id !== tipoId || venda.status_venda?.status_venda_id === 11468) continue;
   
-      const vendedorId = venda.vendedor.vendedor_id;
-  
-      const vendedorNome = venda.vendedor.nome;
+      const vendedor = venda.vendedor;
+      const vendedorId = vendedor.vendedor_id;
   
       if (!vendedorMap.has(vendedorId)) {
         vendedorMap.set(vendedorId, {
-          vendedor: vendedorNome,
+          vendedor_id: vendedorId,
+          vendedor: vendedor.nome,
           faturado: 0,
           pedidos: 0,
           comissao: 0,
           ticketMedio: 0,
-          comissaoMedia: 0,
         });
       }
   
-      const vendedorData = vendedorMap.get(vendedorId)!;
-      vendedorData.faturado += Number(venda.valor_final);
-      vendedorData.pedidos += 1;
-      vendedorData.comissao += Number(venda.comisao);
+      const data = vendedorMap.get(vendedorId)!;
+      data.faturado += Number(venda.valor_final);
+      data.pedidos += 1;
+      data.comissao += Number(venda.comisao);
+    }
+  
+    // Calcular metas
+    const hoje = new Date();
+    const mes = hoje.getMonth() + 1;
+    const ano = hoje.getFullYear();
+    
+  
+    const metas = await this.metaRepository.find({
+      where: { mes, ano },
+      relations: ['vendedor'],
+    });
+  
+    for (const meta of metas) {
+      const vendedorId = meta.vendedor.vendedor_id;
+      const progresso = vendedorMap.get(vendedorId);
+      if (!progresso) continue;
+  
+      if (meta.meta_ped > 0 || Number(meta.meta_fat) > 0) {
+        progresso.meta_ped = meta.meta_ped;
+        progresso.meta_fat = meta.meta_fat;
+        progresso.progresso_ped = Number(((progresso.pedidos / meta.meta_ped) * 100).toFixed(2));
+        progresso.progresso_fat = Number(((progresso.faturado / Number(meta.meta_fat)) * 100).toFixed(2));
+      }
     }
   
     return Array.from(vendedorMap.values()).map(v => ({
@@ -1042,10 +1067,9 @@ export class SellsService implements ISellsRepository {
       faturado: Number(v.faturado.toFixed(2)),
       comissao: Number(v.comissao.toFixed(2)),
       ticketMedio: Number((v.faturado / v.pedidos).toFixed(2)),
-      comissaoMedia: Number((v.comissao / v.pedidos).toFixed(2)),
     }));
-  }
-
+  }  
+  
   addVolumeSell(id: number, volume: number): Promise<string> {
     return this.vendaRepository.update({ venda_id: id }, { volume })
       .then(() => `Volume de venda ${id} atualizado para ${volume}.`)

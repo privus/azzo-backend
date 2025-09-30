@@ -52,3 +52,4 @@ export * from './grupoCliente';
 export * from './valorEstoque';
 export * from './blingTokens';
 export * from './historicoEstoque';
+export * from './metaVendedor';

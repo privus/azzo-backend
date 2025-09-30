@@ -18,6 +18,7 @@ import {
   SaidaEstoque,
   Montagem,
   ItensMontagem,
+  MetaVendedor,
 } from '../../infrastructure/database/entities';
 import { SellsController } from './controllers/sells.controller';
 import { HttpModule } from '@nestjs/axios';
@@ -54,6 +55,7 @@ import { AuthModule } from '../auth/auth.module';
       SaidaEstoque,
       Montagem,
       ItensMontagem,
+      MetaVendedor,
     ]),
     AuthModule,
     HttpModule,
