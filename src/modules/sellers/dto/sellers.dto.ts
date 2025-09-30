@@ -7,9 +7,8 @@ export interface SellerAPIResponse {
 }
 
 export interface GoalsDto {
+  vendedor_id: number;
   vendedor: string;
-  mes: number;
-  ano: number;
   meta_ped: number;
   meta_fat: number;
   ped_realizados: number;
@@ -17,6 +16,7 @@ export interface GoalsDto {
   progress_ped: number;
   progress_fat: number;
 }
+
 
 export interface Goals {
   vendedor_id: number;

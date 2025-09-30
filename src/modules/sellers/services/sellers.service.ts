@@ -125,17 +125,22 @@ export class SellersService {
   
   async getMetaProgress(): Promise<GoalsDto[]> {
     const today = new Date();
-    const mes = today.getMonth() + 1;
-    const ano = today.getFullYear();
+    const mes = today.getMonth() + 1; // mês atual
+    const ano = today.getFullYear();  // ano atual
   
+    // 🔹 Metas cadastradas para o mês atual
     const metas = await this.metaRepository.find({
       where: { mes, ano },
       relations: ['vendedor'],
     });
   
+    // 🔹 Vendas válidas do mês atual
     const vendas = await this.vendaRepository.find({
       where: {
-        data_criacao: Raw(alias => `EXTRACT(MONTH FROM ${alias}) = :mes AND EXTRACT(YEAR FROM ${alias}) = :ano`, { mes, ano }),
+        data_criacao: Raw(
+          alias => `EXTRACT(MONTH FROM ${alias}) = :mes AND EXTRACT(YEAR FROM ${alias}) = :ano`,
+          { mes, ano }
+        ),
         tipo_pedido: { tipo_pedido_id: 10438 }, // apenas vendas válidas
       },
       relations: ['vendedor'],
@@ -156,19 +161,19 @@ export class SellersService {
     }
   
     return metas.map(meta => {
-      const progresso = progressoMap.get(meta.vendedor.vendedor_id) || { pedidos: 0, faturamento: 0 };
+      const vendedorId = meta.vendedor.vendedor_id;
+      const progresso = progressoMap.get(vendedorId) || { pedidos: 0, faturamento: 0 };
   
       return {
+        vendedor_id: vendedorId,
         vendedor: meta.vendedor.nome,
-        mes,
-        ano,
         meta_ped: meta.meta_ped,
-        meta_fat: Number(meta.meta_fat.toFixed(2)),
+        meta_fat: meta.meta_fat,
         ped_realizados: progresso.pedidos,
         fat_realizado: Number(progresso.faturamento.toFixed(2)),
-        progress_ped: Number(((progresso.pedidos / meta.meta_ped) * 100).toFixed(2)),
-        progress_fat: Number(((progresso.faturamento / Number(meta.meta_fat)) * 100).toFixed(2)),
-      };
+        progress_ped: meta.meta_ped > 0 ? Number(((progresso.pedidos / meta.meta_ped) * 100).toFixed(2)) : 0,
+        progress_fat: meta.meta_fat > 0 ? Number(((progresso.faturamento / Number(meta.meta_fat)) * 100).toFixed(2)) : 0,
+      }
     });
-  }  
+  }
 }
