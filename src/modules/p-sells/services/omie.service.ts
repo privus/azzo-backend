@@ -27,7 +27,7 @@ export class OmieService {
             param: [
             {
                 pagina: 1,
-                registros_por_pagina: 100,
+                registros_por_pagina: 400,
                 apenas_importado_api: "S",
             }
             ],
