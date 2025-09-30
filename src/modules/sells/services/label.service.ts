@@ -83,8 +83,8 @@ export class LabelService {
         // Pedido e Cliente
         {
           columns: [
-            { text: `Pedido: ${order.codigo}`, fontSize: 5, bold: true, alignment: 'left' },
-            { text: `${categoriaCliente}`, fontSize: 5, bold: true, alignment: 'right' },
+            { text: `Pedido: ${order.codigo}`, fontSize: 5, bold: true, alignment: 'right' },
+            { text: `${categoriaCliente}`, fontSize: 5, bold: true, alignment: 'left' },
           ],
         },        
         { text: `Cliente: ${order.cliente.nome_empresa}`, fontSize: 5, alignment: 'left', margin: [0, 10, 0, 2] },
