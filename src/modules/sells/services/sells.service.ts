@@ -1021,7 +1021,7 @@ export class SellsService implements ISellsRepository {
       const vendedor = venda.vendedor;
       const vendedorId = vendedor.vendedor_id;
 
-      if (vendedorId === 18 || vendedorId === 12) continue;
+      if (vendedorId === 18 || vendedorId === 12 || vendedorId === 16) continue;
   
       if (!vendedorMap.has(vendedorId)) {
         vendedorMap.set(vendedorId, {
