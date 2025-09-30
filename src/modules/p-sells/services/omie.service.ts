@@ -3,6 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { PSell } from '../../../infrastructure/database/entities';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Between, Not, IsNull } from 'typeorm';
 
 @Injectable()
 export class OmieService {
@@ -68,5 +69,48 @@ export class OmieService {
             }
         }
     }
+
+
+    async deleteOrdersByDateRange(startDate: string, endDate: string) {
+        const vendas = await this.pSellsRepository.find({
+            where: {
+                data_pedido: Between(new Date(startDate), new Date(endDate)),
+                cod_omie: Not(IsNull()),
+            },
+        });
+
+        if (!vendas.length) {
+            this.logger.warn(`Nenhuma venda com cod_omie encontrada entre ${startDate} e ${endDate}.`);
+            return;
+        }
+
+        for (const venda of vendas) {
+            try {
+                const result = await this.deleteOrder(venda.cod_omie);
+                this.logger.log(`Excluído com sucesso: venda ${venda.codigo}, cod_omie ${venda.cod_omie}`);
+            } catch (err) {
+                this.logger.error(`Erro ao excluir cod_omie ${venda.cod_omie} para venda ${venda.codigo}: ${err.message}`);
+            }
+        }
+    }
+
+    private async deleteOrder(codOmie: number) {
+        const body = {
+            call: "ExcluirContaReceber",
+            param: [{ chave_lancamento: codOmie }],
+            app_key: this.clientKey,
+            app_secret: this.clientSecret,
+        };
     
+        try {
+            const response = await this.httpService.axiosRef.post(
+                this.apiOmieUrl + this.tag,
+                body
+            );
+            return response.data;
+        } catch (error) {
+            this.logger.error(`Erro na API Omie: ${error.message}`);
+            throw error;
+        }
+    }    
 }

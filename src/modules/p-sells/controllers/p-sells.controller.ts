@@ -1,5 +1,5 @@
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { Controller, Get, Query, Patch, Body, Param, Post } from '@nestjs/common';
+import { Controller, Get, Query, Patch, Body, Param, Post, Delete } from '@nestjs/common';
 import { PSellsService } from '../services/p-sell.service';
 import { InstallmentsDto, UpdateSellDto } from '../dto';
 import { OmieService } from '../services/omie.service';
@@ -53,5 +53,11 @@ export class PSellsController {
   @Get(':id')
   async getSellById(@Param('id') id: number) {
     return this.pSellsService.getSellById(id);
+  }
+
+  @ApiOperation({ summary: 'Apagar lançamentos por periodo' })
+  @Delete('installments')
+  async deleteInstallments(@Query('fromDate') fromDate: string, @Query('toDate') toDate: string) {
+    return this.omieService.deleteOrdersByDateRange(fromDate, toDate);
   }
 }
