@@ -22,6 +22,12 @@ export class PSellsController {
     return this.pSellsService.findAllPaymentMethods();
   }
 
+  @ApiOperation({ summary: 'Apagar lançamentos por periodo' })
+  @Delete('installments')
+  async deleteInstallments(@Query('fromDate') fromDate: string, @Query('toDate') toDate: string) {
+    return this.omieService.deleteOrdersByDateRange(fromDate, toDate);
+  }
+
   @ApiOperation({ summary: 'Atualiza códigos Omie nas vendas' })
   @Get('omie-codes')
   async updateOmieCodes() {
@@ -53,11 +59,5 @@ export class PSellsController {
   @Get(':id')
   async getSellById(@Param('id') id: number) {
     return this.pSellsService.getSellById(id);
-  }
-
-  @ApiOperation({ summary: 'Apagar lançamentos por periodo' })
-  @Delete('installments')
-  async deleteInstallments(@Query('fromDate') fromDate: string, @Query('toDate') toDate: string) {
-    return this.omieService.deleteOrdersByDateRange(fromDate, toDate);
   }
 }
