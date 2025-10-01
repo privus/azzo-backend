@@ -1013,7 +1013,7 @@ export class SellsService implements ISellsRepository {
     const vendasMes = await this.sellsBetweenDates(fromDate, toDate);
     const tipoId = 10438;
   
-    const vendedorMap = new Map<number, Commissions & { vendedor_id: number }>();
+    const vendedorMap = new Map<number, Commissions>();
   
     for (const venda of vendasMes) {
       if (venda.tipo_pedido?.tipo_pedido_id !== tipoId || venda.status_venda?.status_venda_id === 11468) continue;
@@ -1040,20 +1040,19 @@ export class SellsService implements ISellsRepository {
       data.comissao += Number(venda.comisao);
     }
   
-    const dataBase = new Date(fromDate);
-    const mes = dataBase.getMonth() + 1;
-    const ano = dataBase.getFullYear();   
+    const [ano, mes] = fromDate.split('-').map(Number);  
   
     const metas = await this.metaRepository.find({
       where: { mes, ano },
       relations: ['vendedor'],
-    });
+    });    
   
     for (const meta of metas) {
+    
       const vendedorId = meta.vendedor.vendedor_id;
       const progresso = vendedorMap.get(vendedorId);
       if (!progresso) continue;
-  
+    
       if (meta.meta_ped > 0 || Number(meta.meta_fat) > 0) {
         progresso.meta_ped = meta.meta_ped;
         progresso.meta_fat = meta.meta_fat;
