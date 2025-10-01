@@ -1040,11 +1040,9 @@ export class SellsService implements ISellsRepository {
       data.comissao += Number(venda.comisao);
     }
   
-    // Calcular metas
-    const hoje = new Date();
-    const mes = hoje.getMonth() + 1;
-    const ano = hoje.getFullYear();
-    
+    const dataBase = new Date(fromDate);
+    const mes = dataBase.getMonth() + 1;
+    const ano = dataBase.getFullYear();   
   
     const metas = await this.metaRepository.find({
       where: { mes, ano },
