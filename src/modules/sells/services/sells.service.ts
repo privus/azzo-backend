@@ -1013,26 +1013,28 @@ export class SellsService implements ISellsRepository {
     const vendasMes = await this.sellsBetweenDates(fromDate, toDate);
     const tipoId = 10438;
   
+    const todosVendedores = (await this.sellersSevice.findAllSellers())
+      .filter(v => v.ativo && ![18, 12, 16].includes(v.vendedor_id));
+  
     const vendedorMap = new Map<number, Commissions>();
+    for (const vendedor of todosVendedores) {
+      vendedorMap.set(vendedor.vendedor_id, {
+        vendedor_id: vendedor.vendedor_id,
+        vendedor: vendedor.nome,
+        faturado: 0,
+        pedidos: 0,
+        comissao: 0,
+        ticketMedio: 0,
+      });
+    }
   
     for (const venda of vendasMes) {
       if (venda.tipo_pedido?.tipo_pedido_id !== tipoId || venda.status_venda?.status_venda_id === 11468) continue;
   
       const vendedor = venda.vendedor;
       const vendedorId = vendedor.vendedor_id;
-
-      if (vendedorId === 18 || vendedorId === 12 || vendedorId === 16) continue;
   
-      if (!vendedorMap.has(vendedorId)) {
-        vendedorMap.set(vendedorId, {
-          vendedor_id: vendedorId,
-          vendedor: vendedor.nome,
-          faturado: 0,
-          pedidos: 0,
-          comissao: 0,
-          ticketMedio: 0,
-        });
-      }
+      if (!vendedorMap.has(vendedorId)) continue;
   
       const data = vendedorMap.get(vendedorId)!;
       data.faturado += Number(venda.valor_final);
@@ -1045,14 +1047,13 @@ export class SellsService implements ISellsRepository {
     const metas = await this.metaRepository.find({
       where: { mes, ano },
       relations: ['vendedor'],
-    });    
+    });
   
     for (const meta of metas) {
-    
       const vendedorId = meta.vendedor.vendedor_id;
       const progresso = vendedorMap.get(vendedorId);
       if (!progresso) continue;
-    
+  
       if (meta.meta_ped > 0 || Number(meta.meta_fat) > 0) {
         progresso.meta_ped = meta.meta_ped;
         progresso.meta_fat = meta.meta_fat;
@@ -1065,10 +1066,10 @@ export class SellsService implements ISellsRepository {
       ...v,
       faturado: Number(v.faturado.toFixed(2)),
       comissao: Number(v.comissao.toFixed(2)),
-      ticketMedio: Number((v.faturado / v.pedidos).toFixed(2)),
+      ticketMedio: v.pedidos > 0 ? Number((v.faturado / v.pedidos).toFixed(2)) : 0,
     }));
-  }  
-  
+  } 
+
   addVolumeSell(id: number, volume: number): Promise<string> {
     return this.vendaRepository.update({ venda_id: id }, { volume })
       .then(() => `Volume de venda ${id} atualizado para ${volume}.`)
