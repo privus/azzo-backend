@@ -1020,8 +1020,8 @@ export class SellsService implements ISellsRepository {
   
       const vendedor = venda.vendedor;
       const vendedorId = vendedor.vendedor_id;
-
-      if (vendedorId === 18 || vendedorId === 12 || vendedorId === 16) continue;
+  
+      if ([18, 12, 16].includes(vendedorId)) continue;
   
       if (!vendedorMap.has(vendedorId)) {
         vendedorMap.set(vendedorId, {
@@ -1040,34 +1040,50 @@ export class SellsService implements ISellsRepository {
       data.comissao += Number(venda.comisao);
     }
   
-    const [ano, mes] = fromDate.split('-').map(Number);  
+    const [ano, mes] = fromDate.split('-').map(Number);
   
     const metas = await this.metaRepository.find({
       where: { mes, ano },
       relations: ['vendedor'],
-    });    
+    });
   
     for (const meta of metas) {
-    
-      const vendedorId = meta.vendedor.vendedor_id;
-      const progresso = vendedorMap.get(vendedorId);
-      if (!progresso) continue;
-    
-      if (meta.meta_ped > 0 || Number(meta.meta_fat) > 0) {
-        progresso.meta_ped = meta.meta_ped;
-        progresso.meta_fat = meta.meta_fat;
-        progresso.progresso_ped = Number(((progresso.pedidos / meta.meta_ped) * 100).toFixed(2));
-        progresso.progresso_fat = Number(((progresso.faturado / Number(meta.meta_fat)) * 100).toFixed(2));
+      const vendedor = meta.vendedor;
+      const vendedorId = vendedor.vendedor_id;
+  
+      if ([18, 12, 16].includes(vendedorId)) continue;
+  
+      // Se o vendedor não teve vendas, ainda assim adicionamos ele com valores zerados
+      if (!vendedorMap.has(vendedorId)) {
+        vendedorMap.set(vendedorId, {
+          vendedor_id: vendedorId,
+          vendedor: vendedor.nome,
+          faturado: 0,
+          pedidos: 0,
+          comissao: 0,
+          ticketMedio: 0,
+        });
       }
+  
+      const progresso = vendedorMap.get(vendedorId)!;
+  
+      // Aplica metas e progresso mesmo para quem não teve vendas
+      progresso.meta_ped = meta.meta_ped;
+      progresso.meta_fat = Number(meta.meta_fat);
+      progresso.progresso_ped = meta.meta_ped > 0 ? Number(((progresso.pedidos / meta.meta_ped) * 100).toFixed(2)) : 0;
+      progresso.progresso_fat = Number(meta.meta_fat) > 0
+        ? Number(((progresso.faturado / Number(meta.meta_fat)) * 100).toFixed(2))
+        : 0;
     }
   
     return Array.from(vendedorMap.values()).map(v => ({
       ...v,
       faturado: Number(v.faturado.toFixed(2)),
       comissao: Number(v.comissao.toFixed(2)),
-      ticketMedio: Number((v.faturado / v.pedidos).toFixed(2)),
+      ticketMedio: v.pedidos > 0 ? Number((v.faturado / v.pedidos).toFixed(2)) : 0,
     }));
-  }  
+  }
+   
   
   addVolumeSell(id: number, volume: number): Promise<string> {
     return this.vendaRepository.update({ venda_id: id }, { volume })
