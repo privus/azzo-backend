@@ -1013,65 +1013,59 @@ export class SellsService implements ISellsRepository {
     const vendasMes = await this.sellsBetweenDates(fromDate, toDate);
     const tipoId = 10438;
   
-    // 1. Buscar todos os vendedores ativos
-    const todosVendedores = (await this.sellersSevice.findAllSellers())
-      .filter(v => v.ativo && ![18, 12, 16].includes(v.vendedor_id)); // filtra bloqueados
-  
-    // 2. Inicializar mapa com todos os vendedores ativos zerados
     const vendedorMap = new Map<number, Commissions>();
-    for (const vendedor of todosVendedores) {
-      vendedorMap.set(vendedor.vendedor_id, {
-        vendedor_id: vendedor.vendedor_id,
-        vendedor: vendedor.nome,
-        faturado: 0,
-        pedidos: 0,
-        comissao: 0,
-        ticketMedio: 0,
-      });
-    }
   
-    // 3. Processar vendas e somar por vendedor
     for (const venda of vendasMes) {
       if (venda.tipo_pedido?.tipo_pedido_id !== tipoId || venda.status_venda?.status_venda_id === 11468) continue;
   
       const vendedor = venda.vendedor;
       const vendedorId = vendedor.vendedor_id;
+
+      if (vendedorId === 18 || vendedorId === 12 || vendedorId === 16) continue;
   
-      const data = vendedorMap.get(vendedorId);
-      if (!data) continue; // vendedor não está na lista de ativos
+      if (!vendedorMap.has(vendedorId)) {
+        vendedorMap.set(vendedorId, {
+          vendedor_id: vendedorId,
+          vendedor: vendedor.nome,
+          faturado: 0,
+          pedidos: 0,
+          comissao: 0,
+          ticketMedio: 0,
+        });
+      }
   
+      const data = vendedorMap.get(vendedorId)!;
       data.faturado += Number(venda.valor_final);
       data.pedidos += 1;
       data.comissao += Number(venda.comisao);
     }
   
-    // 4. Processar metas
-    const [ano, mes] = fromDate.split('-').map(Number);
+    const [ano, mes] = fromDate.split('-').map(Number);  
   
     const metas = await this.metaRepository.find({
       where: { mes, ano },
       relations: ['vendedor'],
-    });
+    });    
   
     for (const meta of metas) {
+    
       const vendedorId = meta.vendedor.vendedor_id;
       const progresso = vendedorMap.get(vendedorId);
       if (!progresso) continue;
-  
-      progresso.meta_ped = meta.meta_ped;
-      progresso.meta_fat = Number(meta.meta_fat);
-      progresso.progresso_ped = meta.meta_ped > 0 ? Number(((progresso.pedidos / meta.meta_ped) * 100).toFixed(2)) : 0;
-      progresso.progresso_fat = Number(meta.meta_fat) > 0
-        ? Number(((progresso.faturado / Number(meta.meta_fat)) * 100).toFixed(2))
-        : 0;
+    
+      if (meta.meta_ped > 0 || Number(meta.meta_fat) > 0) {
+        progresso.meta_ped = meta.meta_ped;
+        progresso.meta_fat = meta.meta_fat;
+        progresso.progresso_ped = Number(((progresso.pedidos / meta.meta_ped) * 100).toFixed(2));
+        progresso.progresso_fat = Number(((progresso.faturado / Number(meta.meta_fat)) * 100).toFixed(2));
+      }
     }
   
-    // 5. Finalizar resposta
     return Array.from(vendedorMap.values()).map(v => ({
       ...v,
       faturado: Number(v.faturado.toFixed(2)),
       comissao: Number(v.comissao.toFixed(2)),
-      ticketMedio: v.pedidos > 0 ? Number((v.faturado / v.pedidos).toFixed(2)) : 0,
+      ticketMedio: Number((v.faturado / v.pedidos).toFixed(2)),
     }));
   }  
   

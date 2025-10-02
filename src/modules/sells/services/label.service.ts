@@ -61,8 +61,7 @@ export class LabelService {
     const estado = order.cliente.cidade ? order.cliente.cidade.estado.sigla : '';
     const cidade = order.cliente.cidade_string + ' - ' + estado + ' - ' + order.cliente.cep;
     const telefoneFixo = '(35) 99877 - 0726';
-    const categoriaCliente = order.cliente.categoria_cliente.nome;
-
+    const categoriaCliente = order.cliente.categoria_cliente ? order.cliente.categoria_cliente.nome : 'Supermercado';
     return {
       stack: [
         {
@@ -83,8 +82,8 @@ export class LabelService {
         // Pedido e Cliente
         {
           columns: [
-            { text: `Pedido: ${order.codigo}`, fontSize: 5, bold: true, alignment: 'right' },
             { text: `${categoriaCliente}`, fontSize: 5, bold: true, alignment: 'left' },
+            { text: `Pedido: ${order.codigo}`, fontSize: 5, bold: true, alignment: 'right' },
           ],
         },        
         { text: `Cliente: ${order.cliente.nome_empresa}`, fontSize: 5, alignment: 'left', margin: [0, 10, 0, 2] },
