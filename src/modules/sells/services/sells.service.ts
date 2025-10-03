@@ -1870,12 +1870,12 @@ export class SellsService implements ISellsRepository {
     while (true) {
       try {
         const url = `${this.apiBlingUrl}${this.nfeTagBling}?dataEmissaoInicial=2025-09-17&dataEmissaoFinal=2025-09-25&pagina=${pagina}`;
-        const response = await this.httpService.axiosRef.get<{ itens: NfeBlingDTO[] }>(url, {
+        const response = await this.httpService.axiosRef.get<{ data: NfeBlingDTO[] }>(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
         console.log('url =====', url);
   
-        const nfData = response.data.itens;
+        const nfData = response.data.data;
         if (!nfData || nfData.length === 0) {
           this.logger.log(`🚫 Nenhuma nota fiscal encontrada na página ${pagina}. Encerrando...`);
           break;
