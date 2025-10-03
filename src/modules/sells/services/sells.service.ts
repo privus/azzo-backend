@@ -1869,7 +1869,7 @@ export class SellsService implements ISellsRepository {
   
     while (true) {
       try {
-        const url = `${this.apiBlingUrl}${this.nfeTagBling}?dataEmissaoInicial=2025-09-18&pagina=${pagina}`;
+        const url = `${this.apiBlingUrl}${this.nfeTagBling}?dataEmissaoInicial=2025-09-17&dataEmissaoFinal=2025-09-25&pagina=${pagina}`;
         const response = await this.httpService.axiosRef.get<{ itens: NfeBlingDTO[] }>(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -1892,7 +1892,6 @@ export class SellsService implements ISellsRepository {
           const venda = await this.vendaRepository.findOne({
             where: {
               cliente: { bling_id_p: clienteBlingId },
-              data_criacao: Raw(alias => `DATE(${alias}) = :data`, { data: dataEmissao.toISOString().split('T')[0] }),
             },
             relations: ['cliente'],
           });
