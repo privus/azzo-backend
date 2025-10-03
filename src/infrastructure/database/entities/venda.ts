@@ -78,7 +78,7 @@ export class Venda {
   @Column({ type: 'int', nullable: true })
   numero_nfe: number;
 
-  @Column({ type: 'int', nullable: true })
+  @Column({ type: 'bigint', nullable: true })
   nfe_id: number;
 
   @Column({ type: 'varchar', nullable: true })
@@ -93,7 +93,7 @@ export class Venda {
   vendedor: Vendedor;
 
   @OneToMany(() => ItensVenda, (item) => item.venda, { cascade: true, onDelete: 'CASCADE' })
-  itensVenda: ItensVenda[];  
+  itensVenda: ItensVenda[];
 
   @ManyToOne(() => Regiao)
   @JoinColumn({ name: 'regiao_id' })

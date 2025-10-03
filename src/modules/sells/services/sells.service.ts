@@ -1923,5 +1923,4 @@ export class SellsService implements ISellsRepository {
   
     return `🎉 Sincronização concluída. Vendas atualizadas: ${updatedSales.join(', ')}`;
   }
-  
 }
