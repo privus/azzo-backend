@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Raw } from 'typeorm';
+import { Repository, In, Raw, Not } from 'typeorm';
 import { Vendedor, Regiao, MetaVendedor, Venda } from '../../../infrastructure/database/entities';
-import { Goals, GoalsDto, SellerAPIResponse } from '../dto/sellers.dto';
+import { Goals, GoalsDto, SellerAPIResponse, CommissionsReport } from '../dto/sellers.dto';
 
 @Injectable()
 export class SellersService {
@@ -176,4 +176,53 @@ export class SellersService {
       }
     });
   }
+
+  async getCommissionsReport(
+    fromDate: string,
+    toDate: string
+  ): Promise<CommissionsReport[]> {
+    const todosVendedores = (await this.findAllSellers())
+      .filter(v => v.ativo && ![18, 12, 16].includes(v.vendedor_id));
+  
+    const relatorio: CommissionsReport[] = [];
+  
+    for (const vendedor of todosVendedores) {
+      const vendas = await this.vendaRepository.find({
+        where: {
+          vendedor: { vendedor_id: vendedor.vendedor_id },
+          tipo_pedido: { tipo_pedido_id: 10438 },
+          status_venda: { status_venda_id: Not(11468) },
+          data_criacao: Raw(alias => `${alias} BETWEEN :start AND :end`, {
+            start: fromDate,
+            end: toDate,
+          }),
+        },
+        select: ['codigo', 'data_criacao', 'valor_final', 'comisao'],
+        order: { data_criacao: 'ASC' },
+      });
+  
+      const totalValor = vendas.reduce((sum, v) => sum + Number(v.valor_final), 0);
+      const totalComissao = vendas.reduce((sum, v) => sum + Number(v.comisao), 0);
+  
+      const vendasDetalhadas = vendas.map(v => ({
+        codigo: v.codigo,
+        data_criacao: v.data_criacao,
+        valor_final: Number(v.valor_final),
+        comisao: Number(v.comisao),
+      }));
+  
+      if (vendasDetalhadas.length) {
+        relatorio.push({
+          vendedor_id: vendedor.vendedor_id,
+          vendedor_nome: vendedor.nome,
+          total_valor_final: Number(totalValor.toFixed(2)),
+          total_comisao: Number(totalComissao.toFixed(2)),
+          vendas: vendasDetalhadas,
+        });
+      }
+    }
+  
+    return relatorio;
+  }
+  
 }

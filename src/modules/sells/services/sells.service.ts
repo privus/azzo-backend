@@ -1009,7 +1009,7 @@ export class SellsService implements ISellsRepository {
     };
   }
 
-  async commissionBySeller(fromDate: string, toDate?: string): Promise<Commissions[]> {
+  async commissionBySeller(fromDate: string, toDate: string): Promise<Commissions[]> {
     const vendasMes = await this.sellsBetweenDates(fromDate, toDate);
     const tipoId = 10438;
   
@@ -1068,7 +1068,7 @@ export class SellsService implements ISellsRepository {
       comissao: Number(v.comissao.toFixed(2)),
       ticketMedio: v.pedidos > 0 ? Number((v.faturado / v.pedidos).toFixed(2)) : 0,
     }));
-  } 
+  }
 
   addVolumeSell(id: number, volume: number): Promise<string> {
     return this.vendaRepository.update({ venda_id: id }, { volume })
@@ -1924,5 +1924,5 @@ export class SellsService implements ISellsRepository {
   
     return `🎉 Sincronização concluída. Vendas atualizadas: ${updatedSales.join(', ')}`;
   }
-
+  
 }

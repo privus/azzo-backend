@@ -19,8 +19,5 @@ export interface WeeklyAid {
   };
 }
 
-export interface CommissionsReport {
-
-}
 
   

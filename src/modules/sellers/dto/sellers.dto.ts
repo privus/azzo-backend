@@ -17,9 +17,21 @@ export interface GoalsDto {
   progress_fat: number;
 }
 
-
 export interface Goals {
   vendedor_id: number;
   meta_ped: number;
   meta_fat: number;
+}
+
+export interface CommissionsReport {
+  vendedor_id: number;
+  vendedor_nome: string;
+  total_valor_final: number;
+  total_comisao: number;
+  vendas: Array<{
+    codigo: number;
+    data_criacao: Date;
+    valor_final: number;
+    comisao: number;
+  }>;
 }

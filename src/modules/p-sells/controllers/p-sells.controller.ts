@@ -29,7 +29,7 @@ export class PSellsController {
   }
 
   @ApiOperation({ summary: 'Atualiza códigos Omie nas vendas' })
-  @Get('omie-codes')
+  @Get('omieCodes')
   async updateOmieCodes() {
     return this.omieService.insertOmieCod();
   }

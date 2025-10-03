@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SellersService } from '../services/sellers.service';
 import { Goals } from '../dto/sellers.dto';
@@ -20,13 +20,19 @@ export class SellersController {
     return this.sellersService.findAllSellers();
   }
 
+  @ApiOperation({ summary: 'Relatório de comissões' })
+  @Get('commissionsReport')
+  async getCommissions(@Query('fromDate') fromDate: string, @Query('toDate') toDate: string) {
+    return this.sellersService.getCommissionsReport(fromDate, toDate);
+  }
+
   //   @ApiOperation({ summary: 'Buscar vendedor por Código' })
   //   @Get(':id')
   //   async findSellerById(@Param('id') id: number) {
   //     return this.sellersService.findSellerById(id);
   //   }
 
-  @ApiOperation({ summary: 'Listar metas dos vendedores' })
+  @ApiOperation({ summary: 'Progresso metas vendedores' })
   @Get('goals')
   async findGoalsSellers() {
     return this.sellersService.getMetaProgress();
