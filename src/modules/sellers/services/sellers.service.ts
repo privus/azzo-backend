@@ -177,10 +177,7 @@ export class SellersService {
     });
   }
 
-  async getCommissionsReport(
-    fromDate: string,
-    toDate: string
-  ): Promise<CommissionsReport[]> {
+  async getCommissionsReport(fromDate: string, toDate: string): Promise<CommissionsReport[]> {
     const todosVendedores = (await this.findAllSellers())
       .filter(v => v.ativo && ![18, 12, 16].includes(v.vendedor_id));
   
@@ -192,10 +189,9 @@ export class SellersService {
           vendedor: { vendedor_id: vendedor.vendedor_id },
           tipo_pedido: { tipo_pedido_id: 10438 },
           status_venda: { status_venda_id: Not(11468) },
-          data_criacao: Raw(alias => `${alias} BETWEEN :start AND :end`, {
-            start: fromDate,
-            end: toDate,
-          }),
+          data_criacao: Raw(alias => `DATE(${alias}) BETWEEN :from AND :to`,
+            { from: fromDate, to: toDate }
+          )
         },
         select: ['codigo', 'data_criacao', 'valor_final', 'comisao'],
         order: { data_criacao: 'ASC' },
