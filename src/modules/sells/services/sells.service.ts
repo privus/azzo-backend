@@ -1913,10 +1913,12 @@ export class SellsService implements ISellsRepository {
   
           // Pega a venda mais próxima da data de emissão da NF
           const venda = vendasPossiveis.reduce((maisProxima, atual) => {
-            const diffAtual = Math.abs(atual.data_criacao.getTime() - dataEmissao.getTime());
-            const diffProxima = Math.abs(maisProxima.data_criacao.getTime() - dataEmissao.getTime());
+            const atualDate = new Date(atual.data_criacao);
+            const proximaDate = new Date(maisProxima.data_criacao);
+            const diffAtual = Math.abs(atualDate.getTime() - dataEmissao.getTime());
+            const diffProxima = Math.abs(proximaDate.getTime() - dataEmissao.getTime());
             return diffAtual < diffProxima ? atual : maisProxima;
-          });
+          });         
   
           // Atualiza venda com dados da NF
           venda.numero_nfe = Number(numeroNota);
