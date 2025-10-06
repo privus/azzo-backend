@@ -1869,11 +1869,10 @@ export class SellsService implements ISellsRepository {
   
     while (true) {
       try {
-        const url = `${this.apiBlingUrl}${this.nfeTagBling}?dataEmissaoInicial=2025-09-17&dataEmissaoFinal=2025-09-25&pagina=${pagina}`;
+        const url = `${this.apiBlingUrl}${this.nfeTagBling}?dataEmissaoInicial=2025-09-17&pagina=${pagina}`;
         const response = await this.httpService.axiosRef.get<{ data: NfeBlingDTO[] }>(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        console.log('url =====', url);
   
         const nfData = response.data.data;
         if (!nfData || nfData.length === 0) {
@@ -1888,19 +1887,38 @@ export class SellsService implements ISellsRepository {
           const linkDanfe = `https://www.bling.com.br/relatorios/danfe.php?idNota1=${nf.id}`;
           const clienteBlingId = nf.contato.id;
   
-          // Buscar venda pela data de emissão + cliente vinculado ao mesmo bling_id_p
-          const venda = await this.vendaRepository.findOne({
+          const dataMin = new Date(dataEmissao);
+          const dataMax = new Date(dataEmissao);
+          dataMin.setDate(dataMin.getDate() - 7);
+          dataMax.setDate(dataMax.getDate() + 7);
+  
+          const vendasPossiveis = await this.vendaRepository.find({
             where: {
               cliente: { bling_id_p: clienteBlingId },
+              tipo_pedido: { tipo_pedido_id: 10438 },
+              data_criacao: Raw(alias => `DATE(${alias}) BETWEEN :start AND :end`, {
+                start: dataMin.toISOString(),
+                end: dataMax.toISOString(),
+              }),
+              chave_acesso: null,
+              numero_nfe: null,
             },
-            relations: ['cliente'],
+            relations: ['cliente', 'tipo_pedido'],
           });
   
-          if (!venda) {
-            this.logger.warn(`⚠️ Nenhuma venda encontrada para NF ${numeroNota}, cliente_bling_id ${clienteBlingId}, data ${dataEmissao}`);
+          if (!vendasPossiveis.length) {
+            this.logger.warn(`⚠️ Nenhuma venda válida encontrada para NF ${numeroNota} (cliente ${nf.contato.nome})`);
             continue;
           }
   
+          // Pega a venda mais próxima da data de emissão da NF
+          const venda = vendasPossiveis.reduce((maisProxima, atual) => {
+            const diffAtual = Math.abs(atual.data_criacao.getTime() - dataEmissao.getTime());
+            const diffProxima = Math.abs(maisProxima.data_criacao.getTime() - dataEmissao.getTime());
+            return diffAtual < diffProxima ? atual : maisProxima;
+          });
+  
+          // Atualiza venda com dados da NF
           venda.numero_nfe = Number(numeroNota);
           venda.chave_acesso = chaveAcesso;
           venda.nfe_link = linkDanfe;
@@ -1923,4 +1941,5 @@ export class SellsService implements ISellsRepository {
   
     return `🎉 Sincronização concluída. Vendas atualizadas: ${updatedSales.join(', ')}`;
   }
+  
 }
