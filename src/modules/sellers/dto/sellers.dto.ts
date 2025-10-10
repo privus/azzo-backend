@@ -28,6 +28,7 @@ export interface CommissionsReport {
   vendedor_nome: string;
   total_valor_final: number;
   total_comisao: number;
+  bonus?: number;
   vendas: Array<{
     codigo: number;
     data_criacao: Date;

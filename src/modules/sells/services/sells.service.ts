@@ -1751,21 +1751,9 @@ export class SellsService implements ISellsRepository {
           clientes_novos: 0,
         };
       }
-      result[vendedor19Nome].valor_total += 250;
+      result[vendedor19Nome].valor_total += 375;
     }
-  
-    // Regra fixa: vendedor_id 20 recebe 125
-    const vendedor20Nome = vendedoresMap.get(20);
-    if (vendedor20Nome) {
-      if (!result[vendedor20Nome]) {
-        result[vendedor20Nome] = {
-          valor_total: 0,
-          pedidos: 0,
-          clientes_novos: 0,
-        };
-      }
-      result[vendedor20Nome].valor_total += 125;
-    }  
+
     return result;
   }
 

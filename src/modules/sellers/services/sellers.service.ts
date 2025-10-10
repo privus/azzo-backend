@@ -181,6 +181,14 @@ export class SellersService {
     const todosVendedores = (await this.findAllSellers())
       .filter(v => v.ativo && ![18, 12, 16].includes(v.vendedor_id));
   
+    const metas = await this.metaRepository.find({
+      where: {
+        ano: new Date(fromDate).getFullYear(),
+        mes: new Date(fromDate).getMonth() + 1,
+      },
+      relations: ['vendedor'],
+    });
+  
     const relatorio: CommissionsReport[] = [];
   
     for (const vendedor of todosVendedores) {
@@ -189,9 +197,10 @@ export class SellersService {
           vendedor: { vendedor_id: vendedor.vendedor_id },
           tipo_pedido: { tipo_pedido_id: 10438 },
           status_venda: { status_venda_id: Not(11468) },
-          data_criacao: Raw(alias => `DATE(${alias}) BETWEEN :from AND :to`,
-            { from: fromDate, to: toDate }
-          )
+          data_criacao: Raw(alias => `DATE(${alias}) BETWEEN :from AND :to`, {
+            from: fromDate,
+            to: toDate,
+          }),
         },
         select: ['codigo', 'data_criacao', 'valor_final', 'comisao'],
         order: { data_criacao: 'ASC' },
@@ -207,12 +216,39 @@ export class SellersService {
         comisao: Number(v.comisao),
       }));
   
+      const meta = metas.find(m => m.vendedor.vendedor_id === vendedor.vendedor_id);
+  
+      let bonus = 0;
+  
+      if (meta) {
+        const totalPedidos = vendas.length;
+        const progressPed = meta.meta_ped > 0 ? (totalPedidos / meta.meta_ped) * 100 : 0;
+        const progressFat = meta.meta_fat > 0 ? (totalValor / Number(meta.meta_fat)) * 100 : 0;
+  
+        const menorIndice = Math.min(progressPed, progressFat);
+  
+        const progress = Math.floor(menorIndice); // Inteiro
+  
+        if (progress >= 80 && progress < 90) {
+          bonus = 100 + (progress - 80) * 5;
+        } else if (progress >= 90 && progress < 100) {
+          bonus = 175 + (progress - 90) * 5;
+        } else if (progress >= 100 && progress < 110) {
+          bonus = 250 + (progress - 100) * 5;
+        } else if (progress >= 110 && progress < 120) {
+          bonus = 300 + (progress - 110) * 10;
+        } else if (progress >= 120) {
+          bonus = 400 + (progress - 120) * 10;
+        }
+      }
+  
       if (vendasDetalhadas.length) {
         relatorio.push({
           vendedor_id: vendedor.vendedor_id,
           vendedor_nome: vendedor.nome,
           total_valor_final: Number(totalValor.toFixed(2)),
           total_comisao: Number(totalComissao.toFixed(2)),
+          bonus: Number(bonus.toFixed(2)),
           vendas: vendasDetalhadas,
         });
       }

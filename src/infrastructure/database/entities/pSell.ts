@@ -21,7 +21,7 @@ export class PSell {
   cod_bling: number;
 
   @Column({ type: 'bigint', nullable: true })
-  cliente_cod_bling: number;
+  cliente_cod: number;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   cliente_nome: string;
@@ -38,6 +38,9 @@ export class PSell {
   @Column({ type: 'int', nullable: true })
   n_ecommerce: number;
 
-  @Column({ type: 'tinyint', nullable: true, default: 0 })
-  boleto_faturado: number;
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  metodo_pagamento: string;
+
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  status: string;
 }
