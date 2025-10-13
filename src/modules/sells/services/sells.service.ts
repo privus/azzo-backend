@@ -51,7 +51,7 @@ export class SellsService implements ISellsRepository {
     const syncedSales: string[] = [];
     const updatedSales: string[] = [];
   
-    await this.clienteService.syncroLastPageCustomers();
+    // await this.clienteService.syncroLastPageCustomers();
   
     const lastSync = await this.getLastSyncDate('sells');
     const lastUpdate = await this.getLastUpdateDate('sells-update');
