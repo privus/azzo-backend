@@ -180,6 +180,7 @@ export class BlingProductService {
   
         const body = {
           nome: produto.nome,
+          codigo: produto.codigo,
           spedTipoItem: "00",
           tipo: 'P',
           situacao: 'A',
@@ -187,6 +188,11 @@ export class BlingProductService {
           preco: produto.preco_venda,
           ean: produto.ean,
           unidade: 'UN',
+          tributacao: {
+            origem: 0,
+            ncm: produto.ncm.toString(),
+            cest: produto.cest
+          },
         };
   
         const url = `${this.apiBlingUrl}${this.productTag}/${produto.bling_id_p}`;
