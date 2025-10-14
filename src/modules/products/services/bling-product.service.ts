@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { IBlingAuthRepository, IProductsRepository } from '../../../domain/repositories';
 import { BlingProductApiResponse, BlingProductDto } from '../dto';
+import * as fs from 'fs';
 
 @Injectable()
 export class BlingProductService {
@@ -161,4 +162,81 @@ export class BlingProductService {
       }
     }
   }
+
+  async updateTributacaoInBling(): Promise<void> {
+    const jsonFilePath = 'src/utils/base-icms-uni.json';
+  
+    if (!fs.existsSync(jsonFilePath)) {
+      this.logger.error(`❌ Arquivo '${jsonFilePath}' não encontrado.`);
+      return;
+    }
+
+    const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
+    const taxData: {
+      codigo: string;
+      valorBaseStRetencao?: number | null;
+      valorStRetencao?: number | null;
+      valorICMSSubstituto?: number | null;
+    }[] = JSON.parse(jsonData);
+  
+    const token = await this.blingAuthRepository.getAccessToken('PURELI');
+    if (!token) {
+      this.logger.error(`❌ Token de autenticação não encontrado.`);
+      return;
+    }
+  
+    this.logger.log(`🚀 Iniciando atualização de tributação de produtos... Total: ${taxData.length}`);
+  
+    for (const [index, item] of taxData.entries()) {
+      const todosNulos =
+        item.valorBaseStRetencao == null &&
+        item.valorStRetencao == null &&
+        item.valorICMSSubstituto == null;
+  
+      if (todosNulos) {
+        this.logger.log(`⏩ [${index + 1}/${taxData.length}] Produto ${item.codigo} ignorado (tributação nula).`);
+        continue;
+      }
+  
+      try {
+        const produto = await this.productRepository.findBy({ codigo: item.codigo });
+  
+        if (!produto || !produto.bling_id_p) {
+          this.logger.warn(`⚠️ [${index + 1}/${taxData.length}] Produto ${item.codigo} não encontrado ou sem bling_id.`);
+          continue;
+        }
+  
+        const body = {
+          tributacao: {
+            valorBaseStRetencao: item.valorBaseStRetencao,
+            valorStRetencao: item.valorStRetencao,
+            valorICMSSubstituto: item.valorICMSSubstituto,
+          },
+        };
+  
+        const url = `${this.apiBlingUrl}${this.productTag}/${produto.bling_id_p}`;
+  
+        const response = await this.httpService.axiosRef.put(url, body, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+  
+        this.logger.log(
+          `✅ [${index + 1}/${taxData.length}] Produto ${item.codigo} atualizado com sucesso no Bling.`
+        );
+  
+        await this.sleep(600);
+      } catch (error) {
+        this.logger.error(
+          `❌ [${index + 1}/${taxData.length}] Erro ao atualizar produto ${item.codigo} no Bling`,
+          error?.response?.data || error.message
+        );
+      }
+    }
+  
+    this.logger.log(`🎯 Atualização de tributação finalizada.`);
+  }
+  
 }
