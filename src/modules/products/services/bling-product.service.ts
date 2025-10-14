@@ -170,13 +170,11 @@ export class BlingProductService {
     this.logger.log(`🚀 Iniciando atualização de preço e EAN de ${products.length} produtos no Bling...`);
   
     for (let index = 0; index < products.length; index++) {
-      const item = products[index];
+      const produto = products[index];
   
       try {
-        const produto = await this.productRepository.findBy({ codigo: item.codigo });
-  
         if (!produto || !produto.bling_id_p) {
-          this.logger.warn(`⚠️ [${index + 1}/${products.length}] Produto ${item.codigo} não encontrado ou sem bling_id.`);
+          this.logger.warn(`⚠️ [${index + 1}/${products.length}] Produto ${produto?.codigo ?? 'SEM CÓDIGO'} não encontrado ou sem bling_id.`);
           continue;
         }
   
@@ -200,18 +198,17 @@ export class BlingProductService {
           },
         });
   
-        this.logger.log(`✅ [${index + 1}/${products.length}] Produto ${item.codigo} atualizado com sucesso. Preço: R$${produto.preco_venda}, EAN: ${produto.ean}`);
+        this.logger.log(`✅ [${index + 1}/${products.length}] Produto ${produto.codigo} atualizado com sucesso. Preço: R$${produto.preco_venda}, EAN: ${produto.ean}`);
         await this.sleep(600); // respeita limite de 3 req/s
+  
       } catch (error) {
         this.logger.error(
-          `❌ [${index + 1}/${products.length}] Erro ao atualizar produto ${item.codigo}`,
+          `❌ [${index + 1}/${products.length}] Erro ao atualizar produto ${produto.codigo}`,
           error?.response?.data || error.message,
         );
       }
     }
   
     this.logger.log(`🎯 Atualização de preço e EAN finalizada.`);
-  }
-  
-  
+  } 
 }
