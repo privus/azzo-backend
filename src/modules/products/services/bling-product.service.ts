@@ -170,7 +170,7 @@ export class BlingProductService {
       this.logger.error(`❌ Arquivo '${jsonFilePath}' não encontrado.`);
       return;
     }
-
+  
     const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
     const taxData: {
       codigo: string;
@@ -207,27 +207,29 @@ export class BlingProductService {
         }
   
         const body = {
+          nome: produto.nome,
+          tipo: 'P',
+          situacao: 'A',
+          formato: 'S',
           tributacao: {
             valorBaseStRetencao: item.valorBaseStRetencao,
             valorStRetencao: item.valorStRetencao,
             valorICMSSubstituto: item.valorICMSSubstituto,
-          },
+          }
         };
   
         const url = `${this.apiBlingUrl}${this.productTag}/${produto.bling_id_p}`;
   
-        const response = await this.httpService.axiosRef.put(url, body, {
+        await this.httpService.axiosRef.put(url, body, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
   
-        this.logger.log(
-          `✅ [${index + 1}/${taxData.length}] Produto ${item.codigo} atualizado com sucesso no Bling.`
-        );
+        this.logger.log(`✅ [${index + 1}/${taxData.length}] Produto ${item.codigo} atualizado com sucesso no Bling.`);
   
-        await this.sleep(600);
+        await this.sleep(600); // respeita 3 req/s
       } catch (error) {
         this.logger.error(
           `❌ [${index + 1}/${taxData.length}] Erro ao atualizar produto ${item.codigo} no Bling`,
@@ -238,5 +240,6 @@ export class BlingProductService {
   
     this.logger.log(`🎯 Atualização de tributação finalizada.`);
   }
+  
   
 }
