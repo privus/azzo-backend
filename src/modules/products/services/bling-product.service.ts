@@ -163,46 +163,20 @@ export class BlingProductService {
     }
   }
 
-  async updateTributacaoInBling(): Promise<void> {
-    const jsonFilePath = 'src/utils/base-icms-uni.json';
-  
-    if (!fs.existsSync(jsonFilePath)) {
-      this.logger.error(`❌ Arquivo '${jsonFilePath}' não encontrado.`);
-      return;
-    }
-  
-    const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
-    const taxData: {
-      codigo: string;
-      valorBaseStRetencao?: number | null;
-      valorStRetencao?: number | null;
-      valorICMSSubstituto?: number | null;
-    }[] = JSON.parse(jsonData);
-  
+  async updateProduct(): Promise<void> {
+    const products = await this.productRepository.findAllUni();
     const token = await this.blingAuthRepository.getAccessToken('PURELI');
-    if (!token) {
-      this.logger.error(`❌ Token de autenticação não encontrado.`);
-      return;
-    }
   
-    this.logger.log(`🚀 Iniciando atualização de tributação de produtos... Total: ${taxData.length}`);
+    this.logger.log(`🚀 Iniciando atualização de preço e EAN de ${products.length} produtos no Bling...`);
   
-    for (const [index, item] of taxData.entries()) {
-      const todosNulos =
-        item.valorBaseStRetencao == null &&
-        item.valorStRetencao == null &&
-        item.valorICMSSubstituto == null;
-  
-      if (todosNulos) {
-        this.logger.log(`⏩ [${index + 1}/${taxData.length}] Produto ${item.codigo} ignorado (tributação nula).`);
-        continue;
-      }
+    for (let index = 0; index < products.length; index++) {
+      const item = products[index];
   
       try {
         const produto = await this.productRepository.findBy({ codigo: item.codigo });
   
         if (!produto || !produto.bling_id_p) {
-          this.logger.warn(`⚠️ [${index + 1}/${taxData.length}] Produto ${item.codigo} não encontrado ou sem bling_id.`);
+          this.logger.warn(`⚠️ [${index + 1}/${products.length}] Produto ${item.codigo} não encontrado ou sem bling_id.`);
           continue;
         }
   
@@ -213,14 +187,8 @@ export class BlingProductService {
           tipo: 'P',
           situacao: 'A',
           formato: 'S',
-          tributacao: {
-            origem: 0,
-            ncm: produto.ncm.toString(),
-            cest: produto.cest,
-            valorBaseStRetencao: item.valorBaseStRetencao,
-            valorStRetencao: item.valorStRetencao,
-            valorICMSSubstituto: item.valorICMSSubstituto,
-          }
+          preco: produto.preco_venda,
+          ean: produto.ean,
         };
   
         const url = `${this.apiBlingUrl}${this.productTag}/${produto.bling_id_p}`;
@@ -232,18 +200,17 @@ export class BlingProductService {
           },
         });
   
-        this.logger.log(`✅ [${index + 1}/${taxData.length}] Produto ${item.codigo} atualizado com sucesso no Bling.`);
-  
-        await this.sleep(600); // respeita 3 req/s
+        this.logger.log(`✅ [${index + 1}/${products.length}] Produto ${item.codigo} atualizado com sucesso. Preço: R$${produto.preco_venda}, EAN: ${produto.ean}`);
+        await this.sleep(600); // respeita limite de 3 req/s
       } catch (error) {
         this.logger.error(
-          `❌ [${index + 1}/${taxData.length}] Erro ao atualizar produto ${item.codigo} no Bling`,
-          error?.response?.data || error.message
+          `❌ [${index + 1}/${products.length}] Erro ao atualizar produto ${item.codigo}`,
+          error?.response?.data || error.message,
         );
       }
     }
   
-    this.logger.log(`🎯 Atualização de tributação finalizada.`);
+    this.logger.log(`🎯 Atualização de preço e EAN finalizada.`);
   }
   
   
