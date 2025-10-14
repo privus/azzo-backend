@@ -180,13 +180,13 @@ export class BlingProductService {
   
         const body = {
           nome: produto.nome,
-          codigo: produto.codigo,
           spedTipoItem: "00",
           tipo: 'P',
           situacao: 'A',
           formato: 'S',
           preco: produto.preco_venda,
           ean: produto.ean,
+          unidade: 'UN',
         };
   
         const url = `${this.apiBlingUrl}${this.productTag}/${produto.bling_id_p}`;
