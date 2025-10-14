@@ -50,6 +50,12 @@ export class ProductsController {
     return this.blingService.getIdsBling();
   }
 
+  @ApiOperation({ summary: 'Sincronizar tributação bling' })
+  @Get('syncroTribBling')
+  async syncroTribBling() {
+    return this.blingService.updateTributacaoInBling();
+  }
+
   @ApiOperation({ summary: 'Listar todos os produtos' })
   @Get()
   async findAllProducts() {
