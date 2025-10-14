@@ -208,11 +208,15 @@ export class BlingProductService {
   
         const body = {
           nome: produto.nome,
+          codigo: produto.codigo,
           spedTipoItem: "00",
           tipo: 'P',
           situacao: 'A',
           formato: 'S',
           tributacao: {
+            origem: 0,
+            ncm: produto.ncm.toString(),
+            cest: produto.cest,
             valorBaseStRetencao: item.valorBaseStRetencao,
             valorStRetencao: item.valorStRetencao,
             valorICMSSubstituto: item.valorICMSSubstituto,
