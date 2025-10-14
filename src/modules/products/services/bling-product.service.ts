@@ -208,6 +208,8 @@ export class BlingProductService {
   
         const body = {
           nome: produto.nome,
+          codigo: produto.codigo,
+          spedTipoItem: "00",
           tipo: 'P',
           situacao: 'A',
           formato: 'S',
