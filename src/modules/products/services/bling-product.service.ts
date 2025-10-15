@@ -210,6 +210,7 @@ export class BlingProductService {
             nome: produto.nome,
             preco: produto.preco_venda,
             ean: produto.ean,
+            unidade: 'UN',
             tipo: 'P',
             situacao: 'A',
             formato: 'S',
