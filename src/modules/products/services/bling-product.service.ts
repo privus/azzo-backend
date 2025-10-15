@@ -207,6 +207,7 @@ export class BlingProductService {
   
           const body = {
             codigo: produto.codigo,
+            nome: produto.nome,
             preco: produto.preco_venda,
             ean: produto.ean,
             tipo: 'P',
