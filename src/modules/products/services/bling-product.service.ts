@@ -209,6 +209,9 @@ export class BlingProductService {
             codigo: produto.codigo,
             preco: produto.preco_venda,
             ean: produto.ean,
+            tipo: 'P',
+            situacao: 'A',
+            formato: 'S',
             tributacao: {
               origem: 0,
               ncm: produto.ncm?.toString(),
