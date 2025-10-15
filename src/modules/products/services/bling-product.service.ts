@@ -209,7 +209,7 @@ export class BlingProductService {
             codigo: produto.codigo,
             nome: produto.nome,
             preco: produto.preco_venda,
-            ean: produto.ean,
+            gtin: produto.ean,
             unidade: 'UN',
             tipo: 'P',
             situacao: 'A',
