@@ -163,36 +163,53 @@ export class BlingProductService {
     }
   }
 
-  async updateProduct(): Promise<void> {
-    const products = await this.productRepository.findAllUni();
+  async updateProductWithTributacao(): Promise<void> {
+    const jsonFilePath = 'src/utils/base-icms-uni.json';
+  
+    if (!fs.existsSync(jsonFilePath)) {
+      this.logger.error(`❌ Arquivo '${jsonFilePath}' não encontrado.`);
+      return;
+    }
+  
+    const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
+    const taxData: {
+      codigo: string;
+      valorBaseStRetencao?: number | null;
+      valorStRetencao?: number | null;
+      valorICMSSubstituto?: number | null;
+    }[] = JSON.parse(jsonData);
+  
     const token = await this.blingAuthRepository.getAccessToken('PURELI');
+    if (!token) {
+      this.logger.error(`❌ Token de autenticação não encontrado.`);
+      return;
+    }
   
-    this.logger.log(`🚀 Iniciando atualização de preço e EAN de ${products.length} produtos no Bling...`);
+    this.logger.log(`🚀 Iniciando atualização de produtos (preço, EAN e tributação)... Total: ${taxData.length}`);
   
-    for (let index = 0; index < products.length; index++) {
-      const produto = products[index];
-  
+    for (const [index, item] of taxData.entries()) {
       try {
+        const produto = await this.productRepository.findBy({ codigo: item.codigo });
+  
         if (!produto || !produto.bling_id_p) {
-          this.logger.warn(`⚠️ [${index + 1}/${products.length}] Produto ${produto?.codigo ?? 'SEM CÓDIGO'} não encontrado ou sem bling_id.`);
+          this.logger.warn(`⚠️ [${index + 1}/${taxData.length}] Produto ${item.codigo} não encontrado ou sem bling_id.`);
           continue;
         }
   
         const body = {
-          nome: produto.nome,
           codigo: produto.codigo,
-          spedTipoItem: "00",
-          tipo: 'P',
-          situacao: 'A',
-          formato: 'S',
+          nome: produto.nome,
           preco: produto.preco_venda,
           ean: produto.ean,
-          unidade: 'UN',
+          spedTipoItem: "00",
           tributacao: {
             origem: 0,
             ncm: produto.ncm.toString(),
-            cest: produto.cest
-          },
+            cest: produto.cest,
+            valorBaseStRetencao: item.valorBaseStRetencao || 0,
+            valorStRetencao: item.valorStRetencao || 0,
+            valorICMSSubstituto: item.valorICMSSubstituto || 0,
+          }
         };
   
         const url = `${this.apiBlingUrl}${this.productTag}/${produto.bling_id_p}`;
@@ -204,17 +221,17 @@ export class BlingProductService {
           },
         });
   
-        this.logger.log(`✅ [${index + 1}/${products.length}] Produto ${produto.codigo} atualizado com sucesso. Preço: R$${produto.preco_venda}, EAN: ${produto.ean}`);
-        await this.sleep(600); // respeita limite de 3 req/s
-  
+        this.logger.log(`✅ [${index + 1}/${taxData.length}] Produto ${produto.codigo} atualizado com sucesso no Bling.`);
+        await this.sleep(1200);
       } catch (error) {
         this.logger.error(
-          `❌ [${index + 1}/${products.length}] Erro ao atualizar produto ${produto.codigo}`,
-          error?.response?.data || error.message,
+          `❌ [${index + 1}/${taxData.length}] Erro ao atualizar produto ${item.codigo} no Bling`,
+          error?.response?.data || error.message
         );
       }
     }
   
-    this.logger.log(`🎯 Atualização de preço e EAN finalizada.`);
-  } 
+    this.logger.log(`🎯 Atualização de preço, EAN e tributação finalizada.`);
+  }
+  
 }
