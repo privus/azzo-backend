@@ -53,7 +53,7 @@ export class ProductsController {
   @ApiOperation({ summary: 'Sincronizar tributação bling' })
   @Get('syncroTribBling')
   async syncroTribBling() {
-    return this.blingService.updateProduct();
+    return this.blingService.updateProductWithTributacao();
   }
 
   @ApiOperation({ summary: 'Listar todos os produtos' })
