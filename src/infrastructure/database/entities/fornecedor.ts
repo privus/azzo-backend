@@ -9,8 +9,11 @@ export class Fornecedor {
   @Column({ type: 'varchar', length: 45 })
   nome: string;
 
-  @Column({ type: 'decimal', nullable: true })
-  comissao: number;
+  @Column({ type: 'varchar', length: 90 })
+  razao_social: string;
+
+  @Column({ type: 'varchar', length: 45, nullable: true })
+  cnpj: string;
 
   @OneToMany(() => Produto, (produto) => produto.fornecedor)
   produtos: Produto[];
