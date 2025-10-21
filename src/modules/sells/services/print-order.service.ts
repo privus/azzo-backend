@@ -19,7 +19,7 @@ export class PrintOrderService {
     if (order.status_venda.status_venda_id === 11138 && responsible !== 'Resumo') {
       const emMontagem = await this.sellsSevice.getSellsByStatus([11139]);
   
-      if (emMontagem.length >= 6) {
+      if (emMontagem.length >= 10) {
         throw new Error(`⚠️ Limite atingido: existem 6 pedidos em montagem. Finalize algum antes de liberar outro.`);
       }
   
