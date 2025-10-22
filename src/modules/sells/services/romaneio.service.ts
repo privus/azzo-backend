@@ -16,37 +16,57 @@ export class RomaneioService {
    
   async generateRomaneio(romaneioDto: RomaneioDto): Promise<string> {
     const { codigos, transportadora_id, transportadora_nome, data_criacao, cod_rastreio } = romaneioDto;
-    let transportadora = await this.transportadoraRepository.findOne({ where: { transportadora_id }});
+  
+    let transportadora = await this.transportadoraRepository.findOne({ where: { transportadora_id } });
   
     if (!transportadora) {
+      if (!transportadora_nome) {
+        throw new Error('Nome da transportadora é obrigatório ao cadastrar nova transportadora.');
+      }
+  
       transportadora = this.transportadoraRepository.create({ nome: transportadora_nome });
       await this.transportadoraRepository.save(transportadora);
     }
   
-    const vendas = await Promise.all(
-      codigos.map(async (code) => {
-        const venda = await this.sellsService.getSellByCode(code);
-        if (!venda) console.warn(`Venda não encontrada: ${code}`);
-        return venda;
-      })
-    );
-    
+    const vendasEncontradas: any[] = [];
+    const vendasNaoEncontradas: number[] = [];
+  
+    for (const code of codigos) {
+      const venda = await this.sellsService.getSellByCode(code);
+      if (venda) {
+        vendasEncontradas.push(venda);
+      } else {
+        vendasNaoEncontradas.push(code);
+      }
+    }
+  
+    if (vendasEncontradas.length === 0) {
+      throw new Error('Nenhuma venda válida encontrada para os códigos fornecidos.');
+    }
+
     const novoRomaneio = this.romaneioRepository.create({
-      vendas,
+      vendas: vendasEncontradas,
       transportadora,
       data_criacao,
       cod_rastreio,
     });
   
     await this.romaneioRepository.save(novoRomaneio);
+  
+    for (const venda of vendasEncontradas) {
+      venda.romaneio = novoRomaneio;
+      await this.sellsService.saveSell(venda);
+    }
 
-    for (const venda of vendas) {
-        venda.romaneio = novoRomaneio;
-        await this.sellsService.saveSell(venda);
+    let mensagem = `Romaneio ${novoRomaneio.romaneio_id} criado com ${vendasEncontradas.length} vendas!`;
+  
+    if (vendasNaoEncontradas.length > 0) {
+      mensagem += ` ⚠️ Vendas não encontradas: ${vendasNaoEncontradas.join(', ')}`;
     }
   
-    return `Romaneio ${novoRomaneio.romaneio_id} criado com ${vendas.length} vendas!`;
-  } 
+    return mensagem;
+  }
+  
 
   getRomaneios(): Promise<Romaneio[]> {
     return this.romaneioRepository.find({ relations: ['vendas.cliente', 'transportadora'] });
