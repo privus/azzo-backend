@@ -24,9 +24,13 @@ export class RomaneioService {
     }
   
     const vendas = await Promise.all(
-      codigos.map(async (code) => await this.sellsService.getSellByCode(code))
+      codigos.map(async (code) => {
+        const venda = await this.sellsService.getSellByCode(code);
+        if (!venda) console.warn(`Venda não encontrada: ${code}`);
+        return venda;
+      })
     );
-  
+    
     const novoRomaneio = this.romaneioRepository.create({
       vendas,
       transportadora,
