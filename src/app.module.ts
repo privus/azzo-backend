@@ -21,6 +21,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { StockModule } from './modules/stock/stock.module';
 import { PSellsModule } from './modules/p-sells/p-sells.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -66,7 +67,8 @@ import { PSellsModule } from './modules/p-sells/p-sells.module';
       serveRoot: '/static', 
     }),
     StockModule,
-    PSellsModule
+    PSellsModule,
+    ReportsModule
   ],
   controllers: [AppController],
   providers: [AppService],
