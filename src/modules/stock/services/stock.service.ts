@@ -176,27 +176,27 @@ export class StockService implements IStockRepository {
       quantidadeImportada++;
     }
 
-    let debitoCriado = null;
-    if (debito && debito.fat && debito.dup) {
-      const debtsDto: DebtsDto = {
-        nome: `${nomeFornecedor} NF-e ${numero_nfe}`,
-        descricao: `Débito gerado automaticamente pela NF-e ${numero_nfe}`,
-        valor_total: parseFloat(debito.fat.vOrig),
-        data_competencia: ide.dhEmi || ide.dEmi,
-        data_vencimento: Array.isArray(debito.dup) ? debito.dup[0].dVenc : debito.dup.dVenc,
-        numero_parcelas: Array.isArray(debito.dup) ? debito.dup.length : 1,
-        company_id: 2,
-        user_company_id: 2,
-        departamento_id: 2,
-        categoria_id: 14,
-        criado_por: 'geecom@azzo.com',
-        account_id: 3,
-        tipo: 'CUSTO',
-      };
+    // let debitoCriado = null;
+    // if (debito && debito.fat && debito.dup) {
+    //   const debtsDto: DebtsDto = {
+    //     nome: `${nomeFornecedor} NF-e ${numero_nfe}`,
+    //     descricao: `Débito gerado automaticamente pela NF-e ${numero_nfe}`,
+    //     valor_total: parseFloat(debito.fat.vOrig),
+    //     data_competencia: ide.dhEmi || ide.dEmi,
+    //     data_vencimento: Array.isArray(debito.dup) ? debito.dup[0].dVenc : debito.dup.dVenc,
+    //     numero_parcelas: Array.isArray(debito.dup) ? debito.dup.length : 1,
+    //     company_id: 2,
+    //     user_company_id: 2,
+    //     departamento_id: 2,
+    //     categoria_id: 14,
+    //     criado_por: 'geecom@azzo.com',
+    //     account_id: 3,
+    //     tipo: 'CUSTO',
+    //   };
 
-      // **Chama o serviço de débitos para criar o débito e as parcelas**
-      debitoCriado = await this.debtsService.createDebtFromNfeXml(debtsDto, debito.dup);
-    }
+    //   // **Chama o serviço de débitos para criar o débito e as parcelas**
+    //   debitoCriado = await this.debtsService.createDebtFromNfeXml(debtsDto, debito.dup);
+    // }
     
       return {
         numero_nf: ide.nNF,
@@ -212,7 +212,7 @@ export class StockService implements IStockRepository {
           quantidade: p.quantidade,
           valor_total: p.valor,
         })),
-        debito: debitoCriado ? { debito_id: debitoCriado.debito_id, nome: debitoCriado.nome, valor_total: debitoCriado.valor_total, numero_parcelas: debitoCriado.numero_parcelas } : null,
+        // debito: debitoCriado ? { debito_id: debitoCriado.debito_id, nome: debitoCriado.nome, valor_total: debitoCriado.valor_total, numero_parcelas: debitoCriado.numero_parcelas } : null,
       }; 
   }
 

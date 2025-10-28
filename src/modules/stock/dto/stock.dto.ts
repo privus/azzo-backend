@@ -22,7 +22,6 @@ export interface StockImportResponse {
     quantidade: number;
     valor_total: number;
   }[];
-  debito: Partial<Debito> | null;
 }
 
 export interface Last10OutDto {
