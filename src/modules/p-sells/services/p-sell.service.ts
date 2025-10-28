@@ -16,7 +16,6 @@ import {
   PVendedor,
   PParcelaCredito,
 } from '../../../infrastructure/database/entities';
-import { Cron, CronExpression } from '@nestjs/schedule';
 import { InstallmentsDto, UpdateSellDto } from '../dto';
 
 @Injectable()

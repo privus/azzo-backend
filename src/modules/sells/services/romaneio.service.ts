@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ISellsRepository } from '../../../domain/repositories';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Romaneio, Transportadora } from '../../../infrastructure/database/entities';
+import { Romaneio, Transportadora, Venda } from '../../../infrastructure/database/entities';
 import { Repository } from 'typeorm';
 import { RomaneioDto } from '../dto';
 import * as XLSX from 'xlsx';
@@ -28,7 +28,7 @@ export class RomaneioService {
       await this.transportadoraRepository.save(transportadora);
     }
   
-    const vendasEncontradas: any[] = [];
+    const vendasEncontradas: Venda[] = [];
     const vendasNaoEncontradas: number[] = [];
   
     for (const code of codigos) {
@@ -66,7 +66,6 @@ export class RomaneioService {
   
     return mensagem;
   }
-  
 
   getRomaneios(): Promise<Romaneio[]> {
     return this.romaneioRepository.find({ relations: ['vendas.cliente', 'transportadora'] });
@@ -102,8 +101,7 @@ export class RomaneioService {
       if (!nota) continue;
     
       let venda = vendas.find(v => v.numero_nfe?.toString() === nota);
-    
-      // Se não encontrou por nota, tenta buscar por padrão alternativo
+
       if (!venda && nota.startsWith('*')) {
         const pedidoId = nota.substring(1); // remove o caractere especial
         venda = vendas.find(v => v.codigo.toString() === pedidoId);
@@ -116,7 +114,6 @@ export class RomaneioService {
         aplicadas++;
       }
     }
-    
   
     romaneio.valor_frete = totalFrete;
     await this.romaneioRepository.save(romaneio);

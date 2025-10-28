@@ -1,5 +1,5 @@
 import { Inject, Injectable, ConflictException } from '@nestjs/common';
-import { Distribuidor, Estoque, Fornecedor, HistoricoEstoque, Produto, SaidaEstoque, ValorEstoque } from '../../../infrastructure/database/entities';
+import { Distribuidor, Estoque, Fornecedor, HistoricoEstoque, NfeResumo, Produto, SaidaEstoque, ValorEstoque } from '../../../infrastructure/database/entities';
 import { IDebtsRepository, IProductsRepository, ISellsRepository, IStockRepository } from '../../../domain/repositories';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -24,7 +24,7 @@ export class StockService implements IStockRepository {
     @Inject('IDebtsRepository') private readonly debtsService: IDebtsRepository,
     @InjectRepository(ValorEstoque)private readonly valorEstoqueRepository: Repository<ValorEstoque>,
     @InjectRepository(HistoricoEstoque) private readonly historicoEstoqueRepository: Repository<HistoricoEstoque>,
-
+    @InjectRepository(NfeResumo) private readonly nfeResumoRepository: Repository<NfeResumo>
   ) {}
 
   async getStock(): Promise<Estoque[]> {
@@ -53,7 +53,6 @@ export class StockService implements IStockRepository {
     const numero_nfe = json.nfeProc.NFe.infNFe.ide.nNF
     const debito = info.cobr
     const nomeFornecedor = info.emit.xFant
-
     
     const existente = await this.stockRepository.findOne({
       where: { numero_nfe: numero_nfe, origem: 'NFE_XML' },
@@ -61,7 +60,13 @@ export class StockService implements IStockRepository {
 
     if (existente) {
       throw new ConflictException(`NF-e ${numero_nfe} já importada anteriormente.`);
-    }   
+    }
+
+    try {
+      await this.saveNfeResumoFromXml(filePath);
+    } catch (error) {
+      console.error(`⚠️ Erro ao salvar resumo da NF-e ${numero_nfe}:`, error.message);
+    }
   
     const itens = Array.isArray(itensNFe) ? itensNFe : [itensNFe];
     const dist_type = Number(typeId);
@@ -286,8 +291,6 @@ export class StockService implements IStockRepository {
     console.log(`✅ Estoque atualizado para ${estoqueData.length} produtos.`);
     return '✅ Estoque atualizado com sucesso.';
   }
-  
-  
 
   async getStockOut(out: StockOutDto): Promise<string> {
     const { produtos, observacao } = out;
@@ -426,7 +429,6 @@ export class StockService implements IStockRepository {
       stockValue,
     };
   }
-  
   
   businessDayOnly(inicio: Date, fim: Date): number {
     let count = 0;
@@ -580,7 +582,6 @@ export class StockService implements IStockRepository {
     return this.valorEstoqueRepository.save(valorEstoque);
   }
 
-
   async getStockDiscrepancies(limit = 100): Promise<Discrepancy[]> {
     const jsonFilePath = 'src/utils/contagem-estoque-agosto.json';
   
@@ -627,5 +628,107 @@ export class StockService implements IStockRepository {
     return resultados.slice(0, limit);
   }
   
-
+  async saveNfeResumoFromXml(filePath: string): Promise<NfeResumo> {
+    const xml = fs.readFileSync(filePath, 'utf8');
+  
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      attributeNamePrefix: '',
+      transformTagName: (tagName) => tagName.replace(/^.*:/, ''),
+    });
+  
+    const json = parser.parse(xml);
+    const info = json?.nfeProc?.NFe?.infNFe;
+    if (!info) throw new Error('XML inválido ou fora do padrão NF-e 4.00');
+  
+    const ide = info.ide;
+    const emitente = info.emit;
+    const total = info.total?.ICMSTot ?? {};
+    const dets = Array.isArray(info.det) ? info.det : [info.det];
+  
+    const numero_nfe = ide?.nNF;
+    const data_emissao = ide?.dhEmi;
+    const fornecedor_nome = emitente?.xNome;
+  
+    let valor_produto = parseFloat(total.vProd ?? '0');
+    let valor_ipi = parseFloat(total.vIPI ?? '0');
+    let valor_st = parseFloat(total.vST ?? '0');
+    let valor_base_icms = parseFloat(total.vBC ?? '0');
+    let valor_total_nfe = parseFloat(total.vNF ?? '0');
+  
+    // 🔹 Novos tributos
+    let valor_icms = parseFloat(total.vICMS ?? '0');
+    let valor_base_icms_st = parseFloat(total.vBCST ?? '0');
+    let valor_pis = parseFloat(total.vPIS ?? '0');
+    let valor_cofins = parseFloat(total.vCOFINS ?? '0');
+  
+    const todosZerados =
+      (valor_st === 0 || isNaN(valor_st)) &&
+      (valor_base_icms === 0 || isNaN(valor_base_icms)) &&
+      (valor_ipi === 0 || isNaN(valor_ipi));
+  
+    if (todosZerados) {
+      valor_produto = 0;
+      valor_ipi = 0;
+      valor_st = 0;
+      valor_base_icms = 0;
+      valor_icms = 0;
+      valor_base_icms_st = 0;
+      valor_pis = 0;
+      valor_cofins = 0;
+  
+      for (const item of dets) {
+        const prod = item?.prod ?? {};
+        const imp = item?.imposto ?? {};
+        const icms = imp?.ICMS ?? {};
+        const tipoICMS: any = Object.values(icms)[0] ?? {};
+  
+        valor_produto += parseFloat(prod?.vProd ?? 0);
+  
+        // IPI
+        const ipi = imp?.IPI;
+        if (ipi) {
+          const vIPI =
+            typeof ipi.vIPI === 'string' || typeof ipi.vIPI === 'number'
+              ? parseFloat(ipi.vIPI)
+              : 0;
+          valor_ipi += vIPI;
+        }
+  
+        // ICMS-ST
+        const vICMSSTRet = parseFloat(tipoICMS.vICMSSTRet ?? 0);
+        const vBCSTRet = parseFloat(tipoICMS.vBCSTRet ?? 0);
+        const vST = parseFloat(tipoICMS.vST ?? 0);
+        const vBCST = parseFloat(tipoICMS.vBCST ?? 0);
+        const vICMS = parseFloat(tipoICMS.vICMS ?? 0);
+        const vBC = parseFloat(tipoICMS.vBC ?? 0);
+  
+        valor_st += vICMSSTRet || vST;
+        valor_base_icms += vBCSTRet || vBCST;
+        valor_icms += vICMS;
+        valor_base_icms_st += vBC;
+      }
+  
+      valor_total_nfe = valor_produto;
+    }
+  
+    const resumo = this.nfeResumoRepository.create({
+      numero_nfe,
+      emitente: fornecedor_nome,
+      valor_produto: Number(valor_produto.toFixed(2)),
+      valor_ipi: Number(valor_ipi.toFixed(2)),
+      valor_st: Number(valor_st.toFixed(2)),
+      valor_base_icms: Number(valor_base_icms.toFixed(2)),
+      valor_total_nfe: Number(valor_total_nfe.toFixed(2)),
+      valor_icms: Number(valor_icms.toFixed(2)),
+      valor_base_icms_st: Number(valor_base_icms_st.toFixed(2)),
+      valor_pis: Number(valor_pis.toFixed(2)),
+      valor_cofins: Number(valor_cofins.toFixed(2)),
+      data_emissao: new Date(data_emissao),
+      data_entrada: new Date(),
+    });
+  
+    return await this.nfeResumoRepository.save(resumo);
+  }
+  
 }

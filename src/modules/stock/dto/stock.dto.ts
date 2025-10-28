@@ -66,3 +66,4 @@ export interface Discrepancy {
   contagem: number;
   diferenca: number;
 }
+

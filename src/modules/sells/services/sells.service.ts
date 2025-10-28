@@ -1741,7 +1741,6 @@ export class SellsService implements ISellsRepository {
       result[vendedorNome].valor_total += incrementoPedido;
     }
   
-    // Regra fixa: vendedor_id 19 recebe 250
     const vendedor19Nome = vendedoresMap.get(19);
     if (vendedor19Nome) {
       if (!result[vendedor19Nome]) {
