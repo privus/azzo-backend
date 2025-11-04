@@ -66,3 +66,12 @@ export interface Discrepancy {
   diferenca: number;
 }
 
+export interface StockInItemDto {
+  produto: string;
+  codigo: string;
+  quantidade_total: number;
+  preco_custo_unitario: number;
+  data_entrada: Date;
+  origem: string;
+  valor_total: number;
+}

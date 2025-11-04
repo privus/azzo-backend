@@ -3,8 +3,8 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { StockService } from '../services/stock.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { Distribuidor, SaidaEstoque } from '../../../infrastructure/database/entities';
-import { Discrepancy, StockImportResponse, StockLiquid, StockOutDto, StockOverview, StockValue, StockValuePermancence } from '../dto';
+import { Distribuidor, NfeResumo, SaidaEstoque } from '../../../infrastructure/database/entities';
+import { Discrepancy, StockImportResponse, StockInItemDto, StockLiquid, StockOutDto, StockOverview, StockValue, StockValuePermancence } from '../dto';
 
 ApiTags('stock')
 @Controller('stock')
@@ -36,6 +36,12 @@ export class StockController {
   async stockOut(@Body() stockOutDto: StockOutDto) {
     const message = await this.stockService.getStockOut(stockOutDto);
     return { message };
+  }
+
+  @ApiOperation({ summary: 'Obter nfe resumo de todas as nfes importadas'})
+  @Get('nfsResume')
+  async getNfsResumo(): Promise<NfeResumo[]> {
+    return this.stockService.findAllXml();
   }
 
   @ApiOperation({ summary: 'Importar estoque por XML' })
@@ -93,5 +99,11 @@ export class StockController {
   @Get('discrepancies')
   async getDiscrepancies(): Promise<Discrepancy[]> {
     return this.stockService.getStockDiscrepancies();
+  }
+
+  @ApiOperation({ summary: 'Obter entradas por número da Nfe' })
+  @Get('in/:id')
+  async findStockIn(@Param('id') id: string): Promise<StockInItemDto[]> {
+    return this.stockService.findStockIn(id);
   }
 }

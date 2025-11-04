@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { XMLParser } from 'fast-xml-parser';
 import * as fs from 'fs';
-import { Discrepancy, StockDuration, StockImportResponse, StockLiquid, StockOverview, StockValue, StockValuePermancence } from '../dto';
+import { Discrepancy, StockDuration, StockImportResponse, StockInItemDto, StockLiquid, StockOverview, StockValue, StockValuePermancence } from '../dto';
 import { StockOutDto } from '../dto/stock-out.dto';
 import { DebtsDto } from 'src/modules/debts/dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -730,5 +730,29 @@ export class StockService implements IStockRepository {
   
     return await this.nfeResumoRepository.save(resumo);
   }
+
+  async findAllXml(): Promise<NfeResumo[]> {
+    return this.nfeResumoRepository.find({ order: { nfe_resumo_id: 'ASC' } });
+  }
+
+  async findStockIn(nfe: string): Promise<StockInItemDto[]> {
+    const entradas = await this.stockRepository.find({
+      where: { numero_nfe: nfe },
+      relations: ['produto', 'distribuidor'],
+    });
   
+    if (!entradas || entradas.length === 0) {
+      throw new Error(`Nenhuma entrada encontrada para a NF-e ${nfe}`);
+    }
+  
+    return entradas.map((entrada) => ({
+      produto: entrada.produto.nome,
+      codigo: entrada.produto.codigo,
+      quantidade_total: entrada.quantidade_total,
+      preco_custo_unitario: entrada.preco_custo_unitario,
+      data_entrada: entrada.data_entrada,
+      origem: entrada.origem,
+      valor_total: entrada.valor_total
+    }));
+  }
 }

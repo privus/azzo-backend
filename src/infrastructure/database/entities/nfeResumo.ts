@@ -3,7 +3,7 @@ import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 @Entity('nfe_resumo')
 export class NfeResumo {
   @PrimaryGeneratedColumn()
-  id: number;
+  nfe_resumo_id: number;
 
   @Column({ type: 'varchar', length: 20 })
   numero_nfe: string;
@@ -26,13 +26,13 @@ export class NfeResumo {
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
   valor_total_nfe: number;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamp'})
   data_emissao: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamp'})
   data_entrada: Date;
 
-    @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
   valor_icms: number;
 
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
@@ -43,4 +43,7 @@ export class NfeResumo {
 
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
   valor_cofins: number;
+
+  @Column({ type: 'tinyint', nullable: true })
+  chegou: number;
 }
