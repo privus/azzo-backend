@@ -44,7 +44,7 @@ export class CustomersController {
   }
 
   @ApiOperation({ summary: 'Buscar cliente por Status' })
-  @Get('/status/:id')
+  @Get('status/:id')
   async findCostumerByStatus(@Param('id') id: number) {
     return this.customersService.findCustomersByStatus(id);
   }

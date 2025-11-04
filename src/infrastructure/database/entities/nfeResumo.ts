@@ -46,4 +46,7 @@ export class NfeResumo {
 
   @Column({ type: 'tinyint', nullable: true })
   chegou: number;
+
+  @Column({ type: 'tinyint', nullable: true })
+  reimportada: number;
 }

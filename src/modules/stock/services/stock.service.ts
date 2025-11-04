@@ -758,4 +758,51 @@ export class StockService implements IStockRepository {
       valor_total: entrada.valor_total
     }));
   }
+
+  async reimportNf(numero_nfe: string): Promise<string> {
+    const entradas = await this.stockRepository.find({
+      where: { numero_nfe },
+      relations: ['produto'],
+    });
+    const nf = await this.nfeResumoRepository.findOne({ where: { numero_nfe }});
+      
+    if (!entradas || entradas.length === 0) {
+      throw new Error(`❌ Nenhum registro de estoque encontrado para a NF-e ${numero_nfe}.`);
+    }
+  
+    let produtosAtualizados = 0;
+    const produtosNaoEncontrados: string[] = [];
+  
+    for (const entrada of entradas) {
+      const produto = entrada.produto;
+  
+      const saldoAnterior = produto.saldo_estoque;
+      const incremento = entrada.quantidade_total;
+      const novoSaldo = saldoAnterior + incremento;
+  
+      // Atualiza o saldo
+      produto.saldo_estoque = novoSaldo;
+      await this.productRepository.saveProduct(produto);
+      
+      produtosAtualizados++;
+    }
+    nf.reimportada = 1
+    await this.nfeResumoRepository.save(nf)
+    
+    if (produtosNaoEncontrados.length > 0) {
+      console.warn(`⚠️ Produtos não encontrados ou inconsistentes: ${produtosNaoEncontrados.join(', ')}`);
+    }
+    
+    return `✅ Reimportação concluída para NF-e ${numero_nfe}. ${produtosAtualizados} produtos tiveram o saldo acrescido.`;
+  }
+
+  async productsArrive(numero_nfe: string): Promise<string> {
+    const nf = await this.nfeResumoRepository.findOne({ where: { numero_nfe }});
+    nf.chegou = 1
+
+    await this.nfeResumoRepository.save(nf)
+
+    return `Nf-e numero ${numero_nfe} atualiza com sucesso`
+  }
+  
 }
