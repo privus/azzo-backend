@@ -1,5 +1,3 @@
-import { Debito } from '../../../infrastructure/database/entities';
-
 export interface StockLiquid {
   codigo: string;
   quantidadeVendida: number;
