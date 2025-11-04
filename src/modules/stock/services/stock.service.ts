@@ -261,13 +261,14 @@ export class StockService implements IStockRepository {
 
   async updateStockFromJson(): Promise<string> {
     const jsonFilePath = 'src/utils/contagem-estoque-novembro.json';
+  
     if (!fs.existsSync(jsonFilePath)) {
       console.error(`❌ Arquivo '${jsonFilePath}' não encontrado.`);
       return '❌ Arquivo de estoque não encontrado.';
     }
   
     const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
-    const estoqueData: { produto_id: number; saldo_estoque: number }[] = JSON.parse(jsonData);
+    const estoqueData: { produto_id: number; saldo_estoque: number | null }[] = JSON.parse(jsonData);
   
     for (const item of estoqueData) {
       const produto = await this.productRepository.findProductById(item.produto_id);
@@ -283,8 +284,10 @@ export class StockService implements IStockRepository {
       });
       await this.historicoEstoqueRepository.save(historico);
   
-      // Atualizar saldo
-      produto.saldo_estoque = item.saldo_estoque;
+      // Substitui saldo nulo por 0
+      const novoSaldo = item.saldo_estoque ?? 0;
+      produto.saldo_estoque = isNaN(Number(novoSaldo)) ? 0 : Number(novoSaldo);
+  
       await this.productRepository.saveProduct(produto);
     }
   
