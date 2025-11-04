@@ -260,7 +260,7 @@ export class StockService implements IStockRepository {
   }
 
   async updateStockFromJson(): Promise<string> {
-    const jsonFilePath = 'src/utils/contagem-green-viceroy.json';
+    const jsonFilePath = 'src/utils/contagem-estoque-novembro.json';
     if (!fs.existsSync(jsonFilePath)) {
       console.error(`❌ Arquivo '${jsonFilePath}' não encontrado.`);
       return '❌ Arquivo de estoque não encontrado.';
@@ -276,12 +276,12 @@ export class StockService implements IStockRepository {
         continue;
       }
   
-      // // Salvar histórico do saldo atual
-      // const historico = this.historicoEstoqueRepository.create({
-      //   produto_id: produto.produto_id,
-      //   quantidade: produto.saldo_estoque ?? 0,
-      // });
-      // await this.historicoEstoqueRepository.save(historico);
+      // Salvar histórico do saldo atual
+      const historico = this.historicoEstoqueRepository.create({
+        produto_id: produto.produto_id,
+        quantidade: produto.saldo_estoque ?? 0,
+      });
+      await this.historicoEstoqueRepository.save(historico);
   
       // Atualizar saldo
       produto.saldo_estoque = item.saldo_estoque;
