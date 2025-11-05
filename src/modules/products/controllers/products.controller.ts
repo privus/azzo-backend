@@ -15,9 +15,9 @@ export class ProductsController {
   }
 
   @ApiOperation({ summary: 'Atualizar preços por json' })
-  @Get('updatePrices')
-  async updatePricesFromJson() {
-    return this.productsService.updatePricesFromJson();
+  @Get('fixNames')
+  async updateNames() {
+    return this.productsService.fixUnidadeNames();
   }
 
   @ApiOperation({ summary: 'Subir estoque minimo' })

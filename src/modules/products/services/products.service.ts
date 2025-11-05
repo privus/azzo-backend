@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Like, Repository } from 'typeorm';
+import { IsNull, Like, Not, Repository } from 'typeorm';
 import { CategoriaProduto, Fornecedor, Produto } from '../../../infrastructure/database/entities';
 import { ProdutoAPIResponse, UpdateProductDto } from '../dto';
 import { IProductsRepository } from '../../../domain/repositories';
@@ -383,5 +383,58 @@ export class ProductsService implements IProductsRepository {
       .getMany();
 
     return produtos;
-  }  
+  }
+
+  async fixUnidadeNames(): Promise<void> {
+    // Regex para capturar medidas no final: 200ml, 1L, 250g, 1kg ...
+    const measureAtEnd = /(\d+(?:[.,]\d+)?\s*(?:ml|mL|l|L|g|kg))\s*$/i;
+  
+    // Busca produtos do fornecedor 3 com unidade_id preenchido
+    const produtos = await this.produtoRepository.find({
+      where: {
+        fornecedor: { fornecedor_id: 3 },
+        unidade: Not(IsNull()),
+      },
+      relations: ['unidade', 'fornecedor'],
+    });
+  
+    console.log(`Encontrados ${produtos.length} produtos CAIXA com unidade vinculada e fornecedor_id = 3.`);
+  
+    for (const produtoCaixa of produtos) {
+      const nomeCaixa = (produtoCaixa.nome || '').trim();
+  
+      const match = nomeCaixa.match(measureAtEnd);
+      if (!match) continue;
+  
+      // Normaliza medida
+      let medida = match[1].trim();
+      medida = medida.replace(/\s+/g, ''); // remove espaços internos → "200 ml" vira "200ml"
+      medida = medida
+        .replace(/mL$/i, 'ml')
+        .replace(/l$/i, 'L')
+        .replace(/kg$/i, 'kg')
+        .replace(/g$/i, 'g');
+  
+      const produtoUnidade = produtoCaixa.unidade;
+      if (!produtoUnidade) continue;
+  
+      const nomeUnidadeAtual = (produtoUnidade.nome || '').trim();
+  
+      // Verifica se já tem essa medida
+      const alreadyHas = new RegExp(`\\b${medida.replace('.', '\\.')}\\b`, 'i').test(nomeUnidadeAtual);
+      if (alreadyHas) continue;
+  
+      const novoNome = `${nomeUnidadeAtual} ${medida}`.trim();
+  
+      produtoUnidade.nome = novoNome;
+      await this.produtoRepository.save(produtoUnidade);
+  
+      console.log(
+        `✅ Unidade do produto ${produtoCaixa.codigo} atualizada: "${nomeUnidadeAtual}" → "${novoNome}"`
+      );
+    }
+  
+    console.log('🚀 Correção dos nomes de unidade concluída.');
+  }
+  
 }
