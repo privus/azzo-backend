@@ -735,7 +735,7 @@ export class StockService implements IStockRepository {
   }
 
   async findAllXml(): Promise<NfeResumo[]> {
-    return this.nfeResumoRepository.find({ order: { nfe_resumo_id: 'ASC' } });
+    return this.nfeResumoRepository.find({ order: { nfe_resumo_id: 'DESC' } });
   }
 
   async findStockIn(nfe: string): Promise<StockInItemDto[]> {
@@ -803,6 +803,5 @@ export class StockService implements IStockRepository {
     await this.nfeResumoRepository.save(nf)
 
     return `Nf-e numero ${numero_nfe} atualiza com sucesso`
-  }
-  
+  }  
 }
