@@ -93,6 +93,8 @@ export class BlingProductService {
     } catch (fatalError) {
       this.logger.error(`💥 Erro fatal no processo de sincronização`, fatalError);
       throw fatalError;
+    } finally {
+      this.isUpdating = false;
     }
   }
   
