@@ -208,7 +208,7 @@ export class BlingProductService {
         try {
           const produto = await this.productRepository.findBy({ codigo: item.codigo });
   
-          if (!produto || !produto.bling_id) {
+          if (!produto || !produto.bling_id_p) {
             this.logger.warn(`⚠️ [${index + 1}/${taxData.length}] Produto ${item.codigo} não encontrado ou sem bling_id.`);
             continue;
           }
@@ -233,7 +233,7 @@ export class BlingProductService {
             },
           };
   
-          const url = `${this.apiBlingUrl}${this.productTag}/${produto.bling_id}`;
+          const url = `${this.apiBlingUrl}${this.productTag}/${produto.bling_id_p}`;
   
           await this.httpService.axiosRef.put(url, body, {
             headers: {
