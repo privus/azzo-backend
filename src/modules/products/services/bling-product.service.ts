@@ -196,7 +196,7 @@ export class BlingProductService {
         valorICMSSubstituto?: number | null;
       }[] = JSON.parse(jsonData);
   
-      const token = await this.blingAuthRepository.getAccessToken('AZZO');
+      const token = await this.blingAuthRepository.getAccessToken('PURELI');
       if (!token) {
         this.logger.error(`❌ Token de autenticação não encontrado.`);
         return;
