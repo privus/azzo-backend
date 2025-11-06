@@ -196,7 +196,7 @@ export class BlingProductService {
         valorICMSSubstituto?: number | null;
       }[] = JSON.parse(jsonData);
   
-      const token = await this.blingAuthRepository.getAccessToken('PURELI');
+      const token = await this.blingAuthRepository.getAccessToken('AZZO');
       if (!token) {
         this.logger.error(`❌ Token de autenticação não encontrado.`);
         return;
@@ -208,7 +208,7 @@ export class BlingProductService {
         try {
           const produto = await this.productRepository.findBy({ codigo: item.codigo });
   
-          if (!produto || !produto.bling_id_p) {
+          if (!produto || !produto.bling_id) {
             this.logger.warn(`⚠️ [${index + 1}/${taxData.length}] Produto ${item.codigo} não encontrado ou sem bling_id.`);
             continue;
           }
@@ -233,7 +233,7 @@ export class BlingProductService {
             },
           };
   
-          const url = `${this.apiBlingUrl}${this.productTag}/${produto.bling_id_p}`;
+          const url = `${this.apiBlingUrl}${this.productTag}/${produto.bling_id}`;
   
           await this.httpService.axiosRef.put(url, body, {
             headers: {
@@ -259,5 +259,4 @@ export class BlingProductService {
       this.isUpdating = false;
     }
   }
-  
 }

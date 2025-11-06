@@ -1784,7 +1784,7 @@ export class SellsService implements ISellsRepository {
         idContato = await this.clienteService.registerBling(order.cliente.codigo);
       }
   
-      const token = await this.blingAuthService.getAccessToken('PURELI');
+      const token = await this.blingAuthService.getAccessToken('AZZO');
       if (!token) {
         throw new BadRequestException({ message: "🚨 Não foi possível obter um token válido para exportação." });
       }
@@ -1813,7 +1813,7 @@ export class SellsService implements ISellsRepository {
             desconto: 0,
             valor: item.valor_total / quantidadeUnidade,
             produto: {
-              id: unidadeBase.bling_id_p,
+              id: unidadeBase.bling_id,
             },
           };
         }),

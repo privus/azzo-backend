@@ -5,7 +5,7 @@ export class NfeResumo {
   @PrimaryGeneratedColumn()
   nfe_resumo_id: number;
 
-  @Column({ type: 'varchar', length: 20 })
+  @Column({ type: 'varchar', unique: true, length: 20 })
   numero_nfe: string;
 
   @Column({ type: 'varchar', length: 255 })

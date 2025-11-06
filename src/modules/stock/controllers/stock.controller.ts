@@ -101,17 +101,17 @@ export class StockController {
     return this.stockService.getStockDiscrepancies();
   }
 
-  @ApiOperation({ summary: 'Reimportar a mercadoria referente a nf' })
-  @Get('reimport/:nf')
-  async reimportNf(@Param('nf') nf: string) {
-    const resultMessage = await this.stockService.reimportNf(nf)
-    return { message: resultMessage };
-  }
-
   @ApiOperation({ summary: 'Indicar que a mercadoria referente a nf chegou' })
   @Get('arrived/:nf')
   async arrivedStock(@Param('nf') nf: string) {
     const resultMessage = await this.stockService.productsArrive(nf)
+    return { message: resultMessage };
+  }
+
+  @ApiOperation({ summary: 'Reimportar a mercadoria referente a nf' })
+  @Get('reimport/:nf')
+  async reimportNf(@Param('nf') nf: string) {
+    const resultMessage = await this.stockService.reimportNf(nf)
     return { message: resultMessage };
   }
 

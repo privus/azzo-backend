@@ -624,7 +624,7 @@ export class CustomersService implements ICustomersRepository{
         throw new Error(`🚨 Cliente com código ${codigo} não encontrado.`);
       }
 
-      const token = await this.blingAuthService.getAccessToken('PURELI');
+      const token = await this.blingAuthService.getAccessToken('AZZO');
       if (!token) {
         throw new Error("🚨 Não foi possível obter um token válido para exportação.");
       }
@@ -669,7 +669,7 @@ export class CustomersService implements ICustomersRepository{
       console.log(`✅ Cliente ${codigo} registrado no Bling com sucesso!`);
       const bling_id = response.data.data.id
 
-      customer.bling_id_p = bling_id;
+      customer.bling_id = bling_id;
       await this.clienteRepository.save(customer);
       return bling_id;
     }
