@@ -669,7 +669,7 @@ export class CustomersService implements ICustomersRepository{
       console.log(`✅ Cliente ${codigo} registrado no Bling com sucesso!`);
       const bling_id = response.data.data.id
 
-      customer.bling_id_p = bling_id;
+      customer.bling_id = bling_id;
       await this.clienteRepository.save(customer);
       return bling_id;
     }
