@@ -624,7 +624,7 @@ export class CustomersService implements ICustomersRepository{
         throw new Error(`🚨 Cliente com código ${codigo} não encontrado.`);
       }
 
-      const token = await this.blingAuthService.getAccessToken('PURELI');
+      const token = await this.blingAuthService.getAccessToken('AZZO');
       if (!token) {
         throw new Error("🚨 Não foi possível obter um token válido para exportação.");
       }
