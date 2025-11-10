@@ -478,7 +478,7 @@ export class ProductsService implements IProductsRepository {
 
   async updateTinyProductNames(): Promise<void> {
     if (this.isUpdating) {
-      this.logger.warn('⚠️ Uma atualização já está em andamento. Abortando nova execução.');
+      console.log('⚠️ Uma atualização já está em andamento. Abortando nova execução.');
       return;
     }
   
