@@ -14,6 +14,7 @@ export class ProductsService implements IProductsRepository {
   private readonly productTag = 'products';
   photoUrl: string;
   private readonly apiUrlTiny: string;
+  private isUpdating = false;
 
   constructor(
     @InjectRepository(Produto) private readonly produtoRepository: Repository<Produto>,
@@ -476,6 +477,13 @@ export class ProductsService implements IProductsRepository {
   }
 
   async updateTinyProductNames(): Promise<void> {
+    if (this.isUpdating) {
+      this.logger.warn('⚠️ Uma atualização já está em andamento. Abortando nova execução.');
+      return;
+    }
+  
+    this.isUpdating = true;
+
     console.log('🔄 Iniciando atualização de nomes de produtos no Tiny MG...');
   
     const produtos = await this.produtoRepository.find({
@@ -528,6 +536,8 @@ export class ProductsService implements IProductsRepository {
         } else {
           console.error(`💥 Erro ao atualizar produto ${produto.codigo}:`, error.message);
         }
+      } finally {
+        this.isUpdating = false;
       }
   
       // ⏳ Delay de 2 segundos
