@@ -17,7 +17,7 @@ export class ProductsController {
   @ApiOperation({ summary: 'Atualizar produtos com o nome dos forncedores' })
   @Get('fixNames')
   async updateNames() {
-    return this.productsService.fixSupplierNames();
+    return this.productsService.updateTinyProductNames();
   }
 
   @ApiOperation({ summary: 'Subir estoque minimo' })
