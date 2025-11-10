@@ -1,28 +1,31 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Like, Not, Repository } from 'typeorm';
 import { CategoriaProduto, Fornecedor, Produto } from '../../../infrastructure/database/entities';
 import { ProdutoAPIResponse, UpdateProductDto } from '../dto';
-import { IProductsRepository } from '../../../domain/repositories';
+import { IProductsRepository, ITinyAuthRepository } from '../../../domain/repositories';
 import * as fs from 'fs';
 
 @Injectable()
 export class ProductsService implements IProductsRepository {
   private readonly apiUrl: string;
   private readonly token: string;
-  private readonly apiTag = 'products'; // Inicializa corretamente o apiTag
+  private readonly productTag = 'products';
   photoUrl: string;
+  private readonly apiUrlTiny: string;
 
   constructor(
     @InjectRepository(Produto) private readonly produtoRepository: Repository<Produto>,
     @InjectRepository(CategoriaProduto) private readonly categoriaRepository: Repository<CategoriaProduto>,
     @InjectRepository(Fornecedor) private readonly fornecedorRepository: Repository<Fornecedor>,
     private readonly httpService: HttpService,
+    @Inject('ITinyAuthRepository') private readonly tinyAuthService: ITinyAuthRepository,
   ) {
     this.token = process.env.SELLENTT_API_TOKEN;
     this.apiUrl = process.env.SELLENTT_API_URL;
     this.photoUrl = process.env.PRODUCT_PHOTO;
+    this.apiUrlTiny = process.env.TINY_API_URL;
   }
 
   async syncroProducts(): Promise<void> {
@@ -30,11 +33,9 @@ export class ProductsService implements IProductsRepository {
 
     while (true) {
       try {
-        // Monta a URL com validação
-        const url = `${this.apiUrl}${this.apiTag}?page=${page}`;
+        const url = `${this.apiUrl}${this.productTag}?page=${page}`;
         console.log(`Requesting: ${url}`); // Log para depuração
 
-        // Realiza a requisição para a API
         const response = await this.httpService.axiosRef.get<{ data: ProdutoAPIResponse[] }>(url, {
           headers: {
             Authorization: `Bearer ${this.token}`,
@@ -43,13 +44,11 @@ export class ProductsService implements IProductsRepository {
 
         const produtosData = response.data.data;
 
-        // Verifica se não há mais produtos para sincronizar
         if (!produtosData || produtosData.length === 0) {
           console.log(`Nenhum registro encontrado na página ${page}. Encerrando a sincronização.`);
           break;
         }
 
-        // Processa cada produto recebido
         console.log(`Página ${page} => ${produtosData.length} produtos recebidos.`);
         for (const item of produtosData) {
           await this.processarProduto(item);
@@ -77,7 +76,6 @@ export class ProductsService implements IProductsRepository {
       console.log(`Categoria ${categoria.nome} salva com sucesso!`);
     }
 
-    // Cria ou atualiza o produto no banco
     const existingProduct = await this.produtoRepository.findOne({
       where: { codigo: item.code },
     });
@@ -318,7 +316,7 @@ export class ProductsService implements IProductsRepository {
     const produto = await this.findBy({sellent_id})
     produto.ativo = 1;
     await this.produtoRepository.save(produto);
-    const url = `${this.apiUrl}${this.apiTag}/${sellent_id}`;
+    const url = `${this.apiUrl}${this.productTag}/${sellent_id}`;
     console.log(`Ativando produto id-${sellent_id} na API: ${url}`);
     try {
       return this.httpService.axiosRef.put(url, { "is_active": 1 }, {
@@ -475,5 +473,60 @@ export class ProductsService implements IProductsRepository {
     }
   
     console.log('🚀 Correção de nomes de fornecedores concluída com sucesso!');
-  }  
+  }
+
+  async updateTinyProductNames(): Promise<void> {
+    console.log('🔄 Iniciando atualização de nomes de produtos no Tiny MG...');
+  
+    const produtos = await this.produtoRepository.find();
+  
+    console.log(`📦 ${produtos.length} produtos encontrados com tiny_mg.`);
+  
+    const token = await this.tinyAuthService.getAccessToken('MG');
+  
+    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+  
+    for (const produto of produtos) {
+      if (!produto.nome) {
+        console.warn(`⚠️ Produto ID ${produto.produto_id} sem nome definido. Pulando...`);
+        continue;
+      }
+  
+      const tinyId = produto.tiny_mg;
+      const url = `${this.apiUrlTiny}produtos/${tinyId}`;
+  
+      const body = {
+        sku: produto.codigo,
+        nome: produto.nome,
+        ncm: produto.ncm,
+      };
+  
+      try {
+        console.log(`📝 Atualizando produto ID ${produto.produto_id} (Tiny ID ${tinyId})...`);
+  
+        const response = await this.httpService.axiosRef.put(url, body, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+  
+        if (response.status === 200 || response.status === 204) {
+          console.log(`✅ Produto ${produto.codigo} atualizado com sucesso no Tiny MG: ${produto.nome}`);
+        } else {
+          console.error(
+            `❌ Falha ao atualizar produto ${produto.produto_id} (${produto.nome}).`,
+            response.data
+          );
+        }
+  
+      } catch (error) {
+        console.error(`💥 Erro ao atualizar produto ${produto.produto_id} no Tiny MG:`, error.message);
+      }
+  
+      await sleep(2000);
+    }
+  
+    console.log('🚀 Atualização de nomes no Tiny MG concluída com sucesso!');
+  }   
 }
