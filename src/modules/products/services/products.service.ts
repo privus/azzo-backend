@@ -497,12 +497,13 @@ export class ProductsService implements IProductsRepository {
   
       const tinyId = produto.tiny_mg;
       const url = `${this.apiUrlTiny}produtos/${tinyId}`;
-
+  
+      // ✅ Estrutura correta para API Tiny
       const body = {
         produto: {
-          nome: produto.nome.trim(),
+          nome: produto.nome,
           codigo: produto.codigo,
-          ncm: produto.ncm ? produto.ncm.toString() : null,
+          ncm: produto.ncm.toString(),
         },
       };
   
@@ -540,5 +541,6 @@ export class ProductsService implements IProductsRepository {
     }
   
     console.log('🚀 Atualização de nomes no Tiny MG concluída com sucesso!');
-  }  
+  }
+   
 }
