@@ -1750,7 +1750,7 @@ export class SellsService implements ISellsRepository {
           clientes_novos: 0,
         };
       }
-      result[vendedor19Nome].valor_total += 500;
+      result[vendedor19Nome].valor_total += 625;
     }
 
     return result;
