@@ -478,7 +478,6 @@ export class ProductsService implements IProductsRepository {
   async updateTinyProductNames(): Promise<void> {
     console.log('🔄 Iniciando atualização de nomes de produtos no Tiny MG...');
   
-    // Busca apenas produtos com tiny_mg válido
     const produtos = await this.produtoRepository.find({
       where: { tiny_mg: Not(IsNull()) },
     });
@@ -490,21 +489,19 @@ export class ProductsService implements IProductsRepository {
     const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
   
     for (const produto of produtos) {
-      if (!produto.nome || !produto.tiny_mg) {
-        console.warn(`⚠️ Produto ID ${produto.produto_id} sem nome ou tiny_mg. Pulando...`);
+      if (!produto.nome || !produto.codigo || !produto.tiny_mg) {
+        console.warn(`⚠️ Produto ID ${produto.produto_id} sem dados obrigatórios. Pulando...`);
         continue;
       }
   
       const tinyId = produto.tiny_mg;
       const url = `${this.apiUrlTiny}produtos/${tinyId}`;
   
-      // ✅ Estrutura correta para API Tiny
+      // ✅ Corpo conforme a API Tiny v3 exige
       const body = {
-        produto: {
-          nome: produto.nome.trim(),
-          SKU: produto.codigo,
-          ncm: produto.ncm.toString(),
-        },
+        sku: produto.codigo,
+        descricao: produto.nome.trim(),
+        ncm: produto.ncm ? produto.ncm.toString() : undefined,
       };
   
       try {
@@ -518,25 +515,22 @@ export class ProductsService implements IProductsRepository {
           },
         });
   
-        if (response.status >= 200 && response.status < 300) {
-          console.log(`✅ Produto ${produto.codigo} atualizado com sucesso no Tiny MG: ${produto.nome}`);
+        if (response.status === 204 || response.status === 200) {
+          console.log(`✅ Produto ${produto.codigo} atualizado com sucesso no Tiny MG.`);
         } else {
-          console.error(
-            `❌ Falha ao atualizar produto ${produto.produto_id} (${produto.nome}).`,
-            response.data
-          );
+          console.error(`❌ Falha ao atualizar produto ${produto.codigo}.`, response.data);
         }
   
       } catch (error) {
-        // Exibir detalhes completos do erro
         if (error.response) {
-          console.error(`💥 Erro ${error.response.status} - ${error.response.statusText}`);
+          console.error(`💥 Erro ${error.response.status}: ${error.response.statusText}`);
           console.error('📨 Resposta:', JSON.stringify(error.response.data, null, 2));
         } else {
-          console.error(`💥 Erro ao atualizar produto ${produto.produto_id} no Tiny MG:`, error.message);
+          console.error(`💥 Erro ao atualizar produto ${produto.codigo}:`, error.message);
         }
       }
   
+      // ⏳ Delay de 2 segundos
       await sleep(2000);
     }
   
