@@ -478,10 +478,7 @@ export class ProductsService implements IProductsRepository {
   async updateTinyProductNames(): Promise<void> {
     console.log('🔄 Iniciando atualização de nomes de produtos no Tiny MG...');
   
-    // Busca apenas produtos com tiny_mg válido
-    const produtos = await this.produtoRepository.find({
-      where: { tiny_mg: Not(IsNull()) },
-    });
+    const produtos = await this.produtoRepository.find();
   
     console.log(`📦 ${produtos.length} produtos encontrados com tiny_mg.`);
   
@@ -490,26 +487,22 @@ export class ProductsService implements IProductsRepository {
     const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
   
     for (const produto of produtos) {
-      if (!produto.nome || !produto.tiny_mg) {
-        console.warn(`⚠️ Produto ID ${produto.produto_id} sem nome ou tiny_mg. Pulando...`);
+      if (!produto.nome) {
+        console.warn(`⚠️ Produto ID ${produto.produto_id} sem nome definido. Pulando...`);
         continue;
       }
   
       const tinyId = produto.tiny_mg;
       const url = `${this.apiUrlTiny}produtos/${tinyId}`;
   
-      // ✅ Estrutura correta para API Tiny
       const body = {
-        produto: {
-          nome: produto.nome,
-          codigo: produto.codigo,
-          ncm: produto.ncm.toString(),
-        },
+        sku: produto.codigo,
+        nome: produto.nome,
+        ncm: produto.ncm.toString(),
       };
   
       try {
         console.log(`📝 Atualizando produto ID ${produto.produto_id} (Tiny ID ${tinyId})...`);
-        console.log('➡️ Corpo da requisição:', JSON.stringify(body));
   
         const response = await this.httpService.axiosRef.put(url, body, {
           headers: {
@@ -518,7 +511,7 @@ export class ProductsService implements IProductsRepository {
           },
         });
   
-        if (response.status >= 200 && response.status < 300) {
+        if (response.status === 200 || response.status === 204) {
           console.log(`✅ Produto ${produto.codigo} atualizado com sucesso no Tiny MG: ${produto.nome}`);
         } else {
           console.error(
@@ -528,19 +521,12 @@ export class ProductsService implements IProductsRepository {
         }
   
       } catch (error) {
-        // Exibir detalhes completos do erro
-        if (error.response) {
-          console.error(`💥 Erro ${error.response.status} - ${error.response.statusText}`);
-          console.error('📨 Resposta:', JSON.stringify(error.response.data, null, 2));
-        } else {
-          console.error(`💥 Erro ao atualizar produto ${produto.produto_id} no Tiny MG:`, error.message);
-        }
+        console.error(`💥 Erro ao atualizar produto ${produto.produto_id} no Tiny MG:`, error.message);
       }
   
       await sleep(2000);
     }
   
     console.log('🚀 Atualização de nomes no Tiny MG concluída com sucesso!');
-  }
-   
+  }   
 }
