@@ -14,10 +14,10 @@ export class ProductsController {
     return this.productsService.syncroProducts();
   }
 
-  @ApiOperation({ summary: 'Atualizar preços por json' })
+  @ApiOperation({ summary: 'Atualizar produtos com o nome dos forncedores' })
   @Get('fixNames')
   async updateNames() {
-    return this.productsService.fixUnidadeNames();
+    return this.productsService.fixSupplierNames();
   }
 
   @ApiOperation({ summary: 'Subir estoque minimo' })

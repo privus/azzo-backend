@@ -436,5 +436,44 @@ export class ProductsService implements IProductsRepository {
   
     console.log('🚀 Correção dos nomes de unidade concluída.');
   }
+
+  async fixSupplierNames(): Promise<void> {
+ 
+    const produtos = await this.produtoRepository.find({
+      where: {
+        fornecedor: { fornecedor_id: Not(4) },
+      },
+      relations: ['fornecedor'],
+    });    
   
+    console.log(`📦 ${produtos.length} produtos encontrados com fornecedor vinculado.`);
+  
+    for (const produto of produtos) {
+      const fornecedor = produto.fornecedor;
+  
+      const fornecedorNome = (fornecedor.nome || '').trim();
+      const produtoNome = (produto.nome || '').trim();
+  
+      if (!fornecedorNome || !produtoNome) {
+        console.warn(`⚠️ Produto ID ${produto.produto_id} com dados incompletos. Pulando...`);
+        continue;
+      }
+  
+      const produtoNomeLower = produtoNome.toLowerCase();
+      const fornecedorLower = fornecedorNome.toLowerCase();
+  
+      if (produtoNomeLower.includes(fornecedorLower)) {
+        continue;
+      }
+
+      const novoNome = `${produtoNome} ${fornecedorNome}`.trim();
+  
+      produto.nome = novoNome;
+      await this.produtoRepository.save(produto);
+  
+      console.log(`✅ Produto "${produtoNome}" atualizado → "${novoNome}"`);
+    }
+  
+    console.log('🚀 Correção de nomes de fornecedores concluída com sucesso!');
+  }  
 }
