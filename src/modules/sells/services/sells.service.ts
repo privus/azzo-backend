@@ -1779,12 +1779,12 @@ export class SellsService implements ISellsRepository {
         throw new BadRequestException({ message: `🚨 Cliente não encontrado para o pedido ${id}.` });
       }
   
-      let idContato = order.cliente.bling_id;
+      let idContato = order.cliente.bling_id_p;
       if (!idContato) {
         idContato = await this.clienteService.registerBling(order.cliente.codigo);
       }
   
-      const token = await this.blingAuthService.getAccessToken('AZZO');
+      const token = await this.blingAuthService.getAccessToken('PURELI');
       if (!token) {
         throw new BadRequestException({ message: "🚨 Não foi possível obter um token válido para exportação." });
       }
@@ -1813,7 +1813,7 @@ export class SellsService implements ISellsRepository {
             desconto: 0,
             valor: item.valor_total / quantidadeUnidade,
             produto: {
-              id: unidadeBase.bling_id,
+              id: unidadeBase.bling_id_p,
             },
           };
         }),
@@ -1881,7 +1881,7 @@ export class SellsService implements ISellsRepository {
   
           const vendasPossiveis = await this.vendaRepository.find({
             where: {
-              cliente: { bling_id: clienteBlingId },
+              cliente: { bling_id_p: clienteBlingId },
               tipo_pedido: { tipo_pedido_id: 10438 },
               data_criacao: Raw(alias => `DATE(${alias}) BETWEEN :start AND :end`, {
                 start: dataMin.toISOString(),

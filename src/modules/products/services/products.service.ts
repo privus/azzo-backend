@@ -505,7 +505,6 @@ export class ProductsService implements IProductsRepository {
       const tinyId = produto.tiny_mg;
       const url = `${this.apiUrlTiny}produtos/${tinyId}`;
   
-      // ✅ Corpo conforme a API Tiny v3 exige
       const body = {
         sku: produto.codigo,
         descricao: produto.nome.trim(),
