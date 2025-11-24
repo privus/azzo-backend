@@ -2,11 +2,16 @@ import { Body, Controller, Get, Param, Patch } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ProductsService } from '../services/products.service';
 import { BlingProductService } from '../services/bling-product.service';
+import { TinyProductService } from '../services/tiny-product.service';
 
 @ApiTags('products')
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService, private readonly blingService: BlingProductService) {}
+  constructor(
+    private readonly productsService: ProductsService, 
+    private readonly blingService: BlingProductService,
+    private readonly tinyService: TinyProductService,
+  ) {}
 
   @ApiOperation({ summary: 'Sincronizar todos os produtos' })
   @Get('syncro')
@@ -14,10 +19,10 @@ export class ProductsController {
     return this.productsService.syncroProducts();
   }
 
-  @ApiOperation({ summary: 'Atualizar produtos com o nome dos forncedores' })
+  @ApiOperation({ summary: 'Atualizar produtos com o nome dos fornecedores' })
   @Get('fixNames')
   async updateNames() {
-    return this.productsService.updateTinyProductNames();
+    return this.tinyService.updateTinyProductNames();
   }
 
   @ApiOperation({ summary: 'Subir estoque minimo' })

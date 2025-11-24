@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { XMLParser } from 'fast-xml-parser';
 import * as fs from 'fs';
-import { Discrepancy, StockDuration, StockImportResponse, StockInItemDto, StockLiquid, StockOverview, StockValue, StockValuePermancence } from '../dto';
+import { Discrepancy, EcommerceOutDto, StockDuration, StockImportResponse, StockInItemDto, StockLiquid, StockOverview, StockValue, StockValuePermancence } from '../dto';
 import { StockOutDto } from '../dto/stock-out.dto';
 import { DebtsDto } from 'src/modules/debts/dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -803,5 +803,19 @@ export class StockService implements IStockRepository {
     await this.nfeResumoRepository.save(nf)
 
     return `Nf-e numero ${numero_nfe} atualiza com sucesso`
-  }  
+  }
+
+  async findProductOutById(ecommerceId: number): Promise<EcommerceOutDto[]> {
+    return await this.saidaRepository
+      .createQueryBuilder('saida')
+      .leftJoin('saida.produto', 'produto')
+      .leftJoin('saida.ecommerce', 'ecommerce')
+      .where('ecommerce.ecommerce_id = :ecommerceId', { ecommerceId })
+      .select([
+        'produto.codigo AS codigo',
+        'produto.nome AS nome',
+        'saida.quantidade AS quantidade',
+      ])
+      .getRawMany();
+  }
 }

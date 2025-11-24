@@ -54,3 +54,4 @@ export * from './blingTokens';
 export * from './historicoEstoque';
 export * from './metaVendedor';
 export * from './nfeResumo'
+export * from './ecommerce'

@@ -27,6 +27,12 @@ export class SellsController {
     return this.sellsService.sellsByDate(fromDate);
   }
 
+  @ApiOperation({ summary: 'Obter todas as vendas de ecommerce' })
+  @Get('ecommerce')
+  async findAllEcommerce() {
+    return this.sellsService.findAllEcommerce();
+  }
+
   @ApiOperation({ summary: 'Vendas entre datas' })
   @Get('between')
   async sellsBetweenDates(@Query('fromDate') fromDate: string, @Query('toDate') toDate?: string) {
@@ -191,6 +197,13 @@ export class SellsController {
     return { message: resultMessage };
   }
 
+  @ApiOperation({ summary: 'Sincronizar todas as vendas' })
+  @Get('syncroEcommerce')
+  async syncroEcommerce() {
+    const resultMessage = await this.sellsService.syncroEcommerceBling();
+    return { message: resultMessage };
+  }
+
   @Post('printResume')
   async printOrderResume(
     @Body('ids') ids: number[],
@@ -208,8 +221,7 @@ export class SellsController {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'inline; filename=' + fileName);
     return res.send(pdfBuffer);
-  }
-  
+  }  
 
   @ApiOperation({ summary: 'Excluir venda e suas parcelas' })
   @Delete(':id')

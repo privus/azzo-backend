@@ -2,10 +2,11 @@ import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, MoreThanOrEqual, Not, Raw, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda, SaidaEstoque, MetaVendedor } from '../../../infrastructure/database/entities';
-import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto, ProjectStockDto, GroupSalesResponse, CustomerGroupSalesDto, WeeklyAid, OrdeBlingDto, NfeBlingDTO } from '../dto';
+import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto, ProjectStockDto, GroupSalesResponse, CustomerGroupSalesDto, WeeklyAid, OrdeBlingDto, NfeBlingDTO, OrdersBlingResponseDto, OrderBlingResponseDto } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository, IBlingAuthRepository } from '../../../domain/repositories';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { HttpService } from '@nestjs/axios';
+import { Ecommerce } from 'src/infrastructure/database/entities/ecommerce';
 
 @Injectable()
 export class SellsService implements ISellsRepository {
@@ -39,6 +40,7 @@ export class SellsService implements ISellsRepository {
     private readonly httpService: HttpService,
     @Inject('IBlingAuthRepository') private readonly blingAuthService: IBlingAuthRepository,
     @InjectRepository(MetaVendedor) private readonly metaRepository: Repository<MetaVendedor>,
+    @InjectRepository(Ecommerce) private readonly ecommerceRepository: Repository<Ecommerce>,
   ) {
     this.tokenSellentt = process.env.SELLENTT_API_TOKEN;
     this.apiUrlSellentt = process.env.SELLENTT_API_URL;
@@ -1750,7 +1752,7 @@ export class SellsService implements ISellsRepository {
           clientes_novos: 0,
         };
       }
-      result[vendedor19Nome].valor_total += 625;
+      result[vendedor19Nome].valor_total += 375;
     }
 
     return result;
@@ -1898,7 +1900,6 @@ export class SellsService implements ISellsRepository {
             continue;
           }
   
-          // Pega a venda mais próxima da data de emissão da NF
           const venda = vendasPossiveis.reduce((maisProxima, atual) => {
             const atualDate = new Date(atual.data_criacao);
             const proximaDate = new Date(maisProxima.data_criacao);
@@ -1906,8 +1907,7 @@ export class SellsService implements ISellsRepository {
             const diffProxima = Math.abs(proximaDate.getTime() - dataEmissao.getTime());
             return diffAtual < diffProxima ? atual : maisProxima;
           });         
-  
-          // Atualiza venda com dados da NF
+
           venda.numero_nfe = Number(numeroNota);
           venda.chave_acesso = chaveAcesso;
           venda.nfe_link = linkDanfe;
@@ -1930,5 +1930,198 @@ export class SellsService implements ISellsRepository {
   
     return `🎉 Sincronização concluída. Vendas atualizadas: ${updatedSales.join(', ')}`;
   }
+
+  async syncroEcommerceBling(): Promise<string> {
+    const token = await this.blingAuthService.getAccessToken('PURELI');
+    const updated: string[] = [];
   
+    const shopee = 205478072;
+    const mercadoLivre = 205488875;
+  
+    const lojas = [
+      { nome: 'Shopee', id: shopee },
+      { nome: 'Mercado Livre', id: mercadoLivre },
+    ];
+  
+    console.log(`🚀 Iniciando sincronização de Shopee e Mercado Livre`);
+  
+    let pagina = 1;
+  
+    while (true) {
+      const listUrl = `${this.apiBlingUrl}${this.orderTagBling}?dataInicial=2025-11-13&pagina=${pagina}`;
+      const response = await this.httpService.axiosRef.get<{ data: OrdersBlingResponseDto[] }>(listUrl, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+  
+      const pedidos = response.data.data;
+      if (!pedidos?.length) {
+        console.log(`✅ Nenhum pedido encontrado na página ${pagina}.`);
+        break;
+      }
+  
+      for (const pedido of pedidos) {
+        const loja = lojas.find(l => l.id === pedido.loja.id);
+        const id = pedido.id;
+        const status = pedido.situacao.id;
+  
+        if (!loja || pedido.loja.id === 0) continue;
+  
+        if (status === 12) {
+          console.log(`🚫 Pedido ${id} (${loja.nome}) está cancelado. Revertendo...`);
+          const existente = await this.ecommerceRepository.findOne({ where: { cod_bling: id } });
+  
+          if (existente) {
+            const saidas = await this.saidaRepository.find({
+              where: { observacao: `Saída por ${loja.nome} - ${id}` },
+              relations: ['produto']
+            });
+  
+            for (const saida of saidas) {
+              await this.produtoRepository.increment(
+                { produto_id: saida.produto.produto_id },
+                'saldo_estoque',
+                saida.quantidade
+              );
+              await this.saidaRepository.remove(saida);
+              console.log(`↩️ Estoque revertido do produto ${saida.produto.codigo} (pedido ${id}).`);
+            }
+  
+            await this.ecommerceRepository.remove(existente);
+            console.log(`🗑️ Pedido ${id} removido da tabela e-commerce (cancelamento).`);
+            updated.push(`Cancelado ${pedido.numero} (${loja.nome})`);
+          } else {
+            console.warn(`⚠️ Pedido ${id} (${loja.nome}) cancelado, mas não encontrado no banco.`);
+          }
+  
+          continue;
+        }
+  
+        if (status !== 9 && status !== 6) {
+          console.log(`ℹ️ Pedido ${id} (${loja.nome}) ignorado (status ${status}).`);
+          continue;
+        }
+  
+        const existente = await this.ecommerceRepository.findOne({ where: { cod_bling: id } });
+        if (existente) {
+          console.warn(`⚠️ Pedido ${id} (${loja.nome}) já importado. Pulando...`);
+          continue;
+        }
+  
+        const detailUrl = `${this.apiBlingUrl}${this.orderTagBling}/${id}`;
+        const detailResp = await this.httpService.axiosRef.get<{ data: OrderBlingResponseDto }>(detailUrl, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const vendaDetalhe = detailResp.data.data;
+  
+        // ✅ Verifica se todos os produtos existem (considerando UNI e KIT)
+        for (const item of vendaDetalhe.itens || []) {
+          const { baseCodigo } = this.extractBaseSku(item.codigo);
+  
+          const produto = await this.produtoRepository
+            .createQueryBuilder('produto')
+            .where('produto.codigo LIKE :codigo', { codigo: `${baseCodigo}%` })
+            .getOne();
+  
+          if (!produto) {
+            throw new Error(`❌ Produto não encontrado (busca até UNI/KIT): ${item.codigo} (Pedido ${id}, ${loja.nome})`);
+          }
+        }
+  
+        const ecommerce = this.ecommerceRepository.create({
+          codigo: pedido.numero,
+          data_pedido: new Date(pedido.data),
+          total_pedido: Number(pedido.total),
+          cod_bling: id,
+          cliente_cod: pedido.contato.id,
+          cliente_nome: pedido.contato.nome,
+          numero_doc: pedido.contato.numeroDocumento,
+          cliente_tipo: pedido.contato.tipoPessoa,
+          status_id: pedido.situacao.id,
+          loja_id: pedido.loja.id
+        });
+  
+        await this.ecommerceRepository.save(ecommerce);
+  
+        // 🔻 Processa saídas
+        for (const item of vendaDetalhe.itens || []) {
+          const { baseCodigo, kitMultiplier } = this.extractBaseSku(item.codigo);
+          const quantidadeReal = item.quantidade * kitMultiplier;
+  
+          const produto = await this.produtoRepository
+            .createQueryBuilder('produto')
+            .where('produto.codigo LIKE :codigo', { codigo: `${baseCodigo}%` })
+            .getOne();
+  
+          if (!produto) {
+            console.error(`❌ Produto não encontrado para saída: ${item.codigo} (Pedido ${id}, ${loja.nome})`);
+            continue;
+          }
+  
+          const existingSaida = await this.saidaRepository.findOne({
+            where: { observacao: `Saída por ${loja.nome} - ${id}`, produto: { produto_id: produto.produto_id } }
+          });
+  
+          if (existingSaida) {
+            console.warn(`⚠️ Saída já registrada para produto ${item.codigo} (Pedido ${id}, ${loja.nome}). Pulando...`);
+            continue;
+          }
+  
+          const saida = this.saidaRepository.create({
+            produto,
+            quantidade: quantidadeReal,
+            data_saida: new Date(pedido.data),
+            observacao: `Saída por ${loja.nome} - ${id}`,
+            ecommerce
+          });
+  
+          await this.produtoRepository.decrement(
+            { produto_id: produto.produto_id },
+            'saldo_estoque',
+            quantidadeReal
+          );
+  
+          await this.saidaRepository.save(saida);
+          console.log(`📦 Saída registrada: ${item.codigo} → ${quantidadeReal} unid. (Pedido ${id})`);
+        }
+  
+        updated.push(`Importado ${pedido.numero} (${loja.nome})`);
+      }
+  
+      pagina++;
+    }
+  
+    console.log(`✅ Finalizada sincronização de Shopee e Mercado Livre`);
+    return `🎯 Sincronização concluída. Movimentos: ${updated.join(', ')}`;
+  }
+  
+  private extractBaseSku(codigo: string): { baseCodigo: string; kitMultiplier: number } {
+    let baseCodigo = codigo.trim();
+    let kitMultiplier = 1;
+
+    const upper = codigo.toUpperCase().trim();
+
+    const matchKit = upper.match(/^(.*?)(KIT)(\d+)?$/i);
+    if (matchKit) {
+      baseCodigo = matchKit[1].trim();
+      kitMultiplier = matchKit[3] ? parseInt(matchKit[3], 10) : 1;
+      return { baseCodigo, kitMultiplier };
+    }
+
+    if (upper.includes('UNI')) {
+      const idx = upper.indexOf('UNI');
+      baseCodigo = codigo.substring(0, idx + 3).trim();
+      return { baseCodigo, kitMultiplier };
+    }
+
+    if (upper.includes('_')) {
+      baseCodigo = codigo.split('_')[0].trim();
+      return { baseCodigo, kitMultiplier };
+    }
+
+    return { baseCodigo, kitMultiplier };
+  }
+
+  findAllEcommerce(): Promise<Ecommerce[]> {
+    return this.ecommerceRepository.find();
+  }
 }

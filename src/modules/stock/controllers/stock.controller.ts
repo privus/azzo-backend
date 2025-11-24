@@ -4,7 +4,7 @@ import { StockService } from '../services/stock.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { Distribuidor, NfeResumo, SaidaEstoque } from '../../../infrastructure/database/entities';
-import { Discrepancy, StockImportResponse, StockInItemDto, StockLiquid, StockOutDto, StockOverview, StockValue, StockValuePermancence } from '../dto';
+import { Discrepancy, EcommerceOutDto, StockImportResponse, StockInItemDto, StockLiquid, StockOutDto, StockOverview, StockValue, StockValuePermancence } from '../dto';
 
 ApiTags('stock')
 @Controller('stock')
@@ -70,12 +70,18 @@ export class StockController {
     return this.stockService.findAllDistributors();
   }
 
-  @ApiOperation({ summary: 'Obter ultimas 10 saidas do produto' })
+  @ApiOperation({ summary: 'Obter ultimas 30 saidas do produto' })
   @Get('out/:id')
   async findProductOut(@Param('id') id: number): Promise<SaidaEstoque[]> {
     return this.stockService.findProductOut(id);
   }
 
+  @ApiOperation({ summary: 'Saídas de estoque por ecommerce_id' })
+  @Get('out/ecommerce/:id')
+  async findProductOutById(@Param('id') id: number): Promise<EcommerceOutDto[]> {
+    return this.stockService.findProductOutById(id);
+  }
+  
   @ApiOperation({ summary: 'Atualiza o CEST dos produtos via XML NF-e (buffer, sem salvar)' })
   @Post('cest')
   @UseInterceptors(FileInterceptor('file'))

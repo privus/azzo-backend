@@ -7,6 +7,7 @@ import { CategoriaProduto, Fornecedor, Produto } from '../../infrastructure/data
 import { BlingProductService } from './services/bling-product.service';
 import { AuthModule } from '../auth/auth.module';
 import { SellsModule } from '../sells/sells.module';
+import { TinyProductService } from './services/tiny-product.service';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { SellsModule } from '../sells/sells.module';
       useExisting: ProductsService,
     },
     BlingProductService,
+    TinyProductService
   ],
   controllers: [ProductsController],
   exports: ['IProductsRepository'],
