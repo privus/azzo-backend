@@ -73,3 +73,9 @@ export interface StockInItemDto {
   origem: string;
   valor_total: number;
 }
+
+export interface EcommerceOutDto {
+  codigo: string;
+  nome: string;
+  quantidade: number;
+}
