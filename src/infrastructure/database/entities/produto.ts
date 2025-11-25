@@ -92,4 +92,10 @@ export class Produto {
 
   @Column({ type: 'bigint', nullable: true })
   bling_id_p: number;
+
+  @Column({ type: 'varchar', length: 40, nullable: true })
+  sku_shoppe: string;
+
+  @Column({ type: 'varchar', length: 40, nullable: true })
+  sku_mercadolivre: string;
 }

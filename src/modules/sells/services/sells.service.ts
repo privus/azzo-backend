@@ -1935,12 +1935,12 @@ export class SellsService implements ISellsRepository {
     const token = await this.blingAuthService.getAccessToken('PURELI');
     const updated: string[] = [];
   
-    const shopee = 205478072;
-    const mercadoLivre = 205488875;
+    const shopee = 205488875;
+    const mercadoLivre = 205478072;
   
     const lojas = [
-      { nome: 'Shopee', id: shopee },
-      { nome: 'Mercado Livre', id: mercadoLivre },
+      { nome: 'Shopee', id: shopee, skuColumn: 'sku_shoppe' },
+      { nome: 'Mercado Livre', id: mercadoLivre, skuColumn: 'sku_mercadolivre' },
     ];
   
     console.log(`🚀 Iniciando sincronização de Shopee e Mercado Livre`);
@@ -1948,7 +1948,7 @@ export class SellsService implements ISellsRepository {
     let pagina = 1;
   
     while (true) {
-      const listUrl = `${this.apiBlingUrl}${this.orderTagBling}?dataInicial=2025-11-13&pagina=${pagina}`;
+      const listUrl = `${this.apiBlingUrl}${this.orderTagBling}?dataInicial=2025-11-17&pagina=${pagina}`;
       const response = await this.httpService.axiosRef.get<{ data: OrdersBlingResponseDto[] }>(listUrl, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -2008,23 +2008,32 @@ export class SellsService implements ISellsRepository {
         }
   
         const detailUrl = `${this.apiBlingUrl}${this.orderTagBling}/${id}`;
-        const detailResp = await this.httpService.axiosRef.get<{ data: OrderBlingResponseDto }>(detailUrl, {
+        const detailResp = await this.httpService.axiosRef.get<{  data: OrderBlingResponseDto }>(detailUrl, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const vendaDetalhe = detailResp.data.data;
   
-        // ✅ Verifica se todos os produtos existem (considerando UNI e KIT)
         for (const item of vendaDetalhe.itens || []) {
           const { baseCodigo } = this.extractBaseSku(item.codigo);
-  
+          
           const produto = await this.produtoRepository
             .createQueryBuilder('produto')
-            .where('produto.codigo LIKE :codigo', { codigo: `${baseCodigo}%` })
+            .where(`produto.${loja.skuColumn} = :sku`, { sku: item.codigo })
+            .orWhere(`produto.${loja.skuColumn} = :baseSku`, { baseSku: baseCodigo })
+            .orWhere('produto.codigo LIKE :codigo', { codigo: `${baseCodigo}%` })
             .getOne();
   
-          if (!produto) {
-            throw new Error(`❌ Produto não encontrado (busca até UNI/KIT): ${item.codigo} (Pedido ${id}, ${loja.nome})`);
-          }
+            if (!produto) {
+              const errorMsg = `Produto não encontrado: ${item.codigo} (Pedido ${vendaDetalhe.numeroLoja} ${loja.nome})`;
+              console.error(`❌ ${errorMsg}`);
+              throw new BadRequestException({
+                code: 'PRODUCT_NOT_FOUND',
+                message: errorMsg,
+                pedidoId: id,
+                sku: item.codigo,
+                loja: loja.nome,
+              });
+            }
         }
   
         const ecommerce = this.ecommerceRepository.create({
@@ -2049,7 +2058,9 @@ export class SellsService implements ISellsRepository {
   
           const produto = await this.produtoRepository
             .createQueryBuilder('produto')
-            .where('produto.codigo LIKE :codigo', { codigo: `${baseCodigo}%` })
+            .where(`produto.${loja.skuColumn} = :sku`, { sku: item.codigo })
+            .orWhere(`produto.${loja.skuColumn} = :baseSku`, { baseSku: baseCodigo })
+            .orWhere('produto.codigo LIKE :codigo', { codigo: `${baseCodigo}%` })
             .getOne();
   
           if (!produto) {
@@ -2120,8 +2131,20 @@ export class SellsService implements ISellsRepository {
 
     return { baseCodigo, kitMultiplier };
   }
-
+  
   findAllEcommerce(): Promise<Ecommerce[]> {
     return this.ecommerceRepository.find();
+  }
+
+  ecommerceBetweenDates(fromDate: string, toDate?: string): Promise<Ecommerce[]> {
+    let where: any = {};
+  
+    if (toDate) {
+      where.data_pedido = Raw(
+        alias => `DATE(${alias}) BETWEEN :from AND :to`,
+        { from: fromDate, to: toDate }
+      );
+    }
+    return this.ecommerceRepository.find({ where });
   }
 }
