@@ -2012,6 +2012,8 @@ export class SellsService implements ISellsRepository {
           headers: { Authorization: `Bearer ${token}` }
         });
         const vendaDetalhe = detailResp.data.data;
+
+        await this.sleep(2000);
   
         for (const item of vendaDetalhe.itens || []) {
           const { baseCodigo } = this.extractBaseSku(item.codigo);
@@ -2099,12 +2101,18 @@ export class SellsService implements ISellsRepository {
       }
   
       pagina++;
+      
+      await this.sleep(2000);
     }
   
     console.log(`✅ Finalizada sincronização de Shopee e Mercado Livre`);
     return `🎯 Sincronização concluída. Movimentos: ${updated.join(', ')}`;
   }
   
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
   private extractBaseSku(codigo: string): { baseCodigo: string; kitMultiplier: number } {
     let baseCodigo = codigo.trim();
     let kitMultiplier = 1;
