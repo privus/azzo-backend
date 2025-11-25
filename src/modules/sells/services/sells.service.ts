@@ -2008,24 +2008,19 @@ export class SellsService implements ISellsRepository {
         }
   
         const detailUrl = `${this.apiBlingUrl}${this.orderTagBling}/${id}`;
-        const detailResp = await this.httpService.axiosRef.get<{ data: OrderBlingResponseDto }>(detailUrl, {
+        const detailResp = await this.httpService.axiosRef.get<{  data: OrderBlingResponseDto }>(detailUrl, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const vendaDetalhe = detailResp.data.data;
   
-        // ✅ Verifica se todos os produtos existem (considerando UNI e KIT)
         for (const item of vendaDetalhe.itens || []) {
           const { baseCodigo } = this.extractBaseSku(item.codigo);
           
-          // Cria o SKU UNI correspondente ao KIT
-          const uniSku = this.convertKitToUni(item.codigo);
-          
           const produto = await this.produtoRepository
             .createQueryBuilder('produto')
-            .where(`produto.${loja.skuColumn} = :sku`, { sku: item.codigo }) // Primeira busca no campo específico da loja
-            .orWhere(`produto.${loja.skuColumn} = :uniSku`, { uniSku }) // Busca pelo SKU UNI correspondente
-            .orWhere(`produto.${loja.skuColumn} = :baseSku`, { baseSku: baseCodigo }) // Segunda busca no campo específico da loja com baseCodigo
-            .orWhere('produto.codigo LIKE :codigo', { codigo: `${baseCodigo}%` }) // Terceira busca no código geral
+            .where(`produto.${loja.skuColumn} = :sku`, { sku: item.codigo })
+            .orWhere(`produto.${loja.skuColumn} = :baseSku`, { baseSku: baseCodigo })
+            .orWhere('produto.codigo LIKE :codigo', { codigo: `${baseCodigo}%` })
             .getOne();
   
             if (!produto) {
@@ -2060,16 +2055,12 @@ export class SellsService implements ISellsRepository {
         for (const item of vendaDetalhe.itens || []) {
           const { baseCodigo, kitMultiplier } = this.extractBaseSku(item.codigo);
           const quantidadeReal = item.quantidade * kitMultiplier;
-
-          // Cria o SKU UNI correspondente ao KIT
-          const uniSku = this.convertKitToUni(item.codigo);
-          
+  
           const produto = await this.produtoRepository
             .createQueryBuilder('produto')
-            .where(`produto.${loja.skuColumn} = :sku`, { sku: item.codigo }) // Primeira busca no campo específico da loja
-            .orWhere(`produto.${loja.skuColumn} = :uniSku`, { uniSku }) // Busca pelo SKU UNI correspondente
-            .orWhere(`produto.${loja.skuColumn} = :baseSku`, { baseSku: baseCodigo }) // Segunda busca no campo específico da loja com baseCodigo
-            .orWhere('produto.codigo LIKE :codigo', { codigo: `${baseCodigo}%` }) // Terceira busca no código geral
+            .where(`produto.${loja.skuColumn} = :sku`, { sku: item.codigo })
+            .orWhere(`produto.${loja.skuColumn} = :baseSku`, { baseSku: baseCodigo })
+            .orWhere('produto.codigo LIKE :codigo', { codigo: `${baseCodigo}%` })
             .getOne();
   
           if (!produto) {
@@ -2141,11 +2132,6 @@ export class SellsService implements ISellsRepository {
     return { baseCodigo, kitMultiplier };
   }
   
-  private convertKitToUni(codigo: string): string {
-    // Substitui KIT por UNI mantendo o restante do código
-    // Ex: TE211KIT2_739 -> TE211UNI_739
-    return codigo.replace(/KIT\d*/i, 'UNI');
-  }
   findAllEcommerce(): Promise<Ecommerce[]> {
     return this.ecommerceRepository.find();
   }
