@@ -2014,11 +2014,13 @@ export class SellsService implements ISellsRepository {
         const vendaDetalhe = detailResp.data.data;
   
         for (const item of vendaDetalhe.itens || []) {
-          const { baseCodigo } = this.extractBaseSku(item.codigo);
+          // Exceção específica para TE211KIT2_739
+          const skuParaBusca = item.codigo === 'TE211KIT2_739' ? 'TE211UNI_739' : item.codigo;
+          const { baseCodigo } = this.extractBaseSku(skuParaBusca);
           
           const produto = await this.produtoRepository
             .createQueryBuilder('produto')
-            .where(`produto.${loja.skuColumn} = :sku`, { sku: item.codigo })
+            .where(`produto.${loja.skuColumn} = :sku`, { sku: skuParaBusca })
             .orWhere(`produto.${loja.skuColumn} = :baseSku`, { baseSku: baseCodigo })
             .orWhere('produto.codigo LIKE :codigo', { codigo: `${baseCodigo}%` })
             .getOne();
@@ -2053,12 +2055,14 @@ export class SellsService implements ISellsRepository {
   
         // 🔻 Processa saídas
         for (const item of vendaDetalhe.itens || []) {
-          const { baseCodigo, kitMultiplier } = this.extractBaseSku(item.codigo);
+          // Exceção específica para TE211KIT2_739
+          const skuParaBusca = item.codigo === 'TE211KIT2_739' ? 'TE211UNI_739' : item.codigo;
+          const { baseCodigo, kitMultiplier } = this.extractBaseSku(skuParaBusca);
           const quantidadeReal = item.quantidade * kitMultiplier;
   
           const produto = await this.produtoRepository
             .createQueryBuilder('produto')
-            .where(`produto.${loja.skuColumn} = :sku`, { sku: item.codigo })
+            .where(`produto.${loja.skuColumn} = :sku`, { sku: skuParaBusca })
             .orWhere(`produto.${loja.skuColumn} = :baseSku`, { baseSku: baseCodigo })
             .orWhere('produto.codigo LIKE :codigo', { codigo: `${baseCodigo}%` })
             .getOne();
