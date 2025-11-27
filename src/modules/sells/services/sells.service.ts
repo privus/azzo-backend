@@ -2003,6 +2003,8 @@ export class SellsService implements ISellsRepository {
   
         const existente = await this.ecommerceRepository.findOne({ where: { cod_bling: id } });
         if (existente) {
+          existente.status_id = status;
+          await this.ecommerceRepository.save(existente);
           console.warn(`⚠️ Pedido ${id} (${loja.nome}) já importado. Pulando...`);
           continue;
         }
