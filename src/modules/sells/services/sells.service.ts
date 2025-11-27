@@ -2023,6 +2023,7 @@ export class SellsService implements ISellsRepository {
             .where(`produto.${loja.skuColumn} = :sku`, { sku: item.codigo })
             .orWhere(`produto.${loja.skuColumn} = :baseSku`, { baseSku: baseCodigo })
             .orWhere('produto.codigo LIKE :codigo', { codigo: `${baseCodigo}%` })
+            .andWhere('produto.unidade_id IS NULL')
             .getOne();
   
             if (!produto) {
@@ -2063,6 +2064,7 @@ export class SellsService implements ISellsRepository {
             .where(`produto.${loja.skuColumn} = :sku`, { sku: item.codigo })
             .orWhere(`produto.${loja.skuColumn} = :baseSku`, { baseSku: baseCodigo })
             .orWhere('produto.codigo LIKE :codigo', { codigo: `${baseCodigo}%` })
+            .andWhere('produto.unidade_id IS NULL') 
             .getOne();
   
           if (!produto) {

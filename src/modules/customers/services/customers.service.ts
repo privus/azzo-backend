@@ -196,7 +196,8 @@ export class CustomersService implements ICustomersRepository{
   async findAllCustomers(): Promise<Cliente[]> {
     return await this.clienteRepository.find({ 
       where: { ativo: 1 },
-      relations: ['cidade.estado', 'regiao', 'status_cliente', 'regiao.vendedores', 'vendedor', 'categoria_cliente'] 
+      relations: ['cidade.estado', 'regiao', 'status_cliente', 'regiao.vendedores', 'vendedor', 'categoria_cliente'],
+      order: { cidade_string: 'ASC' }
     });
   }
 
