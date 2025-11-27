@@ -2,9 +2,9 @@ import { TinyAuthService } from './../../sells/services/tiny-auth.service';
 import { Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In, MoreThanOrEqual } from 'typeorm';
 import { CustomerAPIResponse, CustomerBlingDto, TinyCustomerDto, TinyCustomerResponse } from '../dto';
-import { Regiao, StatusCliente, Cidade, Cliente, CategoriaCliente, GrupoCliente } from '../../../infrastructure/database/entities';
+import { Regiao, StatusCliente, Cidade, Cliente, CategoriaCliente, GrupoCliente, Venda } from '../../../infrastructure/database/entities';
 import { IBlingAuthRepository, ICustomersRepository, ISellersRepository } from '../../../domain/repositories';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import * as fs from 'fs';
@@ -27,6 +27,7 @@ export class CustomersService implements ICustomersRepository{
     @InjectRepository(CategoriaCliente) private readonly categoriaRepository: Repository<CategoriaCliente>,
     @Inject('ISellersRepository') private readonly sellersSevice: ISellersRepository,
     @InjectRepository(GrupoCliente) private readonly grupoClienteRepository: Repository<GrupoCliente>,
+    @InjectRepository(Venda) private readonly vendaRepository: Repository<Venda>,
     @Inject('IBlingAuthRepository') private readonly blingAuthService: IBlingAuthRepository,
     private readonly tinyAuthService: TinyAuthService,  
     private readonly httpService: HttpService,
@@ -678,5 +679,145 @@ export class CustomersService implements ICustomersRepository{
       console.error(`❌ Erro ao registrar cliente ${codigo} no Bling:`, error.message);
       throw error;
     }
+  }
+
+  async statusPorRegiao(regiaoId: number): Promise<Array<{ id: number; nome: string; quantidade: number }>> {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    const periodoDias = 60;
+
+    const dataInicial = periodoDias 
+      ? new Date(hoje.getTime() - periodoDias * 24 * 60 * 60 * 1000)
+      : null;
+
+    const [statusAtivo, status60, status90, status180] = await Promise.all([
+      this.statusClienteRepository.findOne({ where: { status_cliente_id: 101 } }),
+      this.statusClienteRepository.findOne({ where: { status_cliente_id: 104 } }),
+      this.statusClienteRepository.findOne({ where: { status_cliente_id: 102 } }),
+      this.statusClienteRepository.findOne({ where: { status_cliente_id: 103 } }),
+    ]);
+
+    if (!status60 || !status90 || !status180 || !statusAtivo) {
+      throw new Error("❌ ERRO: Status de cliente não encontrados.");
+    }
+
+    const clientes = await this.clienteRepository.find({
+      where: { regiao: { regiao_id: regiaoId } },
+      relations: ['status_cliente', 'regiao'],
+    });
+
+    // Contadores por status final
+    let ativo = 0;
+    let atencao = 0;
+    let frio = 0;
+    let inativo = 0;
+
+    const clienteIds = clientes.map(c => c.cliente_id);
+    const whereCondition: any = { cliente: { cliente_id: In(clienteIds) } };
+    
+    // Se período for informado, filtrar vendas dentro do período
+    if (dataInicial) {
+      whereCondition.data_criacao = MoreThanOrEqual(dataInicial);
+    }
+    
+    const ultimasVendas = await this.vendaRepository.find({
+      where: whereCondition,
+      relations: ['tipo_pedido', 'cliente'],
+      order: { data_criacao: 'DESC' },
+    });
+
+    const ultimaVendaPorCliente = new Map<number, Venda>();
+    for (const venda of ultimasVendas) {
+      if (venda.tipo_pedido?.tipo_pedido_id === 10438 && venda.cliente) {
+        const clienteId = venda.cliente.cliente_id;
+        if (!ultimaVendaPorCliente.has(clienteId)) {
+          ultimaVendaPorCliente.set(clienteId, venda);
+        }
+      }
+    }
+
+    for (const cliente of clientes) {
+      if (!cliente.status_cliente) {
+        continue;
+      }
+
+      // Usar a última venda válida se disponível, senão usar ultima_compra ou data_criacao
+      let dataRef = cliente.ultima_compra || cliente.data_criacao;
+      
+      const ultimaVenda = ultimaVendaPorCliente.get(cliente.cliente_id);
+      if (ultimaVenda) {
+        const dataVenda = new Date(ultimaVenda.data_criacao);
+        const dataUltimaCompra = cliente.ultima_compra ? new Date(cliente.ultima_compra) : null;
+        
+        // Se a venda for mais recente que ultima_compra, usar ela
+        if (!dataUltimaCompra || dataVenda > dataUltimaCompra) {
+          dataRef = ultimaVenda.data_criacao;
+        }
+      }
+
+      if (!dataRef) {
+        continue;
+      }
+
+      const dataRefDate = new Date(dataRef);
+      dataRefDate.setHours(0, 0, 0, 0);
+
+      // Se período for informado, considerar apenas clientes com atividade no período
+      if (dataInicial) {
+        // Se a última compra/venda for anterior ao período, pular este cliente
+        if (dataRefDate < dataInicial) {
+          continue;
+        }
+      }
+
+      const diferencaEmDias = Math.floor((hoje.getTime() - dataRefDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      // Calcular status esperado
+      let statusEsperado = statusAtivo;
+      if (diferencaEmDias > 180) {
+        statusEsperado = status180;
+      } else if (diferencaEmDias > 90) {
+        statusEsperado = status90;
+      } else if (diferencaEmDias > 60) {
+        statusEsperado = status60;
+      }
+
+      const statusEsperadoId = statusEsperado.status_cliente_id;
+
+      // Contar por status final esperado
+      if (statusEsperadoId === 101) {
+        ativo++;
+      } else if (statusEsperadoId === 104) {
+        atencao++;
+      } else if (statusEsperadoId === 102) {
+        frio++;
+      } else if (statusEsperadoId === 103) {
+        inativo++;
+      }
+    }
+
+    return [
+      {
+        id: statusAtivo.status_cliente_id,
+        nome: statusAtivo.nome,
+        quantidade: ativo,
+      },
+      {
+        id: status60.status_cliente_id,
+        nome: status60.nome,
+        quantidade: atencao,
+      },
+      {
+        id: status90.status_cliente_id,
+        nome: status90.nome,
+        quantidade: frio,
+      },
+      {
+        id: status180.status_cliente_id,
+        nome: status180.nome,
+        quantidade: inativo,
+      },
+    ];
   }
 }

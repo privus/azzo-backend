@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { CustomersService } from '../services/customers.service';
 
@@ -47,5 +47,11 @@ export class CustomersController {
   @Get('status/:id')
   async findCostumerByStatus(@Param('id') id: number) {
     return this.customersService.findCustomersByStatus(id);
+  }
+
+  @ApiOperation({ summary: 'Analisar mudanças de status dos clientes por região' })
+  @Get('regiao/:regiaoId/status')
+  async changeStatusByRegion(@Param('regiaoId') regiaoId: number) {
+    return this.customersService.statusPorRegiao(regiaoId);
   }
 }
