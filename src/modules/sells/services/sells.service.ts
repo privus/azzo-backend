@@ -1752,7 +1752,19 @@ export class SellsService implements ISellsRepository {
           clientes_novos: 0,
         };
       }
-      result[vendedor19Nome].valor_total += 375;
+      result[vendedor19Nome].valor_total += 395;
+    }
+
+    const vendedor8Nome = vendedoresMap.get(8);
+    if (vendedor8Nome) {
+      if (!result[vendedor8Nome]) {
+        result[vendedor8Nome] = {
+          valor_total: 0,
+          pedidos: 0,
+          clientes_novos: 0,
+        };
+      }
+      result[vendedor8Nome].valor_total += 185;
     }
 
     return result;
