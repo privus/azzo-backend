@@ -2,7 +2,7 @@ import { TinyAuthService } from './../../sells/services/tiny-auth.service';
 import { Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, MoreThanOrEqual } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { CustomerAPIResponse, CustomerBlingDto, TinyCustomerDto, TinyCustomerResponse } from '../dto';
 import { Regiao, StatusCliente, Cidade, Cliente, CategoriaCliente, GrupoCliente, Venda } from '../../../infrastructure/database/entities';
 import { IBlingAuthRepository, ICustomersRepository, ISellersRepository } from '../../../domain/repositories';
@@ -686,10 +686,8 @@ export class CustomersService implements ICustomersRepository{
     hoje.setHours(0, 0, 0, 0);
 
     const periodoDias = 60;
-
-    const dataInicial = periodoDias 
-      ? new Date(hoje.getTime() - periodoDias * 24 * 60 * 60 * 1000)
-      : null;
+    const dataLimite60DiasAtras = new Date(hoje.getTime() - periodoDias * 24 * 60 * 60 * 1000);
+    dataLimite60DiasAtras.setHours(0, 0, 0, 0);
 
     const [statusAtivo, status60, status90, status180] = await Promise.all([
       this.statusClienteRepository.findOne({ where: { status_cliente_id: 101 } }),
@@ -707,93 +705,147 @@ export class CustomersService implements ICustomersRepository{
       relations: ['status_cliente', 'regiao'],
     });
 
-    // Contadores por status final
-    let ativo = 0;
-    let atencao = 0;
-    let frio = 0;
-    let inativo = 0;
-
     const clienteIds = clientes.map(c => c.cliente_id);
-    const whereCondition: any = { cliente: { cliente_id: In(clienteIds) } };
-    
-    // Se período for informado, filtrar vendas dentro do período
-    if (dataInicial) {
-      whereCondition.data_criacao = MoreThanOrEqual(dataInicial);
-    }
-    
-    const ultimasVendas = await this.vendaRepository.find({
-      where: whereCondition,
+
+    // Buscar todas as vendas válidas (tipo_pedido_id = 10438) até hoje
+    const todasVendas = await this.vendaRepository.find({
+      where: { 
+        cliente: { cliente_id: In(clienteIds) },
+        tipo_pedido: { tipo_pedido_id: 10438 }
+      },
       relations: ['tipo_pedido', 'cliente'],
       order: { data_criacao: 'DESC' },
     });
 
-    const ultimaVendaPorCliente = new Map<number, Venda>();
-    for (const venda of ultimasVendas) {
-      if (venda.tipo_pedido?.tipo_pedido_id === 10438 && venda.cliente) {
+    // Mapear última venda atual por cliente
+    const ultimaVendaAtualPorCliente = new Map<number, Venda>();
+    for (const venda of todasVendas) {
+      if (venda.cliente) {
         const clienteId = venda.cliente.cliente_id;
-        if (!ultimaVendaPorCliente.has(clienteId)) {
-          ultimaVendaPorCliente.set(clienteId, venda);
+        if (!ultimaVendaAtualPorCliente.has(clienteId)) {
+          ultimaVendaAtualPorCliente.set(clienteId, venda);
         }
       }
     }
 
-    for (const cliente of clientes) {
-      if (!cliente.status_cliente) {
-        continue;
-      }
-
-      // Usar a última venda válida se disponível, senão usar ultima_compra ou data_criacao
-      let dataRef = cliente.ultima_compra || cliente.data_criacao;
-      
-      const ultimaVenda = ultimaVendaPorCliente.get(cliente.cliente_id);
-      if (ultimaVenda) {
-        const dataVenda = new Date(ultimaVenda.data_criacao);
-        const dataUltimaCompra = cliente.ultima_compra ? new Date(cliente.ultima_compra) : null;
+    // Mapear última venda até 60 dias atrás por cliente (todas as vendas até essa data)
+    const ultimaVenda60DiasPorCliente = new Map<number, Venda>();
+    for (const venda of todasVendas) {
+      if (venda.cliente) {
+        const dataVenda = new Date(venda.data_criacao);
+        dataVenda.setHours(0, 0, 0, 0);
         
-        // Se a venda for mais recente que ultima_compra, usar ela
+        // Se a venda é anterior ou igual a 60 dias atrás, considerar para cálculo do status há 60 dias
+        if (dataVenda <= dataLimite60DiasAtras) {
+          const clienteId = venda.cliente.cliente_id;
+          if (!ultimaVenda60DiasPorCliente.has(clienteId)) {
+            ultimaVenda60DiasPorCliente.set(clienteId, venda);
+          }
+        }
+      }
+    }
+
+    // Função auxiliar para calcular status baseado em uma data de referência
+    const calcularStatus = (dataRef: Date, dataComparacao: Date = hoje): StatusCliente => {
+      const diferencaEmDias = Math.floor((dataComparacao.getTime() - dataRef.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (diferencaEmDias > 180) {
+        return status180;
+      } else if (diferencaEmDias > 90) {
+        return status90;
+      } else if (diferencaEmDias > 60) {
+        return status60;
+      } else {
+        return statusAtivo;
+      }
+    };
+
+    // Contadores por status - atual e há 60 dias
+    const contadoresAtual = {
+      ativo: 0,
+      atencao: 0,
+      frio: 0,
+      inativo: 0,
+    };
+
+    const contadores60DiasAtras = {
+      ativo: 0,
+      atencao: 0,
+      frio: 0,
+      inativo: 0,
+    };
+
+    for (const cliente of clientes) {
+      // Calcular data de referência atual
+      let dataRefAtual = cliente.ultima_compra || cliente.data_criacao;
+      const ultimaVendaAtual = ultimaVendaAtualPorCliente.get(cliente.cliente_id);
+      if (ultimaVendaAtual) {
+        const dataVenda = new Date(ultimaVendaAtual.data_criacao);
+        const dataUltimaCompra = cliente.ultima_compra ? new Date(cliente.ultima_compra) : null;
         if (!dataUltimaCompra || dataVenda > dataUltimaCompra) {
-          dataRef = ultimaVenda.data_criacao;
+          dataRefAtual = ultimaVendaAtual.data_criacao;
         }
       }
 
-      if (!dataRef) {
+      if (!dataRefAtual) {
         continue;
       }
 
-      const dataRefDate = new Date(dataRef);
-      dataRefDate.setHours(0, 0, 0, 0);
+      // Calcular status atual baseado na última compra/venda
+      const dataRefAtualDate = new Date(dataRefAtual);
+      dataRefAtualDate.setHours(0, 0, 0, 0);
+      const statusAtual = calcularStatus(dataRefAtualDate, hoje);
 
-      // Se período for informado, considerar apenas clientes com atividade no período
-      if (dataInicial) {
-        // Se a última compra/venda for anterior ao período, pular este cliente
-        if (dataRefDate < dataInicial) {
-          continue;
+      // Contar status atual
+      const statusAtualId = statusAtual.status_cliente_id;
+      if (statusAtualId === 101) {
+        contadoresAtual.ativo++;
+      } else if (statusAtualId === 104) {
+        contadoresAtual.atencao++;
+      } else if (statusAtualId === 102) {
+        contadoresAtual.frio++;
+      } else if (statusAtualId === 103) {
+        contadoresAtual.inativo++;
+      }
+
+      // Calcular data de referência há 60 dias atrás
+      // Buscar a última venda até 60 dias atrás, ou usar ultima_compra/data_criacao se não houver venda
+      const ultimaVenda60Dias = ultimaVenda60DiasPorCliente.get(cliente.cliente_id);
+      let dataRef60Dias: Date | null = null;
+      
+      if (ultimaVenda60Dias) {
+        dataRef60Dias = new Date(ultimaVenda60Dias.data_criacao);
+      } else {
+        // Se não há venda até 60 dias atrás, usar ultima_compra ou data_criacao
+        const ultimaCompra = cliente.ultima_compra ? new Date(cliente.ultima_compra) : null;
+        const dataCriacao = cliente.data_criacao ? new Date(cliente.data_criacao) : null;
+        
+        if (ultimaCompra && dataCriacao) {
+          dataRef60Dias = ultimaCompra > dataCriacao ? ultimaCompra : dataCriacao;
+        } else {
+          dataRef60Dias = ultimaCompra || dataCriacao;
         }
       }
 
-      const diferencaEmDias = Math.floor((hoje.getTime() - dataRefDate.getTime()) / (1000 * 60 * 60 * 24));
-
-      // Calcular status esperado
-      let statusEsperado = statusAtivo;
-      if (diferencaEmDias > 180) {
-        statusEsperado = status180;
-      } else if (diferencaEmDias > 90) {
-        statusEsperado = status90;
-      } else if (diferencaEmDias > 60) {
-        statusEsperado = status60;
+      if (!dataRef60Dias) {
+        continue;
       }
 
-      const statusEsperadoId = statusEsperado.status_cliente_id;
+      // Calcular status há 60 dias baseado na última compra/venda até aquela data
+      const dataRef60DiasDate = new Date(dataRef60Dias);
+      dataRef60DiasDate.setHours(0, 0, 0, 0);
+      const status60DiasAtras = calcularStatus(dataRef60DiasDate, dataLimite60DiasAtras);
 
-      // Contar por status final esperado
-      if (statusEsperadoId === 101) {
-        ativo++;
-      } else if (statusEsperadoId === 104) {
-        atencao++;
-      } else if (statusEsperadoId === 102) {
-        frio++;
-      } else if (statusEsperadoId === 103) {
-        inativo++;
+      // Contar status há 60 dias
+      const status60DiasId = status60DiasAtras.status_cliente_id;
+      if (status60DiasId === 101) {
+        contadores60DiasAtras.ativo++;
+      } else if (status60DiasId === 104) {
+        contadores60DiasAtras.atencao++;
+      } else if (status60DiasId === 102) {
+        contadores60DiasAtras.frio++;
+      } else if (status60DiasId === 103) {
+        contadores60DiasAtras.inativo++;
       }
     }
 
@@ -801,22 +853,22 @@ export class CustomersService implements ICustomersRepository{
       {
         id: statusAtivo.status_cliente_id,
         nome: statusAtivo.nome,
-        quantidade: ativo,
+        quantidade: contadoresAtual.ativo - contadores60DiasAtras.ativo,
       },
       {
         id: status60.status_cliente_id,
         nome: status60.nome,
-        quantidade: atencao,
+        quantidade: contadoresAtual.atencao - contadores60DiasAtras.atencao,
       },
       {
         id: status90.status_cliente_id,
         nome: status90.nome,
-        quantidade: frio,
+        quantidade: contadoresAtual.frio - contadores60DiasAtras.frio,
       },
       {
         id: status180.status_cliente_id,
         nome: status180.nome,
-        quantidade: inativo,
+        quantidade: contadoresAtual.inativo - contadores60DiasAtras.inativo,
       },
     ];
   }
