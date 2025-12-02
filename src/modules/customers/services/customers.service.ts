@@ -394,7 +394,7 @@ export class CustomersService implements ICustomersRepository{
    * 📊 Salva o histórico de quantidade de clientes por status
    * Executa a cada 15 dias (dias 1 e 15 de cada mês às 9:30)
    */
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Cron('0 30 9 1,15 * *')
   async saveHistoricoStatus(): Promise<void> {
     console.log("📊 Iniciando salvamento do histórico de status de clientes por região...");
 
