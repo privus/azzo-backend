@@ -49,9 +49,15 @@ export class CustomersController {
     return this.customersService.findCustomersByStatus(id);
   }
 
-  @ApiOperation({ summary: 'Analisar mudanças de status dos clientes por região' })
+  @ApiOperation({ summary: 'Consultar histórico de status de clientes por região' })
+  @Get('historico/status')
+  async getHistoricoStatus(@Query('regiaoId') regiaoId?: number) {
+    return this.customersService.getHistoricoStatus(regiaoId ? Number(regiaoId) : undefined);
+  }
+
+  @ApiOperation({ summary: 'Consultar análise de diferença de status por região' })
   @Get('regiao/:regiaoId/status')
-  async changeStatusByRegion(@Param('regiaoId') regiaoId: number) {
-    return this.customersService.statusPorRegiao(regiaoId);
+  async getStatusAnalytics(@Param('regiaoId') regiaoId: number, @Query('data_registro') data_registro: Date) {
+    return this.customersService.statusAnalitics(regiaoId, data_registro);
   }
 }

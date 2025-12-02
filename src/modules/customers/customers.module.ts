@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CustomersService } from './services/customers.service';
 import { CustomersController } from './controllers/customers.controller';
-import { CategoriaCliente, Cidade, Cliente, Estado, GrupoCliente, Regiao, StatusCliente, TinyTokens, Venda } from '../../infrastructure/database/entities';
+import { CategoriaCliente, Cidade, Cliente, Estado, GrupoCliente, HistoricoStatus, Regiao, StatusCliente, TinyTokens, Venda } from '../../infrastructure/database/entities';
 import { HttpModule } from '@nestjs/axios';
 import { TinyAuthService } from '../sells/services/tiny-auth.service';
 import { TinyTokenService } from '../sells/services/tiny-token.service';
@@ -12,7 +12,7 @@ import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Cliente, Cidade, Estado, Regiao, StatusCliente, TinyTokens, CategoriaCliente, GrupoCliente, Venda]),
+    TypeOrmModule.forFeature([Cliente, Cidade, Estado, Regiao, StatusCliente, TinyTokens, CategoriaCliente, GrupoCliente, Venda, HistoricoStatus]),
     HttpModule, 
     SellersModule,
     AuthModule

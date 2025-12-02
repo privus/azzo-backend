@@ -1,5 +1,7 @@
 export interface StatusAnalyticsDTO {
-  id: number;
-  nome: string;
-  quantidade: number;
+  ativo: number;
+  frio: number;
+  atencao: number;
+  inativo: number;
+  regiao_id: number;
 }

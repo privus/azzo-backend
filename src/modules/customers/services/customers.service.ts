@@ -3,8 +3,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
-import { CustomerAPIResponse, CustomerBlingDto, TinyCustomerDto, TinyCustomerResponse } from '../dto';
-import { Regiao, StatusCliente, Cidade, Cliente, CategoriaCliente, GrupoCliente, Venda } from '../../../infrastructure/database/entities';
+import { CustomerAPIResponse, CustomerBlingDto, StatusAnalyticsDTO, TinyCustomerDto, TinyCustomerResponse } from '../dto';
+import { Regiao, StatusCliente, Cidade, Cliente, CategoriaCliente, GrupoCliente, Venda, HistoricoStatus } from '../../../infrastructure/database/entities';
 import { IBlingAuthRepository, ICustomersRepository, ISellersRepository } from '../../../domain/repositories';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import * as fs from 'fs';
@@ -28,6 +28,7 @@ export class CustomersService implements ICustomersRepository{
     @Inject('ISellersRepository') private readonly sellersSevice: ISellersRepository,
     @InjectRepository(GrupoCliente) private readonly grupoClienteRepository: Repository<GrupoCliente>,
     @InjectRepository(Venda) private readonly vendaRepository: Repository<Venda>,
+    @InjectRepository(HistoricoStatus) private readonly historicoStatusRepository: Repository<HistoricoStatus>,
     @Inject('IBlingAuthRepository') private readonly blingAuthService: IBlingAuthRepository,
     private readonly tinyAuthService: TinyAuthService,  
     private readonly httpService: HttpService,
@@ -119,14 +120,13 @@ export class CustomersService implements ICustomersRepository{
   } 
 
   private async processarCliente(client: CustomerAPIResponse) {
-    // Check if the customer already exists
     const existingClient = await this.clienteRepository.findOne({
       where: { codigo: client.code },
     });
 
     let regiao = await this.regiaoRepository.findOne({
       where: { codigo: client.region_code },
-      relations: ['cidades'],  // Ensure we get the list of associated cities
+      relations: ['cidades'],
     });
 
     if (!regiao) {
@@ -142,19 +142,16 @@ export class CustomersService implements ICustomersRepository{
       return;
     }
 
-    // Fetch or create the city
     const cidade = await this.cidadeRepository.findOne({
       where: { nome: client.address_city },
       relations: ['estado'],
     });
 
-    // If the region exists but the city is not in it, add the city
     if (regiao && cidade && !regiao.cidades.some(c => c.nome === cidade.nome)) {
         regiao.cidades.push(cidade);
         await this.regiaoRepository.save(regiao);
     }
 
-    // Fetch the customer status
     const status = await this.statusClienteRepository.findOne({
       where: { status_cliente_id: Number(client.tags) || null },
     });
@@ -163,7 +160,6 @@ export class CustomersService implements ICustomersRepository{
       where: { categoria_id: client.segment_id },
     });
 
-    // Create the new customer
     const novoCliente = this.clienteRepository.create({
       nome: client.name,
       codigo: client.code,
@@ -182,7 +178,7 @@ export class CustomersService implements ICustomersRepository{
       celular: client.phone_number_1,
       telefone_comercial: client.phone_number_2,
       ativo: client.is_active,
-      regiao, // Ensure customer is assigned to the region
+      regiao,
       data_criacao: new Date(client.created_at),
       data_atualizacao: new Date(client.updated_at),
       status_cliente: status || null,
@@ -341,14 +337,14 @@ export class CustomersService implements ICustomersRepository{
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
   
-    const [statusAtivo, status60, status90, status180] = await Promise.all([
+    const [statusAtivo, status45, status90, status180] = await Promise.all([
       this.statusClienteRepository.findOne({ where: { status_cliente_id: 101 } }),
       this.statusClienteRepository.findOne({ where: { status_cliente_id: 104 } }),
       this.statusClienteRepository.findOne({ where: { status_cliente_id: 102 } }),
       this.statusClienteRepository.findOne({ where: { status_cliente_id: 103 } }),
     ]);
   
-    if (!status60 || !status90 || !status180 || !statusAtivo) {
+    if (!statusAtivo || !status45 || !status90 || !status180) {
       console.error("❌ ERRO: Status de cliente não encontrados.");
       return;
     }
@@ -378,8 +374,8 @@ export class CustomersService implements ICustomersRepository{
       } else if (diferencaEmDias > 90) {
         novoStatus = status90;
         proxStatusDias = 180 - diferencaEmDias;
-      } else if (diferencaEmDias > 60) {
-        novoStatus = status60;
+      } else if (diferencaEmDias > 45) {
+        novoStatus = status45;
         proxStatusDias = 90 - diferencaEmDias;
       }
   
@@ -393,7 +389,94 @@ export class CustomersService implements ICustomersRepository{
     await this.clienteRepository.save(clientesParaAtualizar);
     console.log("✅ Atualização de status de clientes concluída.");
   }
-  
+
+  /**
+   * 📊 Salva o histórico de quantidade de clientes por status
+   * Executa a cada 15 dias (dias 1 e 15 de cada mês às 9:30)
+   */
+  @Cron('0 30 9 1,15 * *')
+  async saveHistoricoStatus(): Promise<void> {
+    console.log("📊 Iniciando salvamento do histórico de status de clientes por região...");
+
+    try {
+      // Buscar todas as regiões
+      const regioes = await this.regiaoRepository.find();
+
+      const clientes = await this.clienteRepository.find({
+        where: { ativo: 1 },
+        relations: ['status_cliente', 'regiao'],
+      });
+
+      for (const regiao of regioes) {
+        // Filtrar clientes da região atual
+        const clientesRegiao = clientes.filter(
+          (cliente) => cliente.regiao && cliente.regiao.regiao_id === regiao.regiao_id
+        );
+
+
+        let ativo = 0;
+        let frio = 0;
+        let atencao = 0;
+        let inativo = 0;
+
+        for (const cliente of clientesRegiao) {
+          if (!cliente.status_cliente) {
+            continue;
+          }
+
+          const statusId = cliente.status_cliente.status_cliente_id;
+
+          switch (statusId) {
+            case 101:
+              ativo++;
+              break;
+            case 104:
+              atencao++;
+              break;
+            case 102:
+              frio++;
+              break;
+            case 103:
+              inativo++;
+              break;
+          }
+        }
+
+        const historico = this.historicoStatusRepository.create({
+          ativo,
+          frio,
+          atencao,
+          inativo,
+          regiao,
+          data_registro: new Date(),
+        });
+
+        await this.historicoStatusRepository.save(historico);
+
+        console.log(
+          `✅ Histórico salvo para região ${regiao.nome} (ID: ${regiao.regiao_id}) - Ativo: ${ativo}, Frio: ${frio}, Atenção: ${atencao}, Inativo: ${inativo}`
+        );
+      }
+
+      console.log(`✅ Histórico de status salvo com sucesso para ${regioes.length} região(ões)!`);
+    } catch (error) {
+      console.error("❌ Erro ao salvar histórico de status:", error.message);
+      throw error;
+    }
+  }
+
+  async getHistoricoStatus(regiaoId?: number): Promise<HistoricoStatus[]> {
+    const queryBuilder = this.historicoStatusRepository
+      .createQueryBuilder('historico')
+      .leftJoinAndSelect('historico.regiao', 'regiao')
+      .orderBy('historico.data_registro', 'DESC');
+
+    if (regiaoId) {
+      queryBuilder.where('regiao.regiao_id = :regiaoId', { regiaoId });
+    }
+
+    return await queryBuilder.getMany();
+  }
 
   async lastPurchase(): Promise<void> {
     const jsonFilePath = 'src/utils/datas-ultima-compra.json';
@@ -681,195 +764,96 @@ export class CustomersService implements ICustomersRepository{
     }
   }
 
-  async statusPorRegiao(regiaoId: number): Promise<Array<{ id: number; nome: string; quantidade: number }>> {
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-
-    const periodoDias = 60;
-    const dataLimite60DiasAtras = new Date(hoje.getTime() - periodoDias * 24 * 60 * 60 * 1000);
-    dataLimite60DiasAtras.setHours(0, 0, 0, 0);
-
-    const [statusAtivo, status60, status90, status180] = await Promise.all([
-      this.statusClienteRepository.findOne({ where: { status_cliente_id: 101 } }),
-      this.statusClienteRepository.findOne({ where: { status_cliente_id: 104 } }),
-      this.statusClienteRepository.findOne({ where: { status_cliente_id: 102 } }),
-      this.statusClienteRepository.findOne({ where: { status_cliente_id: 103 } }),
-    ]);
-
-    if (!status60 || !status90 || !status180 || !statusAtivo) {
-      throw new Error("❌ ERRO: Status de cliente não encontrados.");
-    }
-
-    const clientes = await this.clienteRepository.find({
-      where: { regiao: { regiao_id: regiaoId } },
-      relations: ['status_cliente', 'regiao'],
-    });
-
-    const clienteIds = clientes.map(c => c.cliente_id);
-
-    // Buscar todas as vendas válidas (tipo_pedido_id = 10438) até hoje
-    const todasVendas = await this.vendaRepository.find({
-      where: { 
-        cliente: { cliente_id: In(clienteIds) },
-        tipo_pedido: { tipo_pedido_id: 10438 }
-      },
-      relations: ['tipo_pedido', 'cliente'],
-      order: { data_criacao: 'DESC' },
-    });
-
-    // Mapear última venda atual por cliente
-    const ultimaVendaAtualPorCliente = new Map<number, Venda>();
-    for (const venda of todasVendas) {
-      if (venda.cliente) {
-        const clienteId = venda.cliente.cliente_id;
-        if (!ultimaVendaAtualPorCliente.has(clienteId)) {
-          ultimaVendaAtualPorCliente.set(clienteId, venda);
-        }
-      }
-    }
-
-    // Mapear última venda até 60 dias atrás por cliente (todas as vendas até essa data)
-    const ultimaVenda60DiasPorCliente = new Map<number, Venda>();
-    for (const venda of todasVendas) {
-      if (venda.cliente) {
-        const dataVenda = new Date(venda.data_criacao);
-        dataVenda.setHours(0, 0, 0, 0);
-        
-        // Se a venda é anterior ou igual a 60 dias atrás, considerar para cálculo do status há 60 dias
-        if (dataVenda <= dataLimite60DiasAtras) {
-          const clienteId = venda.cliente.cliente_id;
-          if (!ultimaVenda60DiasPorCliente.has(clienteId)) {
-            ultimaVenda60DiasPorCliente.set(clienteId, venda);
-          }
-        }
-      }
-    }
-
-    // Função auxiliar para calcular status baseado em uma data de referência
-    const calcularStatus = (dataRef: Date, dataComparacao: Date = hoje): StatusCliente => {
-      const diferencaEmDias = Math.floor((dataComparacao.getTime() - dataRef.getTime()) / (1000 * 60 * 60 * 24));
-      
-      if (diferencaEmDias > 180) {
-        return status180;
-      } else if (diferencaEmDias > 90) {
-        return status90;
-      } else if (diferencaEmDias > 60) {
-        return status60;
-      } else {
-        return statusAtivo;
-      }
-    };
-
-    // Contadores por status - atual e há 60 dias
-    const contadoresAtual = {
-      ativo: 0,
-      atencao: 0,
-      frio: 0,
-      inativo: 0,
-    };
-
-    const contadores60DiasAtras = {
-      ativo: 0,
-      atencao: 0,
-      frio: 0,
-      inativo: 0,
-    };
-
+  async statusAnalitics(regiaoId: number, data_registro: Date ): Promise<StatusAnalyticsDTO> {
+    const clientes = await this.clienteRepository
+      .createQueryBuilder('cliente')
+      .leftJoinAndSelect('cliente.status_cliente', 'status_cliente')
+      .leftJoinAndSelect('cliente.regiao', 'regiao')
+      .where('cliente.ativo = :ativo', { ativo: 1 })
+      .andWhere('regiao.regiao_id = :regiaoId', { regiaoId })
+      .getMany();
+  
+    // Contagem atual
+    let ativoAtual = 0;
+    let frioAtual = 0;
+    let atencaoAtual = 0;
+    let inativoAtual = 0;
+  
     for (const cliente of clientes) {
-      // Calcular data de referência atual
-      let dataRefAtual = cliente.ultima_compra || cliente.data_criacao;
-      const ultimaVendaAtual = ultimaVendaAtualPorCliente.get(cliente.cliente_id);
-      if (ultimaVendaAtual) {
-        const dataVenda = new Date(ultimaVendaAtual.data_criacao);
-        const dataUltimaCompra = cliente.ultima_compra ? new Date(cliente.ultima_compra) : null;
-        if (!dataUltimaCompra || dataVenda > dataUltimaCompra) {
-          dataRefAtual = ultimaVendaAtual.data_criacao;
-        }
-      }
-
-      if (!dataRefAtual) {
-        continue;
-      }
-
-      // Calcular status atual baseado na última compra/venda
-      const dataRefAtualDate = new Date(dataRefAtual);
-      dataRefAtualDate.setHours(0, 0, 0, 0);
-      const statusAtual = calcularStatus(dataRefAtualDate, hoje);
-
-      // Contar status atual
-      const statusAtualId = statusAtual.status_cliente_id;
-      if (statusAtualId === 101) {
-        contadoresAtual.ativo++;
-      } else if (statusAtualId === 104) {
-        contadoresAtual.atencao++;
-      } else if (statusAtualId === 102) {
-        contadoresAtual.frio++;
-      } else if (statusAtualId === 103) {
-        contadoresAtual.inativo++;
-      }
-
-      // Calcular data de referência há 60 dias atrás
-      // Buscar a última venda até 60 dias atrás, ou usar ultima_compra/data_criacao se não houver venda
-      const ultimaVenda60Dias = ultimaVenda60DiasPorCliente.get(cliente.cliente_id);
-      let dataRef60Dias: Date | null = null;
-      
-      if (ultimaVenda60Dias) {
-        dataRef60Dias = new Date(ultimaVenda60Dias.data_criacao);
-      } else {
-        // Se não há venda até 60 dias atrás, usar ultima_compra ou data_criacao
-        const ultimaCompra = cliente.ultima_compra ? new Date(cliente.ultima_compra) : null;
-        const dataCriacao = cliente.data_criacao ? new Date(cliente.data_criacao) : null;
-        
-        if (ultimaCompra && dataCriacao) {
-          dataRef60Dias = ultimaCompra > dataCriacao ? ultimaCompra : dataCriacao;
-        } else {
-          dataRef60Dias = ultimaCompra || dataCriacao;
-        }
-      }
-
-      if (!dataRef60Dias) {
-        continue;
-      }
-
-      // Calcular status há 60 dias baseado na última compra/venda até aquela data
-      const dataRef60DiasDate = new Date(dataRef60Dias);
-      dataRef60DiasDate.setHours(0, 0, 0, 0);
-      const status60DiasAtras = calcularStatus(dataRef60DiasDate, dataLimite60DiasAtras);
-
-      // Contar status há 60 dias
-      const status60DiasId = status60DiasAtras.status_cliente_id;
-      if (status60DiasId === 101) {
-        contadores60DiasAtras.ativo++;
-      } else if (status60DiasId === 104) {
-        contadores60DiasAtras.atencao++;
-      } else if (status60DiasId === 102) {
-        contadores60DiasAtras.frio++;
-      } else if (status60DiasId === 103) {
-        contadores60DiasAtras.inativo++;
+      if (!cliente.status_cliente) continue;
+  
+      switch (cliente.status_cliente.status_cliente_id) {
+        case 101:
+          ativoAtual++;
+          break;
+        case 104:
+          atencaoAtual++;
+          break;
+        case 102:
+          frioAtual++;
+          break;
+        case 103:
+          inativoAtual++;
+          break;
       }
     }
-
-    return [
-      {
-        id: statusAtivo.status_cliente_id,
-        nome: statusAtivo.nome,
-        quantidade: contadoresAtual.ativo - contadores60DiasAtras.ativo,
-      },
-      {
-        id: status60.status_cliente_id,
-        nome: status60.nome,
-        quantidade: contadoresAtual.atencao - contadores60DiasAtras.atencao,
-      },
-      {
-        id: status90.status_cliente_id,
-        nome: status90.nome,
-        quantidade: contadoresAtual.frio - contadores60DiasAtras.frio,
-      },
-      {
-        id: status180.status_cliente_id,
-        nome: status180.nome,
-        quantidade: contadoresAtual.inativo - contadores60DiasAtras.inativo,
-      },
-    ];
+    
+    const historicoMesmoDia = await this.historicoStatusRepository
+      .createQueryBuilder('historico')
+      .leftJoinAndSelect('historico.regiao', 'regiao')
+      .where('regiao.regiao_id = :regiaoId', { regiaoId })
+      .andWhere('DATE(historico.data_registro) = :data_registro', { data_registro })
+      .orderBy('historico.data_registro', 'ASC')
+      .limit(1)
+      .getOne();
+  
+    let historicoBase: HistoricoStatus | null = historicoMesmoDia;
+  
+    // Se não houver histórico no mesmo dia, pega o último anterior
+    if (!historicoBase) {
+      historicoBase = await this.historicoStatusRepository
+        .createQueryBuilder('historico')
+        .leftJoinAndSelect('historico.regiao', 'regiao')
+        .where('regiao.regiao_id = :regiaoId', { regiaoId })
+        .andWhere('historico.data_registro < :data_registro', { data_registro })
+        .orderBy('historico.data_registro', 'DESC')
+        .limit(1)
+        .getOne();
+    }
+  
+    if (!historicoBase) {
+      console.warn(`⚠️ Nenhum histórico encontrado para a região ${regiaoId} até ${data_registro}.`);
+      return {
+        ativo: 0,
+        frio: 0,
+        atencao: 0,
+        inativo: 0,
+        regiao_id: regiaoId,
+      };
+    }
+  
+    // Calcula diferença entre o estado atual e o histórico
+    const diffAtivo = ativoAtual - historicoBase.ativo;
+    const diffFrio = frioAtual - historicoBase.frio;
+    const diffAtencao = atencaoAtual - historicoBase.atencao;
+    const diffInativo = inativoAtual - historicoBase.inativo;
+  
+    console.log(
+      `📊 Região ${regiaoId} comparando com ${data_registro} → ` +
+        `Ativo: ${diffAtivo >= 0 ? '+' : ''}${diffAtivo}, ` +
+        `Atenção: ${diffAtencao >= 0 ? '+' : ''}${diffAtencao}, ` +
+        `Frio: ${diffFrio >= 0 ? '+' : ''}${diffFrio}, ` +
+        `Inativo: ${diffInativo >= 0 ? '+' : ''}${diffInativo}`
+    );
+  
+    return {
+      ativo: diffAtivo,
+      frio: diffFrio,
+      atencao: diffAtencao,
+      inativo: diffInativo,
+      regiao_id: +regiaoId,
+    };
   }
+  
+  
 }
