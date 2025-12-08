@@ -135,7 +135,7 @@ export class PrintOrderService {
 
     sortedItens.forEach((item, idx) => {
       const produto = item.produto;
-      const isCaixa = produto?.descricao_uni?.toUpperCase()?.includes('CAIXA') || item.quantidade > 11;
+      const isCaixa = produto?.descricao_uni?.toUpperCase()?.includes('CAIXA');
       const obs = item.observacao ? `obs: ${item.observacao}` : '';
       const qtdUni = item.produto.unidade ? item.quantidade * item.produto.qt_uni : item.quantidade;
 

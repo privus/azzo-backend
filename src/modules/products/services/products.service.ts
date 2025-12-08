@@ -1,9 +1,9 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Like, Not, Repository } from 'typeorm';
-import { CategoriaProduto, Fornecedor, Produto } from '../../../infrastructure/database/entities';
-import { ProdutoAPIResponse, UpdateProductDto } from '../dto';
+import { IsNull, Like, Not, Repository, Raw } from 'typeorm';
+import { CategoriaProduto, Fornecedor, Produto, ItensVenda } from '../../../infrastructure/database/entities';
+import { ProdutoAPIResponse, UpdateProductDto, ProductRankingItem } from '../dto';
 import { IProductsRepository } from '../../../domain/repositories';
 import * as fs from 'fs';
 
@@ -18,6 +18,7 @@ export class ProductsService implements IProductsRepository {
     @InjectRepository(Produto) private readonly produtoRepository: Repository<Produto>,
     @InjectRepository(CategoriaProduto) private readonly categoriaRepository: Repository<CategoriaProduto>,
     @InjectRepository(Fornecedor) private readonly fornecedorRepository: Repository<Fornecedor>,
+    @InjectRepository(ItensVenda) private readonly itensVendaRepository: Repository<ItensVenda>,
     private readonly httpService: HttpService,
   ) {
     this.token = process.env.SELLENTT_API_TOKEN;
@@ -471,5 +472,116 @@ export class ProductsService implements IProductsRepository {
   
     console.log('🚀 Correção de nomes de fornecedores concluída com sucesso!');
   }
+
+  async getProductRanking(
+    fromDate?: string,
+    toDate?: string,
+    limit: number = 100
+  ): Promise<ProductRankingItem[]> {
+    // === 1️⃣ Determina intervalo atual ===
+    const from = fromDate ? new Date(fromDate) : new Date();
+    const to = toDate ? new Date(toDate) : new Date();
+  
+    if (!fromDate && !toDate) {
+      from.setDate(1);
+      to.setMonth(to.getMonth() + 1);
+      to.setDate(0);
+    }
+  
+    // === 2️⃣ Calcula período anterior ===
+    const diffDays = Math.ceil((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
+    const prevTo = new Date(from);
+    prevTo.setDate(prevTo.getDate() - 1);
+    const prevFrom = new Date(prevTo);
+    prevFrom.setDate(prevFrom.getDate() - diffDays);
+  
+    const format = (d: Date) => d.toISOString().slice(0, 10);
+    const currFrom = format(from);
+    const currTo = format(to);
+    const lastFrom = format(prevFrom);
+    const lastTo = format(prevTo);
+  
+    // === 3️⃣ Query para o período atual ===
+    const current = await this.itensVendaRepository
+      .createQueryBuilder('itensVenda')
+      .leftJoin('itensVenda.produto', 'produto')
+      .leftJoin('produto.unidade', 'unidade')
+      .leftJoin('produto.fornecedor', 'fornecedor')
+      .leftJoin('itensVenda.venda', 'venda')
+      .select([
+        `COALESCE(unidade.produto_id, produto.produto_id) AS produto_id`,
+        `COALESCE(unidade.codigo, produto.codigo) AS codigo`,
+        `COALESCE(unidade.nome, produto.nome) AS nome`,
+        `COALESCE(unidade.fotoUrl, produto.fotoUrl) AS fotoUrl`,
+        `SUM(itensVenda.quantidade * COALESCE(produto.qt_uni, 1)) AS quantidade_vendida`,
+        `SUM(itensVenda.valor_total) AS valor_total_vendido`,
+        `fornecedor.nome AS fornecedor`,
+      ])
+      .where('DATE(venda.data_criacao) BETWEEN :from AND :to', {
+        from: currFrom,
+        to: currTo,
+      })
+      .groupBy(`COALESCE(unidade.produto_id, produto.produto_id)`)
+      .addGroupBy(`COALESCE(unidade.codigo, produto.codigo)`)
+      .addGroupBy(`COALESCE(unidade.nome, produto.nome)`)
+      .addGroupBy(`COALESCE(unidade.fotoUrl, produto.fotoUrl)`)
+      .addGroupBy(`fornecedor.nome`)
+      .orderBy('quantidade_vendida', 'DESC')
+      .limit(limit)
+      .getRawMany();
+  
+    // === 4️⃣ Query para o mês anterior ===
+    const previous = await this.itensVendaRepository
+      .createQueryBuilder('itensVenda')
+      .leftJoin('itensVenda.produto', 'produto')
+      .leftJoin('produto.unidade', 'unidade')
+      .leftJoin('itensVenda.venda', 'venda')
+      .select([
+        `COALESCE(unidade.produto_id, produto.produto_id) AS produto_id`,
+        `SUM(itensVenda.quantidade * COALESCE(produto.qt_uni, 1)) AS quantidade_vendida`,
+      ])
+      .where('DATE(venda.data_criacao) BETWEEN :from AND :to', {
+        from: lastFrom,
+        to: lastTo,
+      })
+      .groupBy(`COALESCE(unidade.produto_id, produto.produto_id)`)
+      .getRawMany();
+  
+    // === 5️⃣ Monta mapa de comparação ===
+    const prevMap = new Map<number, number>();
+    for (const p of previous) {
+      prevMap.set(Number(p.produto_id), Number(p.quantidade_vendida));
+    }
+  
+    // === 6️⃣ Calcula variação e retorna ===
+    const ranking: ProductRankingItem[] = current.map((r) => {
+      const produtoId = Number(r.produto_id);
+      const atual = Number(r.quantidade_vendida);
+      const anterior = prevMap.get(produtoId) || 0;
+  
+      let variacao = 0;
+      if (anterior === 0 && atual > 0) variacao = 100;
+      else if (anterior > 0) variacao = ((atual - anterior) / anterior) * 100;
+  
+      let direcao: 'aumento' | 'queda' | 'neutro' = 'neutro';
+      if (variacao > 5) direcao = 'aumento';
+      else if (variacao < -5) direcao = 'queda';
+  
+      return {
+        produto_id: produtoId,
+        codigo: r.codigo,
+        nome: r.nome,
+        quantidade_vendida: atual,
+        valor_total_vendido: Number(r.valor_total_vendido),
+        fornecedor: r.fornecedor,
+        fotoUrl: r.fotoUrl || null,
+        variacao_percentual: Number(variacao.toFixed(2)),
+        direcao,
+      };
+    });
+  
+    return ranking;
+  }
+  
   
 }

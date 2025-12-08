@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, Patch } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { ProductsService } from '../services/products.service';
 import { BlingProductService } from '../services/bling-product.service';
 import { TinyProductService } from '../services/tiny-product.service';
@@ -65,6 +65,16 @@ export class ProductsController {
   @Get()
   async findAllProducts() {
     return this.productsService.findAllProducts();
+  }
+
+  @ApiOperation({ summary: 'Ranking de produtos mais vendidos' })
+  @Get('ranking')
+  async getProductRanking(
+    @Query('fromDate') fromDate: string,
+    @Query('toDate') toDate: string,
+    @Query('limit') limit: number,
+  ) {
+    return this.productsService.getProductRanking(fromDate, toDate, limit);
   }
 
   @ApiOperation({ summary: 'Salvar códigos Tiny.' })

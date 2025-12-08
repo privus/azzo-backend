@@ -792,7 +792,7 @@ export class SellsService implements ISellsRepository {
     };
   
     for (const venda of vendas) {
-      if (venda.tipo_pedido.tipo_pedido_id !== 10438) continue;
+      if (venda.tipo_pedido.tipo_pedido_id !== 10438 || venda.status_venda.status_venda_id === 11468) continue;
   
       const vendedorNome = venda.vendedor?.nome || 'Desconhecido';
   
@@ -1092,21 +1092,42 @@ export class SellsService implements ISellsRepository {
     const vendasPeriodo2 = await this.sellsBetweenDates(fromDate2, toDate2);
   
     const tipoId = 10438;
-    const vendasValidasPeriodo1 = vendasPeriodo1.filter(v => v.tipo_pedido?.tipo_pedido_id === tipoId);
-    const vendasValidasPeriodo2 = vendasPeriodo2.filter(v => v.tipo_pedido?.tipo_pedido_id === tipoId);
+    const statusIgnorar = 11468;
   
-    const totalPeriodo1 = vendasValidasPeriodo1.reduce((acc, venda) => acc + Number(venda.valor_final || 0), 0);
-    const totalPeriodo2 = vendasValidasPeriodo2.reduce((acc, venda) => acc + Number(venda.valor_final || 0), 0);
+    // Filtra tipo de pedido e remove vendas com status 11468
+    const vendasValidasPeriodo1 = vendasPeriodo1.filter(
+      v =>
+        v.tipo_pedido?.tipo_pedido_id === tipoId &&
+        v.status_venda?.status_venda_id !== statusIgnorar
+    );
   
-    const variacao = totalPeriodo1 === 0
-      ? (totalPeriodo2 > 0 ? 100 : 0)
-      : ((totalPeriodo2 - totalPeriodo1) / totalPeriodo1) * 100;
+    const vendasValidasPeriodo2 = vendasPeriodo2.filter(
+      v =>
+        v.tipo_pedido?.tipo_pedido_id === tipoId &&
+        v.status_venda?.status_venda_id !== statusIgnorar
+    );
+  
+    const totalPeriodo1 = vendasValidasPeriodo1.reduce(
+      (acc, venda) => acc + Number(venda.valor_final || 0),
+      0
+    );
+    const totalPeriodo2 = vendasValidasPeriodo2.reduce(
+      (acc, venda) => acc + Number(venda.valor_final || 0),
+      0
+    );
+  
+    const variacao =
+      totalPeriodo1 === 0
+        ? totalPeriodo2 > 0
+          ? 100
+          : 0
+        : ((totalPeriodo2 - totalPeriodo1) / totalPeriodo1) * 100;
   
     let direcao: 'aumento' | 'queda' | 'neutro' = 'neutro';
     if (variacao > 0) direcao = 'aumento';
     else if (variacao < 0) direcao = 'queda';
   
-    // Relatório de marcas usando O PERÍODO FILTRADO pelo usuário (não mais fixo no mês atual)
+    // Relatório de marcas usando o período selecionado
     const relatorioPeriodoSelecionado = await this.reportBrandSalesBySeller(fromDate2, toDate2);
     const azzoData = relatorioPeriodoSelecionado["Azzo"] || { totalFaturado: 0, marcas: {} };
     const faturamentoMesAtual = azzoData.totalFaturado || 0;
@@ -1114,7 +1135,9 @@ export class SellsService implements ISellsRepository {
     const faturamentoPorMarcaMesAtual: { [marca: string]: number } = {};
     if (azzoData.marcas) {
       for (const marca in azzoData.marcas) {
-        faturamentoPorMarcaMesAtual[marca] = Number(azzoData.marcas[marca].valor?.toFixed(2) || 0);
+        faturamentoPorMarcaMesAtual[marca] = Number(
+          azzoData.marcas[marca].valor?.toFixed(2) || 0
+        );
       }
     }
   
@@ -1127,6 +1150,7 @@ export class SellsService implements ISellsRepository {
       faturamentoPorMarcaMesAtual
     };
   }
+  
 
   @Cron(CronExpression.EVERY_DAY_AT_9AM)
   async syncroTinyInvoiceNf(): Promise<string> {

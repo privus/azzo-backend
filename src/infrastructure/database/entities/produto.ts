@@ -39,10 +39,10 @@ export class Produto {
   @Column({ type: 'varchar', length: 255, nullable: true })
   fotoUrl: string;
 
-  @Column({ type: 'varchar', length: 90 })
+  @Column({ type: 'timestamp', nullable: true })
   data_criacao: Date;
 
-  @Column({ type: 'varchar', length: 90 })
+  @Column({ type: 'timestamp', nullable: true })
   data_atualizacao: Date;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
@@ -68,7 +68,7 @@ export class Produto {
   @JoinColumn({ name: 'fornecedor_id' })
   fornecedor: Fornecedor;
 
-  @OneToMany(() => ItensVenda, (vp) => vp.produto, { cascade: true })
+  @OneToMany(() => ItensVenda, (vp) => vp.produto)
   itens_venda: ItensVenda[];
 
   @OneToOne(() => Produto, { nullable: true })
