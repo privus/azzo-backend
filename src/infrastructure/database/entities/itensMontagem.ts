@@ -2,7 +2,7 @@ import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, Unique }
 import { ItensVenda, Montagem } from '.';
 
 @Entity('itens_montagem')
-@Unique(['itensVenda_id', 'montagem_id'])
+@Unique(['montagem_id', 'itens_venda_id'])
 export class ItensMontagem  {
   @PrimaryGeneratedColumn('increment')
   itens_montagem_id: number;
