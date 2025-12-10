@@ -1,7 +1,8 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, Unique } from 'typeorm';
 import { ItensVenda, Montagem } from '.';
 
 @Entity('itens_montagem')
+@Unique(['itensVenda_id', 'montagem_id'])
 export class ItensMontagem  {
   @PrimaryGeneratedColumn('increment')
   itens_montagem_id: number;
@@ -14,6 +15,6 @@ export class ItensMontagem  {
   @JoinColumn({ name: 'montagem_id' })
   montagem: Montagem;
 
-  @Column({ type: 'int' })
+  @Column({ type: 'int', default: 0 })
   quantidade_bipada: number;
 }

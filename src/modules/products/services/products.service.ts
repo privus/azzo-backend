@@ -501,7 +501,7 @@ export class ProductsService implements IProductsRepository {
     const lastFrom = format(prevFrom);
     const lastTo = format(prevTo);
   
-    // === 3️⃣ Query para o período atual ===
+    // === 3️⃣ Query para o período atual (ordenar por faturamento) ===
     const current = await this.itensVendaRepository
       .createQueryBuilder('itensVenda')
       .leftJoin('itensVenda.produto', 'produto')
@@ -526,11 +526,11 @@ export class ProductsService implements IProductsRepository {
       .addGroupBy(`COALESCE(unidade.nome, produto.nome)`)
       .addGroupBy(`COALESCE(unidade.fotoUrl, produto.fotoUrl)`)
       .addGroupBy(`fornecedor.nome`)
-      .orderBy('quantidade_vendida', 'DESC')
+      .orderBy('valor_total_vendido', 'DESC') // ✅ ordena por faturamento
       .limit(limit)
       .getRawMany();
   
-    // === 4️⃣ Query para o mês anterior ===
+    // === 4️⃣ Query para o período anterior ===
     const previous = await this.itensVendaRepository
       .createQueryBuilder('itensVenda')
       .leftJoin('itensVenda.produto', 'produto')
@@ -538,7 +538,7 @@ export class ProductsService implements IProductsRepository {
       .leftJoin('itensVenda.venda', 'venda')
       .select([
         `COALESCE(unidade.produto_id, produto.produto_id) AS produto_id`,
-        `SUM(itensVenda.quantidade * COALESCE(produto.qt_uni, 1)) AS quantidade_vendida`,
+        `SUM(itensVenda.valor_total) AS valor_total_vendido`,
       ])
       .where('DATE(venda.data_criacao) BETWEEN :from AND :to', {
         from: lastFrom,
@@ -547,16 +547,16 @@ export class ProductsService implements IProductsRepository {
       .groupBy(`COALESCE(unidade.produto_id, produto.produto_id)`)
       .getRawMany();
   
-    // === 5️⃣ Monta mapa de comparação ===
+    // === 5️⃣ Monta mapa de comparação (por faturamento) ===
     const prevMap = new Map<number, number>();
     for (const p of previous) {
-      prevMap.set(Number(p.produto_id), Number(p.quantidade_vendida));
+      prevMap.set(Number(p.produto_id), Number(p.valor_total_vendido));
     }
   
     // === 6️⃣ Calcula variação e retorna ===
     const ranking: ProductRankingItem[] = current.map((r) => {
       const produtoId = Number(r.produto_id);
-      const atual = Number(r.quantidade_vendida);
+      const atual = Number(r.valor_total_vendido);
       const anterior = prevMap.get(produtoId) || 0;
   
       let variacao = 0;
@@ -571,8 +571,8 @@ export class ProductsService implements IProductsRepository {
         produto_id: produtoId,
         codigo: r.codigo,
         nome: r.nome,
-        quantidade_vendida: atual,
-        valor_total_vendido: Number(r.valor_total_vendido),
+        quantidade_vendida: Number(r.quantidade_vendida),
+        valor_total_vendido: atual,
         fornecedor: r.fornecedor,
         fotoUrl: r.fotoUrl || null,
         variacao_percentual: Number(variacao.toFixed(2)),
