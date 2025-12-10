@@ -3,9 +3,15 @@ import { ItensVenda, Montagem } from '.';
 
 @Entity('itens_montagem')
 @Unique(['montagem_id', 'itens_venda_id'])
-export class ItensMontagem  {
+export class ItensMontagem {
   @PrimaryGeneratedColumn('increment')
   itens_montagem_id: number;
+
+  @Column({ type: 'int' })
+  itens_venda_id: number;
+
+  @Column({ type: 'int' })
+  montagem_id: number;
 
   @ManyToOne(() => ItensVenda, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'itens_venda_id' })
