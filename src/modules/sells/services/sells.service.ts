@@ -1776,7 +1776,7 @@ export class SellsService implements ISellsRepository {
           clientes_novos: 0,
         };
       }
-      result[vendedor19Nome].valor_total += 375;
+      result[vendedor19Nome].valor_total += 125;
     }
 
     const vendedor1 = vendedoresMap.get(1);
@@ -1788,7 +1788,7 @@ export class SellsService implements ISellsRepository {
           clientes_novos: 0,
         };
       }
-      result[vendedor1].valor_total -= 60;
+      result[vendedor1].valor_total -= 30;
     }
 
     return result;
