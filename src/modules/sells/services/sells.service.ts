@@ -159,6 +159,10 @@ export class SellsService implements ISellsRepository {
             const newStatus = await this.statusVendaRepository.findOne({
               where: { status_venda_id: sell.status.id },
             });
+            if (existingSell.volume > 0 && newStatus.status_venda_id === 11138) {
+              await this.updateStatusSellentt(existingSell.codigo, 11541)
+              return;
+            }              
             existingSell.status_venda = newStatus;
             await this.vendaRepository.save(existingSell);
             console.log(`✅ Status updated for venda: ${sell.code}`);
