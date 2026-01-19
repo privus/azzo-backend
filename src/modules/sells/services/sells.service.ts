@@ -1783,6 +1783,30 @@ export class SellsService implements ISellsRepository {
       result[vendedor19Nome].valor_total += 375;
     }
 
+    const vendedor2 = vendedoresMap.get(2);
+    if (vendedor2) {
+      if (!result[vendedor2]) {
+        result[vendedor2] = {
+          valor_total: 0,
+          pedidos: 0,
+          clientes_novos: 0,
+        };
+      }
+      result[vendedor2].valor_total -= 30;
+    }
+
+    const vendedor3 = vendedoresMap.get(3);
+    if (vendedor3) {
+      if (!result[vendedor3]) {
+        result[vendedor3] = {
+          valor_total: 0,
+          pedidos: 0,
+          clientes_novos: 0,
+        };
+      }
+      result[vendedor3].valor_total -= 30;
+    }
+
     return result;
   }
 
