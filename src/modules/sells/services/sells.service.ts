@@ -1783,18 +1783,6 @@ export class SellsService implements ISellsRepository {
       result[vendedor19Nome].valor_total += 375;
     }
 
-    const vendedor1 = vendedoresMap.get(1);
-    if (vendedor1) {
-      if (!result[vendedor1]) {
-        result[vendedor1] = {
-          valor_total: 0,
-          pedidos: 0,
-          clientes_novos: 0,
-        };
-      }
-      result[vendedor1].valor_total += 60;
-    }
-
     return result;
   }
 
