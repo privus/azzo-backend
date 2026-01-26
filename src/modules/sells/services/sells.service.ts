@@ -1018,6 +1018,7 @@ export class SellsService implements ISellsRepository {
   async commissionBySeller(fromDate: string, toDate: string): Promise<Commissions[]> {
     const vendasMes = await this.sellsBetweenDates(fromDate, toDate);
     const tipoId = 10438;
+    const tipoIdBonificado = 10441;
   
     const todosVendedores = (await this.sellersSevice.findAllSellers())
       .filter(v => v.ativo && ![18, 12, 16].includes(v.vendedor_id));
@@ -1031,18 +1032,24 @@ export class SellsService implements ISellsRepository {
         pedidos: 0,
         comissao: 0,
         ticketMedio: 0,
+        bonificado: 0,
       });
     }
   
     for (const venda of vendasMes) {
-      if (venda.tipo_pedido?.tipo_pedido_id !== tipoId || venda.status_venda?.status_venda_id === 11468) continue;
-  
       const vendedor = venda.vendedor;
-      const vendedorId = vendedor.vendedor_id;
+      const vendedorId = vendedor?.vendedor_id;
   
       if (!vendedorMap.has(vendedorId)) continue;
   
       const data = vendedorMap.get(vendedorId)!;
+  
+      if (venda.tipo_pedido?.tipo_pedido_id === tipoIdBonificado) {
+        data.bonificado += Number(venda.valor_final);
+      }
+  
+      if (venda.tipo_pedido?.tipo_pedido_id !== tipoId || venda.status_venda?.status_venda_id === 11468) continue;
+  
       data.faturado += Number(venda.valor_final);
       data.pedidos += 1;
       data.comissao += Number(venda.comisao);
@@ -1073,8 +1080,10 @@ export class SellsService implements ISellsRepository {
       faturado: Number(v.faturado.toFixed(2)),
       comissao: Number(v.comissao.toFixed(2)),
       ticketMedio: v.pedidos > 0 ? Number((v.faturado / v.pedidos).toFixed(2)) : 0,
+      bonificado: Number(v.bonificado.toFixed(2)), // ✅ Retorna o novo campo
     }));
   }
+  
 
   addVolumeSell(id: number, volume: number): Promise<string> {
     return this.vendaRepository.update({ venda_id: id }, { volume })
