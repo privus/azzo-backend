@@ -272,7 +272,7 @@ export class SellsService implements ISellsRepository {
             existingSell.itensVenda = itensVenda;
             existingSell.valor_pedido = Number(sell.amount);
             existingSell.valor_final = Number(sell.amount_final);
-            existingSell.desconto = sell.discount_total || 0
+            existingSell.desconto = sell.discount || 0
             existingSell.valor_parcela = Number(sell.installment_value)
             existingSell.forma_pagamento = sell.payment_term_text || '';
             cliente.valor_ultima_compra = Number(sell.amount_final);
@@ -401,7 +401,7 @@ export class SellsService implements ISellsRepository {
       valor_pedido: Number(sell.amount),
       valor_final: Number(sell.amount_final),
       flex_gerado: Number(sell.no_financial) || 0,
-      desconto: sell.discount_total | 0,
+      desconto: sell.discount | 0,
       datas_vencimento,
       cliente,
       vendedor,
@@ -1780,19 +1780,7 @@ export class SellsService implements ISellsRepository {
           clientes_novos: 0,
         };
       }
-      result[vendedor19Nome].valor_total += 375;
-    }
-
-    const vendedor2 = vendedoresMap.get(2);
-    if (vendedor2) {
-      if (!result[vendedor2]) {
-        result[vendedor2] = {
-          valor_total: 0,
-          pedidos: 0,
-          clientes_novos: 0,
-        };
-      }
-      result[vendedor2].valor_total -= 30;
+      result[vendedor19Nome].valor_total += 125;
     }
 
     const vendedor3 = vendedoresMap.get(3);

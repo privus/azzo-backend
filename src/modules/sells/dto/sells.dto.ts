@@ -14,7 +14,7 @@ export interface SellsApiResponse {
   seller_code: string;
   amount_final: number;
   commission: number;
-  discount_total?: number;
+  discount?: number;
   no_financial?: string;
   obs: string;
   payment_method_text: string;
