@@ -345,8 +345,8 @@ export class ProductsService implements IProductsRepository {
     console.log(`🔄 Processando ${priceData.length} produtos para atualização de preços...`);
   
     for (const item of priceData) {
-      const codigo = item['Código do Produto'];
-      const preco = item['Preço ($)'];
+      const codigo = item['codigo'];
+      const preco = item['preco'];
   
       if (!codigo || preco === undefined) {
         console.warn(`⚠️ Registro inválido: ${JSON.stringify(item)}`);
