@@ -56,9 +56,9 @@ export class ProductsController {
   }
 
   @ApiOperation({ summary: 'Atualizar preços produtos' })
-  @Get('updatePrices')
-  async updatePreices() {
-    return this.productsService.updatePricesFromJson()
+  @Get('seedComissions')
+  async seedComissions() {
+    return this.productsService.seedComissionsTable();
   }
 
   @ApiOperation({ summary: 'Listar todos os produtos' })

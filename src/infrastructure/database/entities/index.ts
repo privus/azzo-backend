@@ -56,3 +56,4 @@ export * from './historicoStatus';
 export * from './metaVendedor';
 export * from './nfeResumo'
 export * from './ecommerce'
+export * from './comissions'

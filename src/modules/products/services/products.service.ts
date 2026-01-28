@@ -2,7 +2,7 @@ import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Like, Not, Repository, Raw } from 'typeorm';
-import { CategoriaProduto, Fornecedor, Produto, ItensVenda } from '../../../infrastructure/database/entities';
+import { CategoriaProduto, Fornecedor, Produto, ItensVenda, Comissions } from '../../../infrastructure/database/entities';
 import { ProdutoAPIResponse, UpdateProductDto, ProductRankingItem } from '../dto';
 import { IProductsRepository } from '../../../domain/repositories';
 import * as fs from 'fs';
@@ -19,6 +19,7 @@ export class ProductsService implements IProductsRepository {
     @InjectRepository(CategoriaProduto) private readonly categoriaRepository: Repository<CategoriaProduto>,
     @InjectRepository(Fornecedor) private readonly fornecedorRepository: Repository<Fornecedor>,
     @InjectRepository(ItensVenda) private readonly itensVendaRepository: Repository<ItensVenda>,
+    @InjectRepository(Comissions) private readonly comissionsRepository: Repository<Comissions>,
     private readonly httpService: HttpService,
   ) {
     this.token = process.env.SELLENTT_API_TOKEN;
@@ -583,5 +584,35 @@ export class ProductsService implements IProductsRepository {
     return ranking;
   }
   
+  async seedComissionsTable(): Promise<void> {
+    const jsonFilePath = 'src/utils/tabela-padrao.json';
   
+    if (!fs.existsSync(jsonFilePath)) {
+      console.error(`❌ Arquivo '${jsonFilePath}' não encontrado.`);
+      return;
+    }
+  
+    const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
+    const comissionData = JSON.parse(jsonData);
+  
+    console.log(`🔄 Iniciando seed da tabela Comissions com ${comissionData.length} registros...`);
+  
+    for (const item of comissionData) {
+      const codigo = item['codigo'];
+      const percentual = item['percentual'];
+  
+      if (!codigo || percentual === undefined) {
+        console.warn(`⚠️ Registro inválido: ${JSON.stringify(item)}`);
+        continue;
+      }
+      const novaComissao = this.comissionsRepository.create({
+        codigo,
+        percentual: Number(percentual),
+      });
+      await this.comissionsRepository.save(novaComissao);
+      console.log(`✅ Nova comissão adicionada: ${codigo} → ${percentual}%`);
+    }
+  
+    console.log('🚀 Seed da tabela Comissions concluído com sucesso!');
+  } 
 }
