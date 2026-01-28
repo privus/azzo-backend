@@ -20,4 +20,9 @@ export interface CustomerAPIResponse {
   region_code: number;
   tags: string;
   segment_id: number;
+  default_price_table: {
+    code: string;
+  };
 }
+
+

@@ -104,4 +104,7 @@ export class Cliente {
 
   @Column({ type: 'bigint', nullable: true })
   bling_id_p: number;
+
+  @Column({ type: 'int'})
+  cod_tabela_preco: number;
 }

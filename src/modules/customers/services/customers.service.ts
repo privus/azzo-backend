@@ -136,6 +136,7 @@ export class CustomersService implements ICustomersRepository{
     if (existingClient) {
       existingClient.regiao = regiao;
       existingClient.ativo = client.is_active;
+      existingClient.cod_tabela_preco = +client.default_price_table.code
       
       await this.clienteRepository.save(existingClient);
       console.log(`Cliente código ${client.code} ja exists. Atualizando somente is_active...`);
