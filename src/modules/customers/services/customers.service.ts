@@ -853,52 +853,8 @@ export class CustomersService implements ICustomersRepository{
       regiao_id: +regiaoId,
     };
   }
-
-  async syncCustomerPriceTableByCode(codigo: number): Promise<void> {
-    try {
-      const url = `${this.apiUrlSellentt}${this.storeTag}/${codigo}`;
-      console.log(`📡 Buscando informações do cliente: ${url}`);
   
-      const response = await this.httpService.axiosRef.get<{ data: CustomerAPIResponse }>(url, {
-        headers: { Authorization: `Bearer ${this.tokenSellentt}` },
-      });
-  
-      const clientData = response.data.data;
-  
-      if (!clientData) {
-        console.warn(`⚠️ Nenhum cliente retornado para o código ${codigo}.`);
-        return;
-      }
-  
-      // Extrai o código da tabela de preço
-      const tabelaPrecoCode = clientData.default_price_table?.code
-        ? Number(clientData.default_price_table.code)
-        : null;
-  
-      if (tabelaPrecoCode === null || isNaN(tabelaPrecoCode)) {
-        console.warn(`⚠️ Cliente ${codigo} não possui código de tabela de preço válido.`);
-        return;
-      }
-  
-      // Busca o cliente no banco
-      const cliente = await this.clienteRepository.findOne({ where: { codigo } });
-      if (!cliente) {
-        console.warn(`❌ Cliente com código ${codigo} não encontrado no banco.`);
-        return;
-      }
-  
-      // Atualiza o campo cod_tabela_preco
-      cliente.cod_tabela_preco = tabelaPrecoCode;
-      await this.clienteRepository.save(cliente);
-  
-      console.log(`✅ Cliente ${codigo} atualizado com cod_tabela_preco = ${tabelaPrecoCode}`);
-    } catch (error: any) {
-      console.error(`❌ Erro ao sincronizar tabela de preço do cliente ${codigo}:`, error.message);
-      throw error;
-    }
-  }
-  
-  async syncAllCustomersPriceTables(): Promise<void> {
+  async syncCustomersPriceTables(): Promise<void> {
     console.log('🔄 Iniciando sincronização de tabelas de preço dos clientes...');
   
     const clientes = await this.clienteRepository.find();

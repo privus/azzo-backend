@@ -55,6 +55,12 @@ export class CustomersController {
     return this.customersService.getHistoricoStatus(regiaoId ? Number(regiaoId) : undefined);
   }
 
+  @ApiOperation({ summary: 'Sincroniza tabela de preço' })
+  @Get('priceTables')
+  async syncPriceTables() {
+    return this.customersService.syncCustomersPriceTables();
+  }
+
   @ApiOperation({ summary: 'Consultar análise de diferença de status por região' })
   @Get('regiao/:regiaoId/status')
   async getStatusAnalytics(@Param('regiaoId') regiaoId: number, @Query('data_registro') data_registro: Date) {
