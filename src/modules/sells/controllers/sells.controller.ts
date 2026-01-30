@@ -76,6 +76,12 @@ export class SellsController {
   }
 
   @ApiOperation({ summary: 'Comissão por vendedor' })
+  @Get('comissions')
+  async getComissions() {
+    return this.sellsService.commissionBySellerCalculated()
+  }
+
+  @ApiOperation({ summary: 'Comissão por vendedor' })
   @Get('commissions')
   async getCommissions(@Query('fromDate') fromDate: string, @Query('toDate') toDate?: string) {
     return this.sellsService.commissionBySeller(fromDate, toDate);
