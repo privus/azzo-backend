@@ -37,12 +37,6 @@ export class CustomersController {
     return this.customersService.findAllCustomers();
   }
 
-  @ApiOperation({ summary: 'Buscar cliente por Código' })
-  @Get(':id')
-  async findCostumerById(@Param('id') codigo: number) {
-    return this.customersService.findCustomerByCode(codigo);
-  }
-
   @ApiOperation({ summary: 'Buscar cliente por Status' })
   @Get('status/:id')
   async findCostumerByStatus(@Param('id') id: number) {
@@ -65,5 +59,11 @@ export class CustomersController {
   @Get('regiao/:regiaoId/status')
   async getStatusAnalytics(@Param('regiaoId') regiaoId: number, @Query('data_registro') data_registro: Date) {
     return this.customersService.statusAnalitics(regiaoId, data_registro);
+  }
+
+  @ApiOperation({ summary: 'Buscar cliente por Código' })
+  @Get(':id')
+  async findCostumerById(@Param('id') codigo: number) {
+    return this.customersService.findCustomerByCode(codigo);
   }
 }
