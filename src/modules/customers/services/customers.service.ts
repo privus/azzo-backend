@@ -28,7 +28,6 @@ export class CustomersService implements ICustomersRepository{
     @InjectRepository(CategoriaCliente) private readonly categoriaRepository: Repository<CategoriaCliente>,
     @Inject('ISellersRepository') private readonly sellersSevice: ISellersRepository,
     @InjectRepository(GrupoCliente) private readonly grupoClienteRepository: Repository<GrupoCliente>,
-    @InjectRepository(Venda) private readonly vendaRepository: Repository<Venda>,
     @InjectRepository(HistoricoStatus) private readonly historicoStatusRepository: Repository<HistoricoStatus>,
     @Inject('IBlingAuthRepository') private readonly blingAuthService: IBlingAuthRepository,
     private readonly tinyAuthService: TinyAuthService,  

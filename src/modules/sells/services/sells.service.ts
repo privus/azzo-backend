@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, MoreThanOrEqual, Not, Raw, Repository } from 'typeorm';
-import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda, SaidaEstoque, MetaVendedor } from '../../../infrastructure/database/entities';
+import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda, SaidaEstoque, MetaVendedor, Comissions } from '../../../infrastructure/database/entities';
 import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto, ProjectStockDto, GroupSalesResponse, CustomerGroupSalesDto, WeeklyAid, OrdeBlingDto, NfeBlingDTO, OrdersBlingResponseDto, OrderBlingResponseDto } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository, IBlingAuthRepository } from '../../../domain/repositories';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -41,6 +41,7 @@ export class SellsService implements ISellsRepository {
     @Inject('IBlingAuthRepository') private readonly blingAuthService: IBlingAuthRepository,
     @InjectRepository(MetaVendedor) private readonly metaRepository: Repository<MetaVendedor>,
     @InjectRepository(Ecommerce) private readonly ecommerceRepository: Repository<Ecommerce>,
+    @InjectRepository(Comissions) private readonly comissionsRepository: Repository<Comissions>,
   ) {
     this.tokenSellentt = process.env.SELLENTT_API_TOKEN;
     this.apiUrlSellentt = process.env.SELLENTT_API_URL;
@@ -1083,7 +1084,6 @@ export class SellsService implements ISellsRepository {
       bonificado: Number(v.bonificado.toFixed(2)), // ✅ Retorna o novo campo
     }));
   }
-  
 
   addVolumeSell(id: number, volume: number): Promise<string> {
     return this.vendaRepository.update({ venda_id: id }, { volume })
@@ -2220,4 +2220,88 @@ export class SellsService implements ISellsRepository {
     }
     return this.ecommerceRepository.find({ where });
   }
+
+  async commissionBySellerCalculated(): Promise<Commissions[]> {
+  
+    const vendasMes = await this.sellsBetweenDates('2025-03-01', '2025-12-31');
+    const tipoVenda = 10438;
+  
+    // 🔹 Vendedores válidos
+    const vendedores = (await this.sellersSevice.findAllSellers())
+      .filter(v => v.ativo && ![18, 12, 16].includes(v.vendedor_id));
+  
+    const vendedorMap = new Map<number, Commissions>();
+  
+    for (const vendedor of vendedores) {
+      vendedorMap.set(vendedor.vendedor_id, {
+        vendedor_id: vendedor.vendedor_id,
+        vendedor: vendedor.nome,
+        faturado: 0,
+        pedidos: 0,
+        comissao: 0,
+        ticketMedio: 0,
+      });
+    }
+  
+    // 🔹 Percentual por produto
+    const commissions = await this.comissionsRepository.find();
+    const commissionMap = new Map<string, number>();
+    commissions.forEach(c => {
+      commissionMap.set(c.codigo, Number(c.percentual));
+    });
+  
+    // 🔹 Fator por tabela de preço
+    const tabelaFactorMap: Record<number, number> = {
+      1: 1,
+      2: 0.8,
+      3: 0.7,
+      4: 0.5,
+      5: 0.4,
+      6: 0.6,
+    };
+  
+    // 🔹 Processa vendas
+    for (const venda of vendasMes) {
+      if (venda.tipo_pedido?.tipo_pedido_id !== tipoVenda) continue;
+      if (venda.status_venda?.status_venda_id === 11468) continue;
+  
+      const vendedorId = venda.vendedor?.vendedor_id;
+      if (!vendedorMap.has(vendedorId)) continue;
+  
+      const data = vendedorMap.get(vendedorId)!;
+  
+      data.faturado += Number(venda.valor_final);
+      data.pedidos += 1;
+  
+      const tabelaPreco = Number(venda.cliente?.cod_tabela_preco) || 1;
+      const fatorTabela = tabelaFactorMap[tabelaPreco] ?? 1;
+  
+      for (const item of venda.itensVenda) {
+        const produto = item.produto;
+        if (!produto) continue;
+  
+        const percentualBase = commissionMap.get(produto.codigo);
+        if (!percentualBase) continue;
+  
+        const valorItem = Number(item.valor_total);
+  
+        const comissaoItem =
+          valorItem *
+          (percentualBase / 100) *
+          fatorTabela;
+  
+        data.comissao += comissaoItem;
+      }
+    }
+
+    return Array.from(vendedorMap.values()).map(v => ({
+      ...v,
+      faturado: Number(v.faturado.toFixed(2)),
+      comissao: Number(v.comissao.toFixed(2)),
+      ticketMedio: v.pedidos > 0
+        ? Number((v.faturado / v.pedidos).toFixed(2))
+        : 0,
+    }));
+  }
+  
 }

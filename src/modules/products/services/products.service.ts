@@ -19,7 +19,7 @@ export class ProductsService implements IProductsRepository {
     @InjectRepository(CategoriaProduto) private readonly categoriaRepository: Repository<CategoriaProduto>,
     @InjectRepository(Fornecedor) private readonly fornecedorRepository: Repository<Fornecedor>,
     @InjectRepository(ItensVenda) private readonly itensVendaRepository: Repository<ItensVenda>,
-    @InjectRepository(Comissions) private readonly comissionsRepository: Repository<Comissions>,
+    @InjectRepository(Comissions) private readonly commissionsRepository: Repository<Comissions>,
     private readonly httpService: HttpService,
   ) {
     this.token = process.env.SELLENTT_API_TOKEN;
@@ -605,11 +605,11 @@ export class ProductsService implements IProductsRepository {
         console.warn(`⚠️ Registro inválido: ${JSON.stringify(item)}`);
         continue;
       }
-      const novaComissao = this.comissionsRepository.create({
+      const novaComissao = this.commissionsRepository.create({
         codigo,
         percentual: Number(percentual),
       });
-      await this.comissionsRepository.save(novaComissao);
+      await this.commissionsRepository.save(novaComissao);
       console.log(`✅ Nova comissão adicionada: ${codigo} → ${percentual}%`);
     }
   

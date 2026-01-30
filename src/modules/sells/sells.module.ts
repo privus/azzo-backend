@@ -20,6 +20,7 @@ import {
   ItensMontagem,
   MetaVendedor,
   Ecommerce,
+  Comissions,
 } from '../../infrastructure/database/entities';
 import { SellsController } from './controllers/sells.controller';
 import { HttpModule } from '@nestjs/axios';
@@ -57,7 +58,8 @@ import { AuthModule } from '../auth/auth.module';
       Montagem,
       ItensMontagem,
       MetaVendedor,
-      Ecommerce
+      Ecommerce,
+      Comissions
     ]),
     AuthModule,
     HttpModule,
