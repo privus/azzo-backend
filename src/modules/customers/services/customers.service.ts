@@ -18,6 +18,7 @@ export class CustomersService implements ICustomersRepository{
   private readonly contactTag = 'contatos';
   private readonly sellerTag = 'seller';
   private readonly apiBlingUrl: string;
+  private isUpdating = false;
 
   constructor(
     @InjectRepository(Cliente) private readonly clienteRepository: Repository<Cliente>,
@@ -855,6 +856,12 @@ export class CustomersService implements ICustomersRepository{
   }
   
   async syncCustomersPriceTables(): Promise<void> {
+    if (this.isUpdating) {
+      console.log('⚠️ Registro de produtos já está em andamento. Abortando nova execução.');
+      return;
+    }
+  
+    this.isUpdating = true;
     console.log('🔄 Iniciando sincronização de tabelas de preço dos clientes...');
   
     const clientes = await this.clienteRepository.find();
