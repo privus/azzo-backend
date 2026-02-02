@@ -35,6 +35,7 @@ export class RomaneioService {
       const venda = await this.sellsService.getSellByCode(code);
       if (venda) {
         vendasEncontradas.push(venda);
+        await this.sellsService.updateStatusSellentt(venda.codigo, 11491)
       } else {
         vendasNaoEncontradas.push(code);
       }
@@ -119,5 +120,58 @@ export class RomaneioService {
     await this.romaneioRepository.save(romaneio);
   
     return `Fretes importados: ${aplicadas} vendas atualizadas. Total R$ ${totalFrete.toFixed(2)}.`;
-  }  
+  }
+
+  async splitFreteByRomaneio(
+    romaneio_id: number,
+    valorTotalFrete: number
+  ): Promise<string> {
+    if (valorTotalFrete <= 0) {
+      throw new Error('O valor total do frete deve ser maior que zero.');
+    }
+  
+    const romaneio = await this.romaneioRepository.findOne({
+      where: { romaneio_id },
+      relations: ['vendas'],
+    });
+  
+    if (!romaneio) {
+      throw new Error(`Romaneio ${romaneio_id} não encontrado.`);
+    }
+  
+    const vendas = romaneio.vendas;
+  
+    if (!vendas || vendas.length === 0) {
+      throw new Error(`Romaneio ${romaneio_id} não possui vendas associadas.`);
+    }
+  
+    const totalVendas = vendas.length;
+    const valorPorVenda = Number((valorTotalFrete / totalVendas).toFixed(2));
+  
+    let totalAplicado = 0;
+  
+    for (let i = 0; i < vendas.length; i++) {
+      const venda = vendas[i];
+  
+      // Última venda recebe ajuste de centavos
+      if (i === vendas.length - 1) {
+        venda.valor_frete = Number(
+          (valorTotalFrete - totalAplicado).toFixed(2)
+        );
+      } else {
+        venda.valor_frete = valorPorVenda;
+        totalAplicado += valorPorVenda;
+      }
+  
+      await this.sellsService.saveSell(venda);
+    }
+  
+    romaneio.valor_frete = Number(valorTotalFrete.toFixed(2));
+    await this.romaneioRepository.save(romaneio);
+  
+    return `🚚 Frete total R$ ${valorTotalFrete.toFixed(
+      2
+    )} dividido entre ${totalVendas} vendas do romaneio ${romaneio_id}.`;
+  }
+  
 }

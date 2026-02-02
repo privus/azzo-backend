@@ -34,4 +34,5 @@ export interface ISellsRepository {
   updateStatus(code: number, status_id: number): Promise<void>;
   findSellsByRomaneio(romaneio_id: number): Promise<Venda[]>;
   clearNfeData(code: number): Promise<string>;
+  getSellByNf(id: number): Promise<Venda>;
 }

@@ -548,6 +548,24 @@ export class SellsService implements ISellsRepository {
     });
   }
 
+  async getSellByNf(id: number): Promise<Venda> {
+    return this.vendaRepository.findOne({
+      where: { numero_nfe: id },
+      relations: [
+        'vendedor',
+        'itensVenda.produto.fornecedor',
+        'status_pagamento',
+        'status_venda',
+        'parcela_credito.status_pagamento',
+        'tipo_pedido',
+        'cliente.cidade.estado',
+        'cliente.categoria_cliente',
+        'cliente.regiao',
+        'itensVenda.produto.unidade',
+      ],
+    });
+  }
+
   async updateSellStatus(UpdateSellStatusDto: UpdateSellStatusDto): Promise<string> {
     const { codigo, status_venda_id, numero_nfe, valor_frete } = UpdateSellStatusDto;
 
@@ -1193,7 +1211,7 @@ export class SellsService implements ISellsRepository {
 
     while (true) {
       try {
-        const url = `${apiUrl}${this.contasReceberTag}?dataInicialEmissao=2025-06-11&offset=${offset}&limit=${limit}`;
+        const url = `${apiUrl}${this.contasReceberTag}?dataInicialEmissao=2026-01-01&offset=${offset}&limit=${limit}`;
         const response = await this.httpService.axiosRef.get<{ itens: InvoiceTinyDto[] }>(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -1789,7 +1807,7 @@ export class SellsService implements ISellsRepository {
           clientes_novos: 0,
         };
       }
-      result[vendedor19Nome].valor_total += 125;
+      result[vendedor19Nome].valor_total += 250;
     }
 
     const vendedor3 = vendedoresMap.get(3);
@@ -1802,18 +1820,6 @@ export class SellsService implements ISellsRepository {
         };
       }
       result[vendedor3].valor_total -= 30;
-    }
-
-    const vendedor1 = vendedoresMap.get(1);
-    if (vendedor1) {
-      if (!result[vendedor1]) {
-        result[vendedor1] = {
-          valor_total: 0,
-          pedidos: 0,
-          clientes_novos: 0,
-        };
-      }
-      result[vendedor1].valor_total -= 20;
     }
 
     return result;
