@@ -87,46 +87,65 @@ export class RomaneioService {
       .filter(row => row.length >= 2)
       .map(row => ({
         nota: row[0]?.toString().trim(),
-        frete: Number(row[1])
-      }));
-    
+        frete: Number(row[1]),
+      }))
+      .filter(r => r.nota && !isNaN(r.frete) && r.frete > 0);
   
     const vendas = await this.sellsService.findSellsByRomaneio(romaneio_id);
     const romaneio = await this.romaneioRepository.findOne({ where: { romaneio_id } });
-    if (!romaneio) throw new Error(`Romaneio ${romaneio_id} não encontrado.`);
   
-    let totalFrete = 0;
+    if (!romaneio) {
+      throw new Error(`Romaneio ${romaneio_id} não encontrado.`);
+    }
+  
+    let totalFreteNovo = 0;
     let aplicadas = 0;
   
     for (const { nota, frete } of mappedRows) {
       if (!nota) continue;
-    
+  
       let venda = vendas.find(v => v.numero_nfe?.toString() === nota);
-
+  
       if (!venda && nota.startsWith('*')) {
-        const pedidoId = nota.substring(1); // remove o caractere especial
+        const pedidoId = nota.substring(1);
         venda = vendas.find(v => v.codigo.toString() === pedidoId);
       }
-    
-      if (venda) {
-        venda.valor_frete = frete;
-        await this.sellsService.saveSell(venda);
-        totalFrete += frete;
-        aplicadas++;
+  
+      if (!venda) continue;
+  
+      // 🔒 NÃO sobrescreve se já existe frete
+      if (venda.valor_frete > 0) {
+
+        continue;
       }
+  
+      venda.valor_frete = frete;
+      await this.sellsService.saveSell(venda);
+  
+      totalFreteNovo += frete;
+      aplicadas++;
     }
   
-    romaneio.valor_frete = totalFrete;
+    // ➕ Soma apenas o novo frete ao romaneio
+    romaneio.valor_frete = Number(
+      ((romaneio.valor_frete || 0) + totalFreteNovo).toFixed(2)
+    );
+  
     await this.romaneioRepository.save(romaneio);
   
-    return `Fretes importados: ${aplicadas} vendas atualizadas. Total R$ ${totalFrete.toFixed(2)}.`;
+    return `
+    🚚 Fretes importados com sucesso!
+    ✔ Vendas atualizadas: ${aplicadas}
+    📦 Novo frete adicionado: R$ ${totalFreteNovo.toFixed(2)}
+    📄 Total do romaneio: R$ ${romaneio.valor_frete.toFixed(2)}
+    `.trim();
   }
-
+  
   async splitFreteByRomaneio(
     romaneio_id: number,
-    valorTotalFrete: number
+    shippingValue: number
   ): Promise<string> {
-    if (valorTotalFrete <= 0) {
+    if (shippingValue <= 0) {
       throw new Error('O valor total do frete deve ser maior que zero.');
     }
   
@@ -146,7 +165,7 @@ export class RomaneioService {
     }
   
     const totalVendas = vendas.length;
-    const valorPorVenda = Number((valorTotalFrete / totalVendas).toFixed(2));
+    const valorPorVenda = Number((shippingValue / totalVendas).toFixed(2));
   
     let totalAplicado = 0;
   
@@ -156,7 +175,7 @@ export class RomaneioService {
       // Última venda recebe ajuste de centavos
       if (i === vendas.length - 1) {
         venda.valor_frete = Number(
-          (valorTotalFrete - totalAplicado).toFixed(2)
+          (shippingValue - totalAplicado).toFixed(2)
         );
       } else {
         venda.valor_frete = valorPorVenda;
@@ -166,10 +185,10 @@ export class RomaneioService {
       await this.sellsService.saveSell(venda);
     }
   
-    romaneio.valor_frete = Number(valorTotalFrete.toFixed(2));
+    romaneio.valor_frete = Number(shippingValue.toFixed(2));
     await this.romaneioRepository.save(romaneio);
   
-    return `🚚 Frete total R$ ${valorTotalFrete.toFixed(
+    return `🚚 Frete total R$ ${shippingValue.toFixed(
       2
     )} dividido entre ${totalVendas} vendas do romaneio ${romaneio_id}.`;
   }

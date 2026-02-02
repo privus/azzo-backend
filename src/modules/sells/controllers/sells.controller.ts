@@ -131,6 +131,13 @@ export class SellsController {
     return this.romaneioService.getRomaneios();
   }
 
+  @ApiOperation({ summary: 'Salvar valor frete' })
+  @Post('shippingValue/:romaneioId')
+  async shippingValue(@Param('romaneioId') romaneioId: number, @Body('shippingValue') shippingValue: number) {
+    const message = await this.romaneioService.splitFreteByRomaneio(romaneioId, shippingValue);
+    return { message };
+  }
+
   @Post('import-fretes/:romaneioId')
   @UseInterceptors(FileInterceptor('file'))
   async importFretes(
