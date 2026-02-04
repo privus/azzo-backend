@@ -422,7 +422,7 @@ export class SellsService implements ISellsRepository {
 
     await this.vendaRepository.save(novaVenda);
     await this.decrementStockSell(novaVenda.codigo);
-    await this.sendSellToFinanceSystem(novaVenda.codigo);
+
     return `Recebida ${sell.code}`;
   }
 
@@ -2396,6 +2396,5 @@ export class SellsService implements ISellsRepository {
         message: `Erro ao enviar venda ${codigoVenda} ao sistema financeiro: ${error.message}`,
       });
     }
-  }
-  
+  }  
 }
