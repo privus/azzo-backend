@@ -15,6 +15,7 @@ export class SellsService implements ISellsRepository {
   private readonly apiUrlSellentt: string;
   private readonly apiUrlTiny: string;
   private readonly tokenSellentt: string;
+  private readonly tokenFinance: string;
   private readonly apiTagSellentt = 'orders';
   private readonly orderTag = 'pedidos';
   private readonly orderTagBling = 'pedidos/vendas';
@@ -22,6 +23,7 @@ export class SellsService implements ISellsRepository {
   private readonly contasReceberTag = 'contas-receber';
   private readonly nfeTagBling = 'nfe';
   private readonly apiBlingUrl: string;
+  private readonly apiFinanceUrl: string;
 
   constructor(
     @Inject('ICustomersRepository') private readonly clienteService: ICustomersRepository,
@@ -47,6 +49,8 @@ export class SellsService implements ISellsRepository {
     this.apiUrlSellentt = process.env.SELLENTT_API_URL;
     this.apiUrlTiny = process.env.TINY_API_URL;
     this.apiBlingUrl = process.env.BLING_API_URL;
+    this.apiFinanceUrl = process.env.FINANCE_API_URL;
+    this.tokenFinance = process.env.TOKEN_FINANCE_PRIVUS;
   }
 
   async syncroSells(): Promise<string> {
@@ -418,6 +422,7 @@ export class SellsService implements ISellsRepository {
 
     await this.vendaRepository.save(novaVenda);
     await this.decrementStockSell(novaVenda.codigo);
+    await this.sendSellToFinanceSystem(novaVenda.codigo);
     return `Recebida ${sell.code}`;
   }
 
@@ -2308,6 +2313,89 @@ export class SellsService implements ISellsRepository {
         ? Number((v.faturado / v.pedidos).toFixed(2))
         : 0,
     }));
+  }
+
+  async sendSellToFinanceSystem(codigoVenda: number): Promise<string> {
+    const venda = await this.getSellByCode(codigoVenda);
+  
+    if (!venda) {
+      throw new BadRequestException({ message: `Venda com código ${codigoVenda} não encontrada.` });
+    }
+  
+    const cliente = venda.cliente;
+    if (!cliente) {
+      throw new BadRequestException({ message: `Cliente não encontrado para a venda ${codigoVenda}.` });
+    }
+  
+
+    const parcelas = venda.parcela_credito.map((p, i) => ({
+      valor: Number(p.valor),
+      data_vencimento: p.data_vencimento,
+      descricao: `Venda código ${codigoVenda}`
+    }));
+  
+    const produtos = venda.itensVenda.map(item => ({
+      sku: item.produto.codigo || 'Produto Teste',
+      nome: item.produto.nome,
+      quantidade: Number(item.quantidade),
+      valor_unitario: Number(item.valor_unitario),
+      custo_unitario: Number(item.produto.preco_custo),
+      unidade_medida: item.produto.qt_uni === 0
+        ? 'UNI'
+        : item.produto.qt_uni === 6
+        ? 'MEIA_DZ'
+        : 'DZ',
+    }));
+  
+    const body = {
+      empresa_id: 1,
+      categoria_id: 294,
+      descricao: `Primeira Venda TESTEEEEEE ${codigoVenda} enviada via API`,
+      data_vencimento: parcelas[parcelas.length - 1]?.data_vencimento || venda.data_criacao,
+      data_competencia: new Date(venda.data_criacao),
+      numero_documento: codigoVenda.toString(),
+      desconto: venda.desconto || 0,
+      frete: venda.valor_frete || 0,
+      regiao: venda.regiao?.nome || 'Região Poços de Caldas',
+      segmento: venda.cliente?.categoria_cliente?.nome || 'Supermercado',
+      parcelas,
+      criar_pedido: true,
+      cliente: {
+        cpf_cnpj: cliente.numero_doc,
+        nome: cliente.nome_empresa,
+        email: cliente.email,
+        telefone: cliente.celular,
+      },
+      pedido: {
+        numero_pedido: `Codigo ${codigoVenda}`,
+        produtos,
+      },
+    };
+
+    console.log('venda ======================>', body)
+  
+    const url = `${this.apiFinanceUrl}${this.contasReceberTag}`;
+    this.logger.log(`📤 Enviando venda ${codigoVenda} para sistema financeiro: ${url}`);
+  
+    try {
+      const response = await this.httpService.axiosRef.post(url, body, {
+        headers: {
+          Authorization: `Bearer ${this.tokenFinance}`,
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      this.logger.log(`✅ Venda ${codigoVenda} enviada com sucesso ao sistema financeiro.`);
+      return `Venda ${codigoVenda} enviada com sucesso ao sistema financeiro.`;
+    } catch (error) {
+      this.logger.error(
+        `❌ Erro ao enviar venda ${codigoVenda} ao sistema financeiro:`,
+        error.response?.data || error.message,
+      );
+      throw new BadRequestException({
+        message: `Erro ao enviar venda ${codigoVenda} ao sistema financeiro: ${error.message}`,
+      });
+    }
   }
   
 }
