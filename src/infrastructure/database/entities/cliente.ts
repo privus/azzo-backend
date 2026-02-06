@@ -107,4 +107,7 @@ export class Cliente {
 
   @Column({ type: 'int', nullable: true})
   cod_tabela_preco: number;
+
+  @Column({ type: 'int', nullable: true })
+  finance_id: number;
 }

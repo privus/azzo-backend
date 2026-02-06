@@ -75,10 +75,10 @@ export class SellsController {
     return this.sellsService.getPositivityAzzo(fromDate, toDate)
   }
 
-  @ApiOperation({ summary: 'Comissão por vendedor' })
-  @Get('comissions')
-  async getComissions() {
-    return this.sellsService.commissionBySellerCalculated()
+  @ApiOperation({ summary: 'Manda vendas para o sistema financeiro' })
+  @Get('sendToFinance')
+  async sendToFinance() {
+    return this.sellsService.sendToFinanceSystem();
   }
 
   @ApiOperation({ summary: 'Comissão por vendedor' })

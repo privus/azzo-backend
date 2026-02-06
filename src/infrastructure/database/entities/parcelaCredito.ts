@@ -54,4 +54,7 @@ export class ParcelaCredito {
   @ManyToOne(() => Account)
   @JoinColumn({ name: 'account_id' })
   account: Account;
+
+  @Column({ type: 'int', nullable: true })
+  finance_id: number;
 }

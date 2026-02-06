@@ -126,4 +126,10 @@ export class Venda {
 
   @Column({ type: 'bigint', nullable: true })
   bling_id: number;
+
+  @Column({ type: 'int', nullable: true })
+  finance_id: number;
+
+  @Column({ type: 'int', nullable: true })
+  finance_order_id: number;
 }

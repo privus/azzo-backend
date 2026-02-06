@@ -24,6 +24,7 @@ export class SellsService implements ISellsRepository {
   private readonly nfeTagBling = 'nfe';
   private readonly apiBlingUrl: string;
   private readonly apiFinanceUrl: string;
+  private isRuning = false;
 
   constructor(
     @Inject('ICustomersRepository') private readonly clienteService: ICustomersRepository,
@@ -122,7 +123,7 @@ export class SellsService implements ISellsRepository {
         messages.push(`Código das vendas atualizadas: ${updatedSales.join(', ')}.`);
       }
   
-      this.syncroStatusSells();
+      // this.syncroStatusSells();
       this.associatePairedSells();
       console.log(messages.join(' | '));
       return messages.join(' | ');
@@ -422,6 +423,9 @@ export class SellsService implements ISellsRepository {
 
     await this.vendaRepository.save(novaVenda);
     await this.decrementStockSell(novaVenda.codigo);
+    // if (novaVenda.tipo_pedido.tipo_pedido_id === 10438) {
+    //   await this.sendSellToFinanceSystem(novaVenda.codigo);
+    // }
 
     return `Recebida ${sell.code}`;
   }
@@ -2329,35 +2333,37 @@ export class SellsService implements ISellsRepository {
   
 
     const parcelas = venda.parcela_credito.map((p, i) => ({
-      valor: Number(p.valor),
+      valor: p.valor,
       data_vencimento: p.data_vencimento,
       descricao: `Venda código ${codigoVenda}`
     }));
   
     const produtos = venda.itensVenda.map(item => ({
-      sku: item.produto.codigo || 'Produto Teste',
+      sku: item.produto.codigo,
       nome: item.produto.nome,
-      quantidade: Number(item.quantidade),
-      valor_unitario: Number(item.valor_unitario),
-      custo_unitario: Number(item.produto.preco_custo),
+      quantidade: item.quantidade,
+      valor_unitario: item.valor_unitario,
+      custo_unitario: item.produto.preco_custo,
       unidade_medida: item.produto.qt_uni === 0
         ? 'UNI'
         : item.produto.qt_uni === 6
         ? 'MEIA_DZ'
         : 'DZ',
     }));
+
+    const obs = venda.observacao ? ` - Obs: ${venda.observacao}` : ''
   
     const body = {
       empresa_id: 1,
       categoria_id: 294,
-      descricao: `Primeira Venda TESTEEEEEE ${codigoVenda} enviada via API`,
+      descricao: `Pedido ${codigoVenda}${obs}`,
       data_vencimento: parcelas[parcelas.length - 1]?.data_vencimento || venda.data_criacao,
-      data_competencia: new Date(venda.data_criacao),
+      data_competencia: venda.data_criacao,
       numero_documento: codigoVenda.toString(),
-      desconto: venda.desconto || 0,
-      frete: venda.valor_frete || 0,
-      regiao: venda.regiao?.nome || 'Região Poços de Caldas',
-      segmento: venda.cliente?.categoria_cliente?.nome || 'Supermercado',
+      desconto: venda.desconto > 0 ? venda.desconto : 0,
+      frete: venda.valor_frete,
+      regiao: venda.regiao.nome,
+      segmento: venda.cliente.categoria_cliente.nome,
       parcelas,
       criar_pedido: true,
       cliente: {
@@ -2365,14 +2371,13 @@ export class SellsService implements ISellsRepository {
         nome: cliente.nome_empresa,
         email: cliente.email,
         telefone: cliente.celular,
+        codigo_cliente: cliente.codigo
       },
       pedido: {
         numero_pedido: `Codigo ${codigoVenda}`,
         produtos,
       },
     };
-
-    console.log('venda ======================>', body)
   
     const url = `${this.apiFinanceUrl}${this.contasReceberTag}`;
     this.logger.log(`📤 Enviando venda ${codigoVenda} para sistema financeiro: ${url}`);
@@ -2384,6 +2389,21 @@ export class SellsService implements ISellsRepository {
           'Content-Type': 'application/json',
         },
       });
+      console.log('RESP ===>', response.data)
+      const { conta_receber_id, parcelas_ids, pedido_id, cliente_id } = response.data;
+      venda.finance_id = Number(conta_receber_id);
+      venda.finance_order_id = Number(pedido_id);
+      venda.cliente.finance_id = cliente_id;
+      await this.clienteService.saveCustomer(venda.cliente);
+      await this.vendaRepository.save(venda);
+
+      let index = 0;
+      for (const parcela_id of parcelas_ids) {
+        const parcela = venda.parcela_credito[index];
+        parcela.finance_id = Number(parcela_id);
+        await this.parcelaRepository.save(parcela);
+        index++;
+      }
   
       this.logger.log(`✅ Venda ${codigoVenda} enviada com sucesso ao sistema financeiro.`);
       return `Venda ${codigoVenda} enviada com sucesso ao sistema financeiro.`;
@@ -2396,5 +2416,39 @@ export class SellsService implements ISellsRepository {
         message: `Erro ao enviar venda ${codigoVenda} ao sistema financeiro: ${error.message}`,
       });
     }
-  }  
+  }
+
+  async sendToFinanceSystem(): Promise<string[]> {
+    if (this.isRuning) {
+      this.logger.warn('⚠️ Registro de produtos já está em andamento. Abortando nova execução.');
+      return;
+    }
+    this.isRuning = true;
+
+    const vendasMes = await this.sellsBetweenDates('2026-01-01', '2026-01-31');
+    const tipoVenda = 10438;
+  
+    const vendasFiltradas = vendasMes.filter(v => 
+      v.tipo_pedido?.tipo_pedido_id === tipoVenda &&
+      v.status_venda?.status_venda_id !== 11468
+    );
+  
+    const resultados: string[] = [];
+  
+    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+  
+    for (const venda of vendasFiltradas) {
+      try {
+        const msg = await this.sendSellToFinanceSystem(venda.codigo);
+        resultados.push(msg);
+      } catch (error) {
+        resultados.push(`❌ Erro venda ${venda.codigo}: ${error.message}`);
+      }
+  
+      await sleep(2000);
+    }
+    this.isRuning = false;
+
+    return resultados;
+  }
 }
