@@ -2331,7 +2331,6 @@ export class SellsService implements ISellsRepository {
       throw new BadRequestException({ message: `Cliente não encontrado para a venda ${codigoVenda}.` });
     }
   
-
     const parcelas = venda.parcela_credito.map((p, i) => ({
       valor: p.valor,
       data_vencimento: p.data_vencimento,
@@ -2350,8 +2349,8 @@ export class SellsService implements ISellsRepository {
         ? 'MEIA_DZ'
         : 'DZ',
     }));
-
-    const obs = venda.observacao ? ` - Obs: ${venda.observacao}` : ''
+  
+    const obs = venda.observacao ? ` - Obs: ${venda.observacao}` : '';
   
     const body = {
       empresa_id: 1,
@@ -2363,7 +2362,7 @@ export class SellsService implements ISellsRepository {
       desconto: venda.desconto > 0 ? venda.desconto : 0,
       frete: venda.valor_frete,
       regiao: venda.regiao.nome,
-      segmento: venda.cliente.categoria_cliente.nome,
+      segmento: cliente.categoria_cliente.nome,
       parcelas,
       criar_pedido: true,
       cliente: {
@@ -2389,14 +2388,19 @@ export class SellsService implements ISellsRepository {
           'Content-Type': 'application/json',
         },
       });
-      console.log('RESP ===>', response.data)
+  
       const { conta_receber_id, parcelas_ids, pedido_id, cliente_id } = response.data;
+  
       venda.finance_id = Number(conta_receber_id);
       venda.finance_order_id = Number(pedido_id);
       venda.cliente.finance_id = cliente_id;
+  
       await this.clienteService.saveCustomer(venda.cliente);
       await this.vendaRepository.save(venda);
-
+  
+      // ✅ Ordena as parcelas locais e associa os IDs retornados
+      venda.parcela_credito.sort((a, b) => a.numero - b.numero);
+  
       let index = 0;
       for (const parcela_id of parcelas_ids) {
         const parcela = venda.parcela_credito[index];
@@ -2417,42 +2421,43 @@ export class SellsService implements ISellsRepository {
       });
     }
   }
-
+  
   async sendToFinanceSystem(): Promise<string[]> {
     this.logger.log(`🟡 Iniciando envio ao financeiro`);
-
+  
     if (this.isRuning) {
       this.logger.warn('⚠️ Registro de produtos já está em andamento. Abortando nova execução.');
       return;
     }
+  
     this.isRuning = true;
-
-    const vendasMes = await this.sellsBetweenDates('2026-01-01', '2026-01-31');
-    const tipoVenda = 10438;
-  
-    const vendasFiltradas = vendasMes.filter(v => 
-      v.tipo_pedido?.tipo_pedido_id === tipoVenda &&
-      v.status_venda?.status_venda_id !== 11468
-    );
-    this.logger.log(`🔢 Vendas filtradas: ${vendasFiltradas.length}`);
-
-  
     const resultados: string[] = [];
   
-    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    try {
+      const vendasMes = await this.sellsBetweenDates('2026-01-01', '2026-01-31');
+      const tipoVenda = 10438;
   
-    for (const venda of vendasFiltradas) {
-      try {
-        const msg = await this.sendSellToFinanceSystem(venda.codigo);
-        resultados.push(msg);
-      } catch (error) {
-        resultados.push(`❌ Erro venda ${venda.codigo}: ${error.message}`);
+      const vendasFiltradas = vendasMes.filter(v => 
+        v.tipo_pedido?.tipo_pedido_id === tipoVenda &&
+        v.status_venda?.status_venda_id !== 11468
+      );
+      this.logger.log(`🔢 Vendas filtradas: ${vendasFiltradas.length}`);
+  
+      const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+  
+      for (const venda of vendasFiltradas) {
+        try {
+          const msg = await this.sendSellToFinanceSystem(venda.codigo);
+          resultados.push(msg);
+        } catch (error) {
+          this.logger.error(`❌ Erro venda ${venda.codigo}:`, error?.response?.data || error.message);
+          resultados.push(`❌ Erro venda ${venda.codigo}: ${error.message}`);
+        }
+        await sleep(2000);
       }
-  
-      await sleep(2000);
+      return resultados;
+    } finally {
+      this.isRuning = false;
     }
-    this.isRuning = false;
-
-    return resultados;
-  }
+  }  
 }
