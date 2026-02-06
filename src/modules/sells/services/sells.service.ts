@@ -2361,7 +2361,7 @@ export class SellsService implements ISellsRepository {
       numero_documento: codigoVenda.toString(),
       desconto: venda.desconto > 0 ? venda.desconto : 0,
       frete: venda.valor_frete,
-      regiao: venda.regiao.nome,
+      regiao: venda.cliente.regiao.nome,
       segmento: cliente.categoria_cliente.nome,
       parcelas,
       criar_pedido: true,
