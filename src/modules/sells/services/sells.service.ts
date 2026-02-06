@@ -2419,6 +2419,8 @@ export class SellsService implements ISellsRepository {
   }
 
   async sendToFinanceSystem(): Promise<string[]> {
+    this.logger.log(`🟡 Iniciando envio ao financeiro`);
+
     if (this.isRuning) {
       this.logger.warn('⚠️ Registro de produtos já está em andamento. Abortando nova execução.');
       return;
@@ -2432,6 +2434,8 @@ export class SellsService implements ISellsRepository {
       v.tipo_pedido?.tipo_pedido_id === tipoVenda &&
       v.status_venda?.status_venda_id !== 11468
     );
+    this.logger.log(`🔢 Vendas filtradas: ${vendasFiltradas.length}`);
+
   
     const resultados: string[] = [];
   
