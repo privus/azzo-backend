@@ -20,6 +20,12 @@ export class CreditsController {
     return this.creditsService.createCredit(creditDto);
   }
 
+  @ApiOperation({ summary: 'Enviar baixa parcelas para sistema financeiro' })
+  @Get('settle')
+  async settleInstallments() {
+    return this.creditsService.settleInstallments();
+  }
+
   @ApiOperation({ summary: 'Obter categoria de crédito' })
   @Get('categories')
   async getAllCategories() {

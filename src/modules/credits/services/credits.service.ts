@@ -1,20 +1,31 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 import { CategoriaCredito, ParcelaCredito, StatusPagamento, Venda } from '../../../infrastructure/database/entities';
 import { ICreditsRepository } from '../../../domain/repositories';
 import { UpdateInstalmentDto } from '../dto';
 import { CreditDto } from '../dto/credit.dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { HttpService } from '@nestjs/axios';
 
 @Injectable()
 export class CreditsService implements ICreditsRepository {
+  private readonly logger = new Logger(CreditsService.name);
+  private isRunning = false;
+
+  private readonly apiFinanceUrl: string;
+  private readonly tokenFinance: string;
+  
   constructor(
     @InjectRepository(ParcelaCredito) private readonly parcelaRepository: Repository<ParcelaCredito>,
     @InjectRepository(StatusPagamento) private readonly statusRepository: Repository<StatusPagamento>,
     @InjectRepository(Venda) private readonly vendaRepository: Repository<Venda>,
     @InjectRepository(CategoriaCredito) private readonly categoriaRepository: Repository<CategoriaCredito>,
-  ) {}
+    private readonly httpService: HttpService,
+  ) {
+    this.apiFinanceUrl = process.env.FINANCE_API_URL;
+    this.tokenFinance = process.env.TOKEN_FINANCE_PRIVUS;
+  }
 
   async getAllCredits(): Promise<ParcelaCredito[]> {
     const credits = await this.parcelaRepository.find({
@@ -46,7 +57,6 @@ export class CreditsService implements ICreditsRepository {
       await this.updateVendaStatus(credit.venda.venda_id);
     }
   }
-
 
   getCreditById(id: number): Promise<ParcelaCredito> {
     return this.parcelaRepository.findOne({
@@ -223,5 +233,72 @@ export class CreditsService implements ICreditsRepository {
     await this.parcelaRepository.remove(credit);
 
     return `credit com ID ${parcela_id} e suas parcelas foram excluídas com sucesso.`;
-  }  
+  }
+
+  async settleInstallments(): Promise<string> {
+    this.logger.log('🟡 Iniciando baixa automática de parcelas');
+
+    if (this.isRunning) {
+      this.logger.warn('⚠️ Job já em execução. Abortando.');
+      return 'Job já em execução.';
+    }
+
+    this.isRunning = true;
+    const resultados: string[] = [];
+
+    try {
+      const parcelas = await this.parcelaRepository.find({
+        where: {
+          finance_id: Not(IsNull()),
+          status_pagamento: { status_pagamento_id: 2 },
+          nome: IsNull(),
+        },
+        relations: ['venda'],
+      });
+
+      this.logger.log(`🔎 ${parcelas.length} parcelas elegíveis encontradas`);
+
+      const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+
+      for (const parcela of parcelas) {
+        try {
+          const url = `${this.apiFinanceUrl}parcelas-receber/${parcela.finance_id}/baixar`;
+
+          await this.httpService.axiosRef.post(
+            url,
+            {
+              data_recebimento: parcela.data_pagamento,
+              forma_recebimento_id: 1,
+              observacoes: 'Baixa automática via API',
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${this.tokenFinance}`,
+                'Content-Type': 'application/json',
+              },
+            },
+          );
+
+          parcela.nome = 'liquidado';
+          await this.parcelaRepository.save(parcela);
+
+          resultados.push(
+            `✅ Parcela ${parcela.parcela_id} (Venda ${parcela.venda?.codigo}) liquidada`,
+          );
+        } catch (error) {
+          this.logger.error(
+            `❌ Erro ao liquidar parcela ${parcela.parcela_id}`,
+            error.response?.data || error.message,
+          );
+        }
+        await sleep(2000);
+      }
+
+      return resultados.join('\n');
+    } finally {
+      this.isRunning = false;
+      this.logger.log('🟢 Finalizada baixa automática de parcelas');
+    }
+  }
 }

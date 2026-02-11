@@ -3,9 +3,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CreditsService } from './services/credits.service';
 import { CategoriaCredito, ParcelaCredito, StatusPagamento, Venda } from '../../infrastructure/database/entities';
 import { CreditsController } from './controllers/credits.controller';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ParcelaCredito, StatusPagamento, Venda, CategoriaCredito])],
+  imports: [TypeOrmModule.forFeature([ParcelaCredito, StatusPagamento, Venda, CategoriaCredito]), HttpModule],
   controllers: [CreditsController],
   providers: [CreditsService],
   exports: [CreditsService],

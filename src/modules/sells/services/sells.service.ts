@@ -2483,5 +2483,5 @@ export class SellsService implements ISellsRepository {
     } finally {
       this.isRuning = false;
     }
-  }  
+  }
 }
