@@ -123,7 +123,7 @@ export class SellsService implements ISellsRepository {
         messages.push(`Código das vendas atualizadas: ${updatedSales.join(', ')}.`);
       }
   
-      // this.syncroStatusSells();
+      this.syncroStatusSells();
       this.associatePairedSells();
       console.log(messages.join(' | '));
       return messages.join(' | ');
