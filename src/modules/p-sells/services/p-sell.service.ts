@@ -144,7 +144,6 @@ export class PSellsService {
   }
 
   async generateInstallments(venda_id: number, installments: InstallmentsDto[]) {
-    // Opcional: Remover parcelas antigas dessa venda antes de criar novas
     await this.parcelaRepository.delete({ venda: { venda_id } });
     const statusPago = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 2 } }); 
     const statusPendente = await this.statusPagamentoRepository.findOne({ where: { status_pagamento_id: 1 } });

@@ -5,14 +5,23 @@ import { Romaneio, Transportadora, Venda } from '../../../infrastructure/databas
 import { Repository } from 'typeorm';
 import { RomaneioDto } from '../dto';
 import * as XLSX from 'xlsx';
+import { HttpService } from '@nestjs/axios';
 
 @Injectable()
 export class RomaneioService {
+  private readonly tokenFinance: string;
+  private readonly orderTag = 'pedidos';
+  private readonly apiFinanceUrl: string;
+  
   constructor(
     @Inject('ISellsRepository') private readonly sellsService: ISellsRepository,
     @InjectRepository(Romaneio) private readonly romaneioRepository: Repository<Romaneio>,
     @InjectRepository(Transportadora) private readonly transportadoraRepository: Repository<Transportadora>,
-  ) {}
+    private readonly httpService: HttpService,
+  ) {
+    this.apiFinanceUrl = process.env.FINANCE_API_URL;
+    this.tokenFinance = process.env.TOKEN_FINANCE_PRIVUS;
+  }
    
   async generateRomaneio(romaneioDto: RomaneioDto): Promise<string> {
     const { codigos, transportadora_id, transportadora_nome, data_criacao, cod_rastreio } = romaneioDto;
@@ -191,6 +200,35 @@ export class RomaneioService {
     return `🚚 Frete total R$ ${shippingValue.toFixed(
       2
     )} dividido entre ${totalVendas} vendas do romaneio ${romaneio_id}.`;
+  }
+
+  private async sendFretesToFinance(vendas: Venda[]): Promise<void> {
+    const pedidos = vendas
+      .filter(v => v.finance_id && v.valor_frete > 0)
+      .map(v => ({
+        id: v.finance_id,
+        frete: Number(v.valor_frete.toFixed(2)),
+      }));
+  
+    if (pedidos.length === 0) {
+      return;
+    }
+  
+    try {
+      await this.httpService.axiosRef.patch(
+        `${this.apiFinanceUrl}${this.orderTag}`,
+        { pedidos },
+        {
+          headers: {
+            Authorization: `Bearer ${this.tokenFinance}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+    } catch (error) {
+      console.error('Erro ao enviar fretes para o financeiro:', error?.response?.data || error.message);
+      throw new Error('Erro ao sincronizar fretes com o sistema financeiro.');
+    }
   }
   
 }

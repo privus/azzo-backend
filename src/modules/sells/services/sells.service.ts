@@ -297,8 +297,6 @@ export class SellsService implements ISellsRepository {
               return data.toISOString().split('T')[0]; // Formato "YYYY-MM-DD"
             });
             
-          
-            // Agora é um array de strings, não um array de arrays
             const datas_vencimento = datasVencimentoArray;
         
             // Criar as parcelas de crédito
@@ -1806,53 +1804,17 @@ export class SellsService implements ISellsRepository {
   
       result[vendedorNome].valor_total += incrementoPedido;
     }
-  
-    const vendedor19Nome = vendedoresMap.get(19);
-    if (vendedor19Nome) {
-      if (!result[vendedor19Nome]) {
-        result[vendedor19Nome] = {
-          valor_total: 0,
-          pedidos: 0,
-          clientes_novos: 0,
-        };
-      }
-      result[vendedor19Nome].valor_total += 250;
-    }
 
-    const vendedor1 = vendedoresMap.get(1);
-    if (vendedor1) {
-      if (!result[vendedor1]) {
-        result[vendedor1] = {
+    const vendedor3 = vendedoresMap.get(3);
+    if (vendedor3) {
+      if (!result[vendedor3]) {
+        result[vendedor3] = {
           valor_total: 0,
           pedidos: 0,
           clientes_novos: 0,
         };
       }
-      result[vendedor1].valor_total -= 30;
-    }
-
-    const vendedor2 = vendedoresMap.get(2);
-    if (vendedor2) {
-      if (!result[vendedor2]) {
-        result[vendedor2] = {
-          valor_total: 0,
-          pedidos: 0,
-          clientes_novos: 0,
-        };
-      }
-      result[vendedor2].valor_total -= 30;
-    }
-
-    const vendedor9 = vendedoresMap.get(9);
-    if (vendedor9) {
-      if (!result[vendedor9]) {
-        result[vendedor9] = {
-          valor_total: 0,
-          pedidos: 0,
-          clientes_novos: 0,
-        };
-      }
-      result[vendedor9].valor_total -= 30;
+      result[vendedor3].valor_total -= 45;
     }
 
     return result;
