@@ -38,6 +38,12 @@ export class StockController {
     return { message };
   }
 
+  @ApiOperation({ summary: 'Obter todos os colaboradores' })
+  @Get('collaborators')
+  async getAllDepartments() {
+    return this.stockService.getAllCollaborators();
+  }
+
   @ApiOperation({ summary: 'Obter nfe resumo de todas as nfes importadas'})
   @Get('nfsResume')
   async getNfsResumo(): Promise<NfeResumo[]> {

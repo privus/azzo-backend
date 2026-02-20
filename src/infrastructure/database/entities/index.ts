@@ -54,6 +54,7 @@ export * from './blingTokens';
 export * from './historicoEstoque';
 export * from './historicoStatus';
 export * from './metaVendedor';
-export * from './nfeResumo'
-export * from './ecommerce'
-export * from './comissions'
+export * from './nfeResumo';
+export * from './ecommerce';
+export * from './comissions';
+export * from './colaborador';

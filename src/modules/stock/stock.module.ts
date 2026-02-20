@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { HttpModule } from '@nestjs/axios';
-import { Distribuidor, Estoque, Fornecedor, HistoricoEstoque, NfeResumo, Produto, SaidaEstoque, TinyTokens, ValorEstoque } from '../../infrastructure/database/entities';
+import { Colaborador, Distribuidor, Estoque, Fornecedor, HistoricoEstoque, NfeResumo, Produto, SaidaEstoque, TinyTokens, ValorEstoque } from '../../infrastructure/database/entities';
 import { StockService } from './services/stock.service';
 import { ProductsModule } from '../products/products.module';
 import { TinyTokenService } from '../sells/services/tiny-token.service';
@@ -11,7 +11,7 @@ import { DebtsModule } from '../debts/debts.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Estoque, TinyTokens, Fornecedor, Distribuidor, SaidaEstoque, Produto, ValorEstoque, HistoricoEstoque, NfeResumo]),
+    TypeOrmModule.forFeature([Estoque, TinyTokens, Fornecedor, Distribuidor, SaidaEstoque, Produto, ValorEstoque, HistoricoEstoque, NfeResumo, Colaborador]),
     HttpModule,
     ProductsModule,
     SellsModule,

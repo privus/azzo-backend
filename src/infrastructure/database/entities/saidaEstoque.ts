@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Ecommerce, Produto, Venda } from './';
+import { Colaborador } from './colaborador';
 
 @Entity('saida_estoque')
 export class SaidaEstoque {
@@ -26,4 +27,9 @@ export class SaidaEstoque {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   observacao: string;
+
+  @ManyToOne(() => Colaborador, { nullable: true })
+  @JoinColumn({ name: 'colaborador_id' })
+  colaborador: Colaborador;
+
 }

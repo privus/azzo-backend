@@ -1,5 +1,5 @@
 import { Inject, Injectable, ConflictException } from '@nestjs/common';
-import { Distribuidor, Estoque, Fornecedor, HistoricoEstoque, NfeResumo, Produto, SaidaEstoque, ValorEstoque } from '../../../infrastructure/database/entities';
+import { Colaborador, Distribuidor, Estoque, Fornecedor, HistoricoEstoque, NfeResumo, Produto, SaidaEstoque, ValorEstoque } from '../../../infrastructure/database/entities';
 import { IDebtsRepository, IProductsRepository, ISellsRepository, IStockRepository } from '../../../domain/repositories';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -7,9 +7,7 @@ import { XMLParser } from 'fast-xml-parser';
 import * as fs from 'fs';
 import { Discrepancy, EcommerceOutDto, StockDuration, StockImportResponse, StockInItemDto, StockLiquid, StockOverview, StockValue, StockValuePermancence } from '../dto';
 import { StockOutDto } from '../dto/stock-out.dto';
-import { DebtsDto } from 'src/modules/debts/dto';
-import { Cron, CronExpression } from '@nestjs/schedule';
-
+import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class StockService implements IStockRepository {
@@ -21,10 +19,10 @@ export class StockService implements IStockRepository {
     @Inject('ISellsRepository') private readonly sellRepository: ISellsRepository,
     @InjectRepository(SaidaEstoque) private readonly saidaRepository: Repository<SaidaEstoque>,
     @InjectRepository(Produto) private readonly produtoRepository: Repository<Produto>,
-    @Inject('IDebtsRepository') private readonly debtsService: IDebtsRepository,
     @InjectRepository(ValorEstoque)private readonly valorEstoqueRepository: Repository<ValorEstoque>,
     @InjectRepository(HistoricoEstoque) private readonly historicoEstoqueRepository: Repository<HistoricoEstoque>,
-    @InjectRepository(NfeResumo) private readonly nfeResumoRepository: Repository<NfeResumo>
+    @InjectRepository(NfeResumo) private readonly nfeResumoRepository: Repository<NfeResumo>,
+    @InjectRepository(Colaborador) private readonly collaborateRepository: Repository<Colaborador>
   ) {}
 
   async getStock(): Promise<Estoque[]> {
@@ -296,28 +294,63 @@ export class StockService implements IStockRepository {
   }
 
   async getStockOut(out: StockOutDto): Promise<string> {
-    const { produtos, observacao } = out;
+    const { produtos, observacao, colaborador_id, colaborador_nome } = out;
   
+    let colaborador: Colaborador | null = null;
     let totalUnidadesSaidas = 0;
+    
+    const isPedidoInterno = out.tipo_saida === 'Pedido Colaborador';
+    
+    if (isPedidoInterno) {
+      if (colaborador_id) {
+        colaborador = await this.collaborateRepository.findOne({
+          where: { colaborador_id },
+        });
+      }
+    
+      if (!colaborador && colaborador_nome) {
+        colaborador = this.collaborateRepository.create({
+          nome: colaborador_nome.trim(),
+        });
+    
+        await this.collaborateRepository.save(colaborador);
+      }
+    
+      if (!colaborador) {
+        throw new Error('Colaborador obrigatório para Pedido Colaborador.');
+      }
+    }
   
     for (const item of produtos) {
-      const produto = await this.productRepository.findProductById(item.produto_id);
+      const produto = await this.productRepository.findProductById(
+        item.produto_id,
+      );
+  
       if (!produto) {
-        throw new Error(`Produto com ID ${item.produto_id} não encontrado.`);
+        throw new Error(
+          `Produto com ID ${item.produto_id} não encontrado.`,
+        );
       }
+  
       let quantidadeEmUnidadesBase = Number(item.quantidade);
+  
       if (produto.qt_uni && produto.unidade) {
         quantidadeEmUnidadesBase *= produto.qt_uni;
-      }    
+      }
   
       totalUnidadesSaidas += quantidadeEmUnidadesBase;
   
-      await this.produtoRepository.decrement({ produto_id: produto.produto_id }, 'saldo_estoque', quantidadeEmUnidadesBase);
+      await this.produtoRepository.decrement(
+        { produto_id: produto.produto_id },
+        'saldo_estoque',
+        quantidadeEmUnidadesBase,
+      );
   
       const saida = this.saidaRepository.create({
         quantidade: item.quantidade,
         produto,
         observacao,
+        colaborador: colaborador ?? null, // 🔥 Aqui está o segredo
       });
   
       await this.saidaRepository.save(saida);
@@ -326,6 +359,10 @@ export class StockService implements IStockRepository {
     return `Saída de estoque realizada com sucesso. Total de unidades: ${totalUnidadesSaidas}.`;
   }
 
+  getAllCollaborators(): Promise<Colaborador[]> {
+    return this.collaborateRepository.find();
+  }
+  
   async findProductOut(id: number): Promise<SaidaEstoque[]> {
     return await this.saidaRepository.find({
       where: { produto: { produto_id: id } },
