@@ -1804,6 +1804,8 @@ export class SellsService implements ISellsRepository {
   
       result[vendedorNome].valor_total += incrementoPedido;
     }
+
+    return result;
   }
 
   async exportBling(id: number): Promise<string> {
