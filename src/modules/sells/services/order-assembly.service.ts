@@ -111,12 +111,13 @@ export class OrderAssemblyService {
       }
 
       const itensMontagem = await this.itensMontagemRepository
-        .createQueryBuilder('im')
-        .select('im.itens_venda_id', 'itensVendaId')
-        .addSelect('SUM(im.quantidade_bipada)', 'scannedCount')
-        .where('im.itens_venda_id IN (:...itensVendaIds)', { itensVendaIds })
-        .groupBy('im.itens_venda_id')
-        .getRawMany();
+      .createQueryBuilder('im')
+      .select([
+        'im.itens_venda_id AS itensVendaId',
+        'im.quantidade_bipada AS scannedCount'
+      ])
+      .where('im.itens_venda_id IN (:...itensVendaIds)', { itensVendaIds })
+      .getRawMany();
 
       const progress = venda.itensVenda.map(item => {
         const found = itensMontagem.find(im => +im.itensVendaId === item.itens_venda_id);
