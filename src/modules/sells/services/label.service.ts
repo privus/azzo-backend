@@ -3,10 +3,13 @@ import { ISellsRepository } from '../../../domain/repositories';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as PdfPrinter from 'pdfmake';
+import { Venda } from '../../../infrastructure/database/entities';
 
 @Injectable()
 export class LabelService {
-  constructor(@Inject('ISellsRepository') private readonly sellsSevice: ISellsRepository) {}
+  constructor(
+    @Inject('ISellsRepository') private readonly sellsSevice: ISellsRepository,
+  ) {}
 
   async generateLabel(orderId: number, totalVolumes: number, responsible: string): Promise<Buffer> {
     const order = await this.sellsSevice.getSellByCode(orderId);
@@ -20,8 +23,8 @@ export class LabelService {
     if (order.status_venda.status_venda_id !== 11491) {
       await this.sellsSevice.updateStatusSellentt(order.codigo, 11541);
     }
+    await this.sellsSevice.registerAssemblyCommission(order);
 
-    // Criar PDF
     return await this.createPdf(order, totalVolumes, responsible, logoBase64);
   }
 
@@ -55,7 +58,7 @@ export class LabelService {
     return this.generatePdfBuffer(printer, docDefinition);
   }
 
-  private createLabel(order: any, volume: number, totalVolumes: number, responsible: string, logoBase64: string) {
+  private createLabel(order: Venda, volume: number, totalVolumes: number, responsible: string, logoBase64: string) {
     const endereco = order.cliente.endereco + ' Nº ' + (order.cliente.num_endereco ?? '');
     const complemento = order.cliente.complemento ? order.cliente.complemento : '';
     const estado = order.cliente.cidade ? order.cliente.cidade.estado.sigla : '';

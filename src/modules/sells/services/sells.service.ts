@@ -1,9 +1,9 @@
 import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, MoreThanOrEqual, Not, Raw, Repository } from 'typeorm';
-import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda, SaidaEstoque, MetaVendedor, Comissions } from '../../../infrastructure/database/entities';
+import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda, SaidaEstoque, MetaVendedor, Comissions, MetaMontagem } from '../../../infrastructure/database/entities';
 import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto, ProjectStockDto, GroupSalesResponse, CustomerGroupSalesDto, WeeklyAid, OrdeBlingDto, NfeBlingDTO, OrdersBlingResponseDto, OrderBlingResponseDto } from '../dto';
-import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository, IBlingAuthRepository } from '../../../domain/repositories';
+import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository, IBlingAuthRepository, IWhatsAppRepository } from '../../../domain/repositories';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { HttpService } from '@nestjs/axios';
 import { Ecommerce } from 'src/infrastructure/database/entities/ecommerce';
@@ -45,6 +45,8 @@ export class SellsService implements ISellsRepository {
     @InjectRepository(MetaVendedor) private readonly metaRepository: Repository<MetaVendedor>,
     @InjectRepository(Ecommerce) private readonly ecommerceRepository: Repository<Ecommerce>,
     @InjectRepository(Comissions) private readonly comissionsRepository: Repository<Comissions>,
+    @InjectRepository(MetaMontagem) private readonly metaMontagemRepository: Repository<MetaMontagem>,
+    @Inject('IWhatsAppRepository') private readonly whatsAppService: IWhatsAppRepository,
   ) {
     this.tokenSellentt = process.env.SELLENTT_API_TOKEN;
     this.apiUrlSellentt = process.env.SELLENTT_API_URL;
@@ -428,21 +430,25 @@ export class SellsService implements ISellsRepository {
     return `Recebida ${sell.code}`;
   }
 
-  private async decrementStockSell(code:number): Promise<void> {
-    const venda = await this.getSellByCode(code);
+  private async decrementStockSell(code: number): Promise<void> {
 
+    const venda = await this.getSellByCode(code);
+    let comissaoMontagem = 0;
+  
     for (const item of venda.itensVenda) {
+  
       const produtoVenda = item.produto;
       if (!produtoVenda) continue;
   
-      // Determina o produto base de controle de estoque
       const produtoEstoque = produtoVenda.unidade || produtoVenda;
   
-      // Quantidade convertida para unidades base
       let quantidadeEmUnidadesBase = Number(item.quantidade);
+  
       if (produtoVenda.qt_uni && produtoVenda.unidade) {
         quantidadeEmUnidadesBase *= produtoVenda.qt_uni;
-      }    
+      }
+  
+      comissaoMontagem += quantidadeEmUnidadesBase * 0.02;
   
       const saida = this.saidaRepository.create({
         produto: produtoEstoque,
@@ -451,11 +457,18 @@ export class SellsService implements ISellsRepository {
         venda: venda,
         observacao: `Saída por ${venda.tipo_pedido.nome} - ${venda.codigo}`,
       });
-      await this.produtoRepository.decrement({ produto_id: produtoEstoque.produto_id }, 'saldo_estoque', quantidadeEmUnidadesBase);
+  
+      await this.produtoRepository.decrement(
+        { produto_id: produtoEstoque.produto_id },
+        'saldo_estoque',
+        quantidadeEmUnidadesBase,
+      );
   
       await this.saidaRepository.save(saida);
     }
-    
+  
+    venda.comissao_montagem = comissaoMontagem;
+    await this.saveSell(venda);
   }
 
   async associatePairedSells(): Promise<void> {
@@ -595,6 +608,20 @@ export class SellsService implements ISellsRepository {
       throw new Error(`Status de venda com ID ${status_venda_id} não encontrado.`);
     }
 
+    if (status_venda_id === 11139) {
+      await this.whatsAppService.sendMessage(
+        venda.cliente.celular,
+        `Olá ${venda.cliente.nome}, recebemos seu pedido ${venda.codigo} e ele está sendo montado 🛠️`
+      );
+    }
+    
+    if (status_venda_id === 11541) {
+      await this.whatsAppService.sendMessage(
+        venda.cliente.celular,
+        `Olá ${venda.cliente.nome}, seu pedido ${venda.codigo} já saiu para entrega 🚚`
+      );
+    }
+
     await this.updateStatus(codigo, status_venda_id);
     venda.numero_nfe = numero_nfe;
     venda.valor_frete = valor_frete;
@@ -611,6 +638,22 @@ export class SellsService implements ISellsRepository {
     });
     const novoStatus = await this.statusVendaRepository.findOne({ where: { status_venda_id } });
     venda.status_venda = novoStatus;
+    if (venda.associado) {
+      await this.updateStatusSellentt(venda.associado, status_venda_id);
+    }
+    if (status_venda_id === 11139) {
+      await this.whatsAppService.sendMessage(
+        venda.cliente.celular,
+        `Olá ${venda.cliente.nome}, recebemos seu pedido ${venda.codigo} e ele está sendo montado 🛠️`
+      );
+    }
+    
+    if (status_venda_id === 11541) {
+      await this.whatsAppService.sendMessage(
+        venda.cliente.celular,
+        `Olá ${venda.cliente.nome}, seu pedido ${venda.codigo} já saiu para entrega 🚚`
+      );
+    }
     await this.updateStatusSellentt(codigo, status_venda_id);
     await this.vendaRepository.save(venda);
   }
@@ -2433,5 +2476,83 @@ export class SellsService implements ISellsRepository {
     } finally {
       this.isRuning = false;
     }
+  }
+
+  async registerAssemblyCommission(order: Venda) {
+
+    const valor = order.comissao_montagem
+    let metaDia;
+  
+    if (!valor || valor <= 0) return;
+  
+    let meta = await this.metaMontagemRepository.findOne({ where: {} });
+ 
+    if (!meta) {
+      meta = this.metaMontagemRepository.create({
+        meta_diaria: 22,
+        meta_realizada: 1,
+        valor_acumulado: 0,
+        valor_condicional: 0,
+      });
+    }
+
+    if (!meta.meta_realizada) {
+      const statusIds = [11139, 11138];
+
+      const totalPedidosPendentes = await this.vendaRepository.count({
+        where: {
+          status_venda: {
+            status_venda_id: In(statusIds),
+          },
+        },
+      });    
+      metaDia = Math.min(totalPedidosPendentes, 22);
+
+    }
+    
+    meta.meta_realizada += 1;
+    meta.valor_condicional = meta.valor_condicional + valor;
+  
+    await this.metaMontagemRepository.save(meta);
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async closeDailyGoal(): Promise<void> {
+
+    this.logger.log('🕛 Iniciando fechamento diário da meta de montagem...');
+
+    const meta = await this.metaMontagemRepository.findOne({ where: {} });
+
+    if (!meta) {
+      this.logger.warn('⚠️ Meta de montagem não encontrada.');
+      return;
+    }
+
+    const bateuMeta = meta.meta_realizada >= meta.meta_diaria;
+
+    if (bateuMeta) {
+
+      meta.valor_acumulado = meta.valor_acumulado +meta.valor_condicional;
+
+      this.logger.log(
+        `🎯 Meta batida! Valor ${meta.valor_condicional} adicionado ao acumulado.`,
+      );
+    } else {
+
+      this.logger.log(
+        `❌ Meta não batida. Realizado: ${meta.meta_realizada} / ${meta.meta_diaria}`,
+      );
+    }
+
+    meta.meta_realizada = 0;
+    meta.valor_condicional = 0;
+
+    await this.metaMontagemRepository.save(meta);
+
+    this.logger.log('✅ Fechamento diário finalizado.');
+  }
+
+  async getAssemblyGoal(): Promise <MetaMontagem> {
+    return await this.metaMontagemRepository.findOne({ where: {} });
   }
 }

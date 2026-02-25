@@ -52,6 +52,9 @@ export class Venda {
   comisao: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  comissao_montagem: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   desconto: number;
 
   @Column({ type: 'int', nullable: true })

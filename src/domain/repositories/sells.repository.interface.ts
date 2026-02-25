@@ -35,4 +35,5 @@ export interface ISellsRepository {
   findSellsByRomaneio(romaneio_id: number): Promise<Venda[]>;
   clearNfeData(code: number): Promise<string>;
   getSellByNf(id: number): Promise<Venda>;
+  registerAssemblyCommission(order: Venda): Promise<void>;
 }

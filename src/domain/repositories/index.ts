@@ -14,3 +14,4 @@ export * from './stock.repository.interface';
 export * from './debts.repository.interface';
 export * from './blingToken.repository.interface';
 export * from './blingAuth.repository.interface';
+export * from './whatsapp.repository.interface';

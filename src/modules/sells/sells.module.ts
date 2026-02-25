@@ -21,6 +21,7 @@ import {
   MetaVendedor,
   Ecommerce,
   Comissions,
+  MetaMontagem,
 } from '../../infrastructure/database/entities';
 import { SellsController } from './controllers/sells.controller';
 import { HttpModule } from '@nestjs/axios';
@@ -38,6 +39,7 @@ import { AssemblyController } from './controllers/assembly.controller';
 import { OmieService } from './services/omie.service';
 import { OmieController } from './controllers/omie.controller';
 import { AuthModule } from '../auth/auth.module';
+import { WhatsAppService } from './services/whatsapp.service';
 
 @Module({
   imports: [
@@ -59,7 +61,8 @@ import { AuthModule } from '../auth/auth.module';
       ItensMontagem,
       MetaVendedor,
       Ecommerce,
-      Comissions
+      Comissions,
+      MetaMontagem
     ]),
     AuthModule,
     HttpModule,
@@ -81,6 +84,7 @@ import { AuthModule } from '../auth/auth.module';
     { provide: 'ITinyAuthRepository', useClass: TinyAuthService },
     { provide: 'ITinyTokenRepository', useClass: TinyTokenService },
     { provide: 'ISellsRepository', useClass: SellsService },
+    { provide: 'IWhatsAppRepository', useClass: WhatsAppService },
   ],
   exports: [
     LabelService,
@@ -92,6 +96,7 @@ import { AuthModule } from '../auth/auth.module';
     'ITinyAuthRepository',
     'ITinyTokenRepository',
     'ISellsRepository',
+    'IWhatsAppRepository'
   ],
 })
 export class SellsModule {}

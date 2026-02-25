@@ -58,3 +58,4 @@ export * from './nfeResumo';
 export * from './ecommerce';
 export * from './comissions';
 export * from './colaborador';
+export * from './metaMontagem';

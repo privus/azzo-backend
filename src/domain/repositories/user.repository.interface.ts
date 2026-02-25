@@ -1,4 +1,4 @@
-import { Usuario } from 'src/infrastructure/database/entities';
+import { Usuario } from '../../infrastructure/database/entities';
 
 export interface IUserRepository {
   findBy(param: Partial<Usuario>): Promise<Usuario>;
