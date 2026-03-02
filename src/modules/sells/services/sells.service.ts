@@ -2524,8 +2524,11 @@ export class SellsService implements ISellsRepository {
 
     }
     
-    meta.meta_realizada += 1;
-    meta.valor_condicional = meta.valor_condicional + valor;
+    const valorAtual = Number(meta.valor_condicional) || 0;
+    const incremento = Number(valor) || 0;
+    
+    meta.meta_realizada = (Number(meta.meta_realizada) || 0) + 1;
+    meta.valor_condicional = valorAtual + incremento;
   
     await this.metaMontagemRepository.save(meta);
   }
