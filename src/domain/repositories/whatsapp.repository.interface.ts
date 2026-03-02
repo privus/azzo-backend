@@ -1,3 +1,3 @@
 export interface IWhatsAppRepository {
-  sendMessage(to: string, message: string): Promise<void> 
+  sendMessage(codigo: number, to: string, message: string): Promise<void> 
 }

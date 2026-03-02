@@ -448,7 +448,7 @@ export class SellsService implements ISellsRepository {
         quantidadeEmUnidadesBase *= produtoVenda.qt_uni;
       }
   
-      comissaoMontagem += quantidadeEmUnidadesBase * 0.02;
+      comissaoMontagem += quantidadeEmUnidadesBase * 0.01;
   
       const saida = this.saidaRepository.create({
         produto: produtoEstoque,
@@ -608,20 +608,6 @@ export class SellsService implements ISellsRepository {
       throw new Error(`Status de venda com ID ${status_venda_id} não encontrado.`);
     }
 
-    if (status_venda_id === 11139) {
-      await this.whatsAppService.sendMessage(
-        venda.cliente.celular,
-        `Olá ${venda.cliente.nome}, recebemos seu pedido ${venda.codigo} e ele está sendo montado 🛠️`
-      );
-    }
-    
-    if (status_venda_id === 11541) {
-      await this.whatsAppService.sendMessage(
-        venda.cliente.celular,
-        `Olá ${venda.cliente.nome}, seu pedido ${venda.codigo} já saiu para entrega 🚚`
-      );
-    }
-
     await this.updateStatus(codigo, status_venda_id);
     venda.numero_nfe = numero_nfe;
     venda.valor_frete = valor_frete;
@@ -632,30 +618,58 @@ export class SellsService implements ISellsRepository {
   }
 
   async updateStatus(codigo: number, status_venda_id: number): Promise<void> {
-    const venda = await this.vendaRepository.findOne({
-      where: { codigo },
-      relations: ['status_venda'],
-    });
-    const novoStatus = await this.statusVendaRepository.findOne({ where: { status_venda_id } });
-    venda.status_venda = novoStatus;
+    const venda = await this.getSellByCode(codigo);
+  
+    if (!venda) return;
+
     if (venda.associado) {
       await this.updateStatusSellentt(venda.associado, status_venda_id);
     }
-    if (status_venda_id === 11139) {
-      await this.whatsAppService.sendMessage(
-        venda.cliente.celular,
-        `Olá ${venda.cliente.nome}, recebemos seu pedido ${venda.codigo} e ele está sendo montado 🛠️`
-      );
-    }
-    
-    if (status_venda_id === 11541) {
-      await this.whatsAppService.sendMessage(
-        venda.cliente.celular,
-        `Olá ${venda.cliente.nome}, seu pedido ${venda.codigo} já saiu para entrega 🚚`
-      );
-    }
     await this.updateStatusSellentt(codigo, status_venda_id);
+  
+    const oldStatusId = venda.status_venda?.status_venda_id;
+  
+    if (oldStatusId === status_venda_id) {
+      this.logger.warn(`Status ${status_venda_id} já está definido para venda ${codigo}.`);
+      return;
+    }
+  
+    const novoStatus = await this.statusVendaRepository.findOne({
+      where: { status_venda_id },
+    });
+    if (!novoStatus) return;
+  
+    const tipoVenda = venda.tipo_pedido.tipo_pedido_id === 10438;
+  
+    // ✅ atualiza local primeiro
+    venda.status_venda = novoStatus;
     await this.vendaRepository.save(venda);
+  
+    if (tipoVenda) {
+      if (status_venda_id === 11139 && !venda.itens_atualizacao) {
+        await this.whatsAppService.sendMessage(
+          venda.cliente.codigo,
+          venda.cliente.celular,
+          `Olá ${venda.cliente.nome_empresa}, recebemos seu pedido ${venda.codigo} e ele está sendo montado 🛠️`,
+        );
+      }
+  
+      if (status_venda_id === 11541) {
+        await this.whatsAppService.sendMessage(
+          venda.cliente.codigo,
+          venda.cliente.celular,
+          `Olá ${venda.cliente.nome_empresa}, seu pedido ${venda.codigo} foi montado e está aguardando coleta da transportadora`,
+        );
+      }
+  
+      if (status_venda_id === 11491) {
+        await this.whatsAppService.sendMessage(
+          venda.cliente.codigo,
+          venda.cliente.celular,
+          `Olá ${venda.cliente.nome}, seu pedido ${venda.codigo} já está com a transportadora e será entregue em breve 🚚`,
+        );
+      }
+    }
   }
 
   async exportTiny(id: number): Promise<string> {

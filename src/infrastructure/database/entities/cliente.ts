@@ -110,4 +110,7 @@ export class Cliente {
 
   @Column({ type: 'int', nullable: true })
   finance_id: number;
+
+  @Column({ type: 'tinyint', default: 0, nullable: true })
+  revisar: number;
 }

@@ -22,6 +22,7 @@ import {
   Ecommerce,
   Comissions,
   MetaMontagem,
+  Cliente,
 } from '../../infrastructure/database/entities';
 import { SellsController } from './controllers/sells.controller';
 import { HttpModule } from '@nestjs/axios';
@@ -62,7 +63,8 @@ import { WhatsAppService } from './services/whatsapp.service';
       MetaVendedor,
       Ecommerce,
       Comissions,
-      MetaMontagem
+      MetaMontagem,
+      Cliente
     ]),
     AuthModule,
     HttpModule,

@@ -1,36 +1,50 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Cliente } from 'src/infrastructure/database/entities/cliente';
 import { IWhatsAppRepository } from '../../../domain/repositories';
 
 @Injectable()
 export class WhatsAppService implements IWhatsAppRepository {
-
   private readonly logger = new Logger(WhatsAppService.name);
 
   private readonly messageTag = 'messages/send';
   private readonly apiMktUrl: string;
   private readonly apiMktToken: string;
 
-  private readonly defaultFrom = '5535997782896';
+  private readonly defaultFrom = '5535998770726';
   private readonly defaultContactName = 'Azzo Distribuidora';
 
-  constructor(private readonly httpService: HttpService) {
+  constructor(
+    private readonly httpService: HttpService,
+    @InjectRepository(Cliente) private readonly clienteRepository: Repository<Cliente>,
+  ) {
     this.apiMktUrl = process.env.MKT_API_URL;
     this.apiMktToken = process.env.TOKEN_MKT_PRIVUS;
   }
 
-  async sendMessage(to: string, message: string): Promise<void> {
+  async sendMessage(codigo: number, to: string, message: string): Promise<void> {
+
+    const cliente = await this.clienteRepository.findOne({ where: { codigo }});
+
+    if (!cliente) {
+      this.logger.warn(`Cliente não encontrado para codigo=${codigo}. Abortando envio WhatsApp.`);
+      return;
+    }
 
     const normalizedPhone = this.normalizeBrMobile(to);
 
     if (!normalizedPhone) {
-      this.logger.warn(`Telefone inválido ou não celular BR: ${to}`);
+      this.logger.warn(`Telefone inválido ou não celular BR. codigo=${codigo} telefone=${to}`);
+
+      cliente.revisar = 1;
+      await this.clienteRepository.save(cliente);
+
       return;
     }
 
-    const url = this.apiMktUrl.endsWith('/')
-      ? `${this.apiMktUrl}${this.messageTag}`
-      : `${this.apiMktUrl}/${this.messageTag}`;
+    const url = `${this.apiMktUrl}${this.messageTag}`;
 
     try {
       await this.httpService.axiosRef.post(
@@ -50,56 +64,45 @@ export class WhatsAppService implements IWhatsAppRepository {
         },
       );
 
-      this.logger.log(`WhatsApp enviado com sucesso para ${normalizedPhone}`);
+      this.logger.log(`WhatsApp enviado com sucesso. codigo=${codigo} to=${normalizedPhone}`);
 
+      cliente.celular = normalizedPhone;
+
+      await this.clienteRepository.save(cliente);
     } catch (error: any) {
       this.logger.error(
-        `Erro ao enviar WhatsApp para ${normalizedPhone}`,
-        error?.response?.data || error.message,
+        `Erro ao enviar WhatsApp. codigo=${codigo} to=${normalizedPhone}`,
+        error?.response?.data || error?.message || error,
       );
+
+      cliente.revisar = 1;
+      await this.clienteRepository.save(cliente);
     }
   }
 
-  private normalizeBrMobile(input: string): string | null {
+  private onlyDigits(input: string): string {
+    return (input || '').replace(/\D/g, '');
+  }
 
+  private normalizeBrMobile(input: string): string | null {
     if (!input) return null;
 
-    // Remove tudo que não é número
-    let digits = input.replace(/\D/g, '');
+    let digits = this.onlyDigits(input);
 
-    // Remove prefixo internacional
-    if (digits.startsWith('00')) {
-      digits = digits.slice(2);
-    }
+    if (digits.startsWith('00')) digits = digits.slice(2);
+    if (digits.startsWith('55')) digits = digits.slice(2);
 
-    // Remove DDI 55 se vier
-    if (digits.startsWith('55')) {
-      digits = digits.slice(2);
-    }
+    digits = digits.replace(/^0+/, '');
 
-    // Remove zeros iniciais
-    while (digits.startsWith('0')) {
-      digits = digits.slice(1);
-    }
+    if (digits.length !== 11) return null;
 
-    // Deve ter exatamente 11 dígitos: DDD + 9 + 8
-    if (digits.length !== 11) {
-      return null;
-    }
-
-    const ddd = digits.substring(0, 2);
+    const ddd = Number(digits.substring(0, 2));
     const firstDigitAfterDDD = digits.substring(2, 3);
 
-    // Celular BR obrigatoriamente começa com 9
-    if (firstDigitAfterDDD !== '9') {
-      return null;
-    }
+    if (ddd < 11 || ddd > 99) return null;
+    if (firstDigitAfterDDD !== '9') return null;
 
-    // DDD precisa ser número válido (opcional mas mais seguro)
-    const dddNumber = Number(ddd);
-    if (dddNumber < 11 || dddNumber > 99) {
-      return null;
-    }
+    if (/^(\d)\1+$/.test(digits)) return null;
 
     return `55${digits}`;
   }
