@@ -2494,7 +2494,7 @@ export class SellsService implements ISellsRepository {
 
   async registerAssemblyCommission(order: Venda) {
 
-    const valor = order.comissao_montagem
+    const valor = order.comissao_montagem || 0;
     let metaDia;
   
     if (!valor || valor <= 0) return;
