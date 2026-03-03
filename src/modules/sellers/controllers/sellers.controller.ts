@@ -38,6 +38,12 @@ export class SellersController {
     return this.sellersService.getMetaProgress();
   }
 
+  @ApiOperation({ summary: 'Progresso metas vendedores' })
+  @Get('goalsRanking')
+  async goalsRanking() {
+    return this.sellersService.rankingByProgress();
+  }
+
   @ApiOperation({ summary: 'Cadastra metas' })
   @Post('goals')
   async createGoals(@Body() goals: Goals[]) {

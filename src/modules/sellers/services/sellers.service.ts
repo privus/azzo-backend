@@ -177,6 +177,18 @@ export class SellersService {
     });
   }
 
+  async rankingByProgress(): Promise<Array<{ vendedor: string; progress: number }>> {  
+    const goals = await this.getMetaProgress();
+    return goals
+      .map(goal => ({
+        vendedor: goal.vendedor,
+        progress: Number(
+          Math.min(goal.progress_ped, goal.progress_fat).toFixed(2)
+        )
+      }))
+      .sort((a, b) => b.progress - a.progress);
+  }
+
   async getCommissionsReport(fromDate: string, toDate: string): Promise<CommissionsReport[]> {
     const todosVendedores = (await this.findAllSellers())
       .filter(v => v.ativo && ![18, 12, 16].includes(v.vendedor_id));

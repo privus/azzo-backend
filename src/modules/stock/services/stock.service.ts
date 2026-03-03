@@ -258,7 +258,7 @@ export class StockService implements IStockRepository {
   }
 
   async updateStockFromJson(): Promise<string> {
-    const jsonFilePath = 'src/utils/contagem-estoque-janeiro.json';
+    const jsonFilePath = 'src/utils/contagem-estoque-fevereiro-26.json';
   
     if (!fs.existsSync(jsonFilePath)) {
       console.error(`❌ Arquivo '${jsonFilePath}' não encontrado.`);

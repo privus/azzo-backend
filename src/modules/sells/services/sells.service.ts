@@ -2457,7 +2457,7 @@ export class SellsService implements ISellsRepository {
     this.logger.log(`🟡 Iniciando envio ao financeiro`);
   
     if (this.isRuning) {
-      this.logger.warn('⚠️ Registro de produtos já está em andamento. Abortando nova execução.');
+      this.logger.warn('⚠️ Registro de lançamentos financeiros já está em andamento. Abortando nova execução.');
       return;
     }
   
@@ -2465,7 +2465,7 @@ export class SellsService implements ISellsRepository {
     const resultados: string[] = [];
   
     try {
-      const vendasMes = await this.sellsBetweenDates('2026-01-01', '2026-01-31');
+      const vendasMes = await this.sellsBetweenDates('2026-02-01', '2026-02-27');
       const tipoVenda = 10438;
   
       const vendasFiltradas = vendasMes.filter(v => 
@@ -2500,15 +2500,6 @@ export class SellsService implements ISellsRepository {
     if (!valor || valor <= 0) return;
   
     let meta = await this.metaMontagemRepository.findOne({ where: {} });
- 
-    if (!meta) {
-      meta = this.metaMontagemRepository.create({
-        meta_diaria: 22,
-        meta_realizada: 1,
-        valor_acumulado: 0,
-        valor_condicional: 0,
-      });
-    }
 
     if (!meta.meta_realizada) {
       const statusIds = [11139, 11138];
@@ -2520,7 +2511,7 @@ export class SellsService implements ISellsRepository {
           },
         },
       });    
-      metaDia = Math.min(totalPedidosPendentes, 22);
+      metaDia = Math.min(totalPedidosPendentes, 24);
 
     }
     
