@@ -2356,6 +2356,10 @@ export class SellsService implements ISellsRepository {
     if (!venda) {
       throw new BadRequestException({ message: `Venda com código ${codigoVenda} não encontrada.` });
     }
+
+    if (venda.finance_id) {
+      return `Venda ${codigoVenda} já enviada para o sistema financeiro.`;
+    }
   
     const cliente = venda.cliente;
     if (!cliente) {
