@@ -2474,7 +2474,8 @@ export class SellsService implements ISellsRepository {
   
       const vendasFiltradas = vendasMes.filter(v => 
         v.tipo_pedido?.tipo_pedido_id === tipoVenda &&
-        v.status_venda?.status_venda_id !== 11468
+        v.status_venda?.status_venda_id !== 11468 &&
+        !v.finance_id
       );
       this.logger.log(`🔢 Vendas filtradas: ${vendasFiltradas.length}`);
   
