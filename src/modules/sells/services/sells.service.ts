@@ -2529,7 +2529,7 @@ export class SellsService implements ISellsRepository {
     await this.metaMontagemRepository.save(meta);
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  @Cron(CronExpression.EVERY_DAY_AT_7AM)
   async closeDailyGoal(): Promise<void> {
 
     this.logger.log('🕛 Iniciando fechamento diário da meta de montagem...');

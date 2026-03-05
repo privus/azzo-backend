@@ -57,6 +57,12 @@ export class SellsController {
     return this.sellsService.getAssemblyGoal();
   }
 
+  @ApiOperation({ summary: 'Obter meta montagem' })
+  @Get('closeDailyGoal')
+  async closeDailyGoal() {
+    return this.sellsService.closeDailyGoal();
+  }
+
   @ApiOperation({ summary: 'Obter mix' })
   @Get('mix')
   async getMix() {
