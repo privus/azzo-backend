@@ -2545,8 +2545,10 @@ export class SellsService implements ISellsRepository {
 
     if (bateuMeta) {
 
-      meta.valor_acumulado = meta.valor_acumulado +meta.valor_condicional;
-
+      meta.valor_acumulado =
+        Number(meta.valor_acumulado || 0) +
+        Number(meta.valor_condicional || 0);
+    
       this.logger.log(
         `🎯 Meta batida! Valor ${meta.valor_condicional} adicionado ao acumulado.`,
       );
