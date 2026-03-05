@@ -768,7 +768,7 @@ export class SellsService implements ISellsRepository {
         throw new Error(`Venda com ID ${code} não encontrada.`);
     }
 
-    await this.revertSaleStock(venda);
+    // await this.revertSaleStock(venda);
 
     // Exclui a venda diretamente (parcelas serão excluídas automaticamente pelo cascade)
     await this.vendaRepository.remove(venda);
@@ -2517,7 +2517,6 @@ export class SellsService implements ISellsRepository {
         },
       });    
       metaDia = Math.min(totalPedidosPendentes, 24);
-
     }
     
     const valorAtual = Number(meta.valor_condicional) || 0;
