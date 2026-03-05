@@ -768,7 +768,7 @@ export class SellsService implements ISellsRepository {
         throw new Error(`Venda com ID ${code} não encontrada.`);
     }
 
-    // await this.revertSaleStock(venda);
+    await this.revertSaleStock(venda);
 
     // Exclui a venda diretamente (parcelas serão excluídas automaticamente pelo cascade)
     await this.vendaRepository.remove(venda);
@@ -777,19 +777,19 @@ export class SellsService implements ISellsRepository {
   }
 
   private async revertSaleStock(venda: Venda): Promise<void> {
-    for (const item of venda.itensVenda) {
-      const produtoVenda = item.produto;
-      if (!produtoVenda) continue;
+    // for (const item of venda.itensVenda) {
+    //   const produtoVenda = item.produto;
+    //   if (!produtoVenda) continue;
   
-      const produtoEstoque = produtoVenda.unidade || produtoVenda;
+    //   const produtoEstoque = produtoVenda.unidade || produtoVenda;
   
-      let quantidadeEmUnidadesBase = Number(item.quantidade);
-      if (produtoVenda.qt_uni && produtoVenda.unidade) {
-        quantidadeEmUnidadesBase *= produtoVenda.qt_uni;
-      }
+    //   let quantidadeEmUnidadesBase = Number(item.quantidade);
+    //   if (produtoVenda.qt_uni && produtoVenda.unidade) {
+    //     quantidadeEmUnidadesBase *= produtoVenda.qt_uni;
+    //   }
   
-      await this.produtoRepository.increment({ produto_id: produtoEstoque.produto_id }, 'saldo_estoque', quantidadeEmUnidadesBase);
-    }
+    //   await this.produtoRepository.increment({ produto_id: produtoEstoque.produto_id }, 'saldo_estoque', quantidadeEmUnidadesBase);
+    // }
   
     // Também apaga os registros de saída de estoque dessa venda
     await this.saidaRepository.delete({ venda });
