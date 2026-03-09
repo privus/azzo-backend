@@ -447,8 +447,10 @@ export class SellsService implements ISellsRepository {
       if (produtoVenda.qt_uni && produtoVenda.unidade) {
         quantidadeEmUnidadesBase *= produtoVenda.qt_uni;
       }
-  
-      comissaoMontagem += quantidadeEmUnidadesBase * 0.01;
+      
+      if (venda.tipo_pedido.tipo_pedido_id === 10438) {
+        comissaoMontagem += quantidadeEmUnidadesBase * 0.01;
+      }
   
       const saida = this.saidaRepository.create({
         produto: produtoEstoque,
@@ -2500,30 +2502,13 @@ export class SellsService implements ISellsRepository {
   async registerAssemblyCommission(order: Venda) {
 
     const valor = order.comissao_montagem || 0;
-    let metaDia;
   
     if (!valor || valor <= 0) return;
   
     let meta = await this.metaMontagemRepository.findOne({ where: {} });
 
-    if (!meta.meta_realizada) {
-      const statusIds = [11139, 11138];
-
-      const totalPedidosPendentes = await this.vendaRepository.count({
-        where: {
-          status_venda: {
-            status_venda_id: In(statusIds),
-          },
-        },
-      });    
-      metaDia = Math.min(totalPedidosPendentes, 24);
-    }
-    
-    const valorAtual = Number(meta.valor_condicional) || 0;
-    const incremento = Number(valor) || 0;
-    
-    meta.meta_realizada = (Number(meta.meta_realizada) || 0) + 1;
-    meta.valor_condicional = valorAtual + incremento;
+    meta.meta_realizada = Number(meta.meta_realizada) + 1;
+    meta.valor_condicional = Number(meta.valor_condicional) + Number(valor);
   
     await this.metaMontagemRepository.save(meta);
   }
