@@ -1380,6 +1380,11 @@ export class SellsService implements ISellsRepository {
             continue;
           }
 
+          if (venda.numero_nfe && !venda.chave_acesso) {
+            await this.syncroNfByNumber(venda, uf);
+            continue;
+          }
+
           venda.chave_acesso = nf.chaveAcesso;
           venda.data_emissao_nfe = new Date(nf.dataEmissao);
           venda.nfe_emitida = 1;
@@ -1395,6 +1400,51 @@ export class SellsService implements ISellsRepository {
         console.error(`❌ Erro ao buscar contas para ${uf}:`, error.message);
         break;
       }
+    }
+  }
+
+  private async syncroNfByNumber(venda: Venda, uf: string): Promise<void> {
+
+    const token = await this.tinyAuthService.getAccessToken(uf);
+    if (!token) return;
+  
+    try {
+  
+      const url = `${this.apiUrlTiny}${this.nfeTagTiny}?numero=${venda.numero_nfe}`;
+  
+      const response = await this.httpService.axiosRef.get<{ itens: NfeDto[] }>(
+        url,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+  
+      const nf = response.data.itens?.[0];
+  
+      if (!nf) {
+        console.warn(`⚠️ NF ${venda.numero_nfe} não encontrada no Tiny.`);
+        return;
+      }
+  
+      venda.chave_acesso = nf.chaveAcesso;
+      venda.data_emissao_nfe = new Date(nf.dataEmissao);
+      venda.nfe_emitida = 1;
+      venda.nfe_id = nf.id;
+      venda.nfe_link = await this.getNflink(nf.id, uf);
+  
+      await this.vendaRepository.save(venda);
+  
+      console.log(`✅ NF ${venda.numero_nfe} sincronizada para venda ${venda.codigo}`);
+  
+    } catch (error) {
+  
+      console.error(
+        `❌ Erro ao sincronizar NF ${venda.numero_nfe}:`,
+        error.message,
+      );
+  
     }
   }
 
@@ -1829,7 +1879,7 @@ export class SellsService implements ISellsRepository {
     for (const venda of vendas) {
       const isPedidoValido =
         venda.tipo_pedido?.tipo_pedido_id === tipoPedidoAlvo &&
-        venda.status_venda?.status_venda_id !== 11468;
+        venda.status_venda?.status_venda_id !== 11468 && venda.valor_final >= 350;
   
       if (!isPedidoValido) continue;
   
@@ -1862,6 +1912,18 @@ export class SellsService implements ISellsRepository {
       }
   
       result[vendedorNome].valor_total += incrementoPedido;
+    }
+
+    const vendedor2 = vendedoresMap.get(2);
+    if (vendedor2) {
+      if (!result[vendedor2]) {
+        result[vendedor2] = {
+          valor_total: 0,
+          pedidos: 0,
+          clientes_novos: 0,
+        };
+      }
+      result[vendedor2].valor_total -= 30;
     }
 
     return result;
