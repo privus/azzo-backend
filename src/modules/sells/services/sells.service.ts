@@ -616,6 +616,11 @@ export class SellsService implements ISellsRepository {
     venda.status_venda = novoStatus;
     await this.vendaRepository.save(venda);
 
+    if (numero_nfe && !venda.chave_acesso) {
+      const vendaAtualizada = await this.getSellByCode(codigo);
+      await this.syncroNfBySell(vendaAtualizada);
+    }
+
     return `Status da venda ${venda.codigo} atualizado para ${novoStatus.nome}, Nf-e nº ${numero_nfe}.`;
   }
 
@@ -1255,9 +1260,6 @@ export class SellsService implements ISellsRepository {
 
     const updatedSales = new Set<string>();
 
-    await this.syncroNfByNumber("MG");
-    await this.syncroNfByNumber("SP");  
-
     await this.syncroInvoiceNfForState("MG", this.apiUrlTiny);
     await this.syncroInvoiceNfForState("SP", this.apiUrlTiny);
     await this.getAccessKeyNf("MG", this.apiUrlTiny, updatedSales);
@@ -1401,59 +1403,39 @@ export class SellsService implements ISellsRepository {
     }
   }
 
-  private async syncroNfByNumber(uf: string): Promise<void> {
-
+  private async syncroNfBySell(venda: Venda): Promise<void> {
+    if (!venda.numero_nfe || venda.chave_acesso) return;
+  
+    const uf =  venda.cliente.cidade.estado.sigla;
+  
     const token = await this.tinyAuthService.getAccessToken(uf);
-    if (!token) return;
-
-    const vendas = await this.vendaRepository.find({
-      where: {
-        numero_nfe: Not(null),
-        chave_acesso: IsNull(),
-        data_criacao: MoreThanOrEqual(new Date('2026-01-01'))
-      }
-    });
-  
-    for (const venda of vendas) {
-  
-      try {
-  
-        const url = `${this.apiUrlTiny}${this.nfeTagTiny}?numero=${venda.numero_nfe}`;
-  
-        const response = await this.httpService.axiosRef.get<{ itens: NfeDto[] }>(
-          url,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        );
-  
-        const nf = response.data.itens?.[0];
-  
-        if (!nf) continue;
-  
-        venda.chave_acesso = nf.chaveAcesso;
-        venda.data_emissao_nfe = new Date(nf.dataEmissao);
-        venda.nfe_emitida = 1;
-        venda.nfe_id = nf.id;
-        venda.nfe_link = await this.getNflink(nf.id, uf);
-  
-        await this.vendaRepository.save(venda);
-  
-        console.log(`✅ NF ${venda.numero_nfe} sincronizada para venda ${venda.codigo}`);
-  
-      } catch (error) {
-  
-        console.error(
-          `❌ Erro ao sincronizar NF ${venda.numero_nfe}`,
-          error.message
-        );
-  
-      }
-  
+    if (!token) {
+      throw new BadRequestException({ message: `Token Tiny não encontrado para ${uf}` });
     }
   
+    const url = `${this.apiUrlTiny}${this.nfeTagTiny}?numero=${venda.numero_nfe}`;
+  
+    const response = await this.httpService.axiosRef.get<{ itens: NfeDto[] }>(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  
+    const nf = response.data.itens?.[0];
+  
+    if (!nf) {
+      throw new BadRequestException({
+        message: `NF ${venda.numero_nfe} não encontrada no Tiny.`,
+      });
+    }
+  
+    venda.chave_acesso = nf.chaveAcesso;
+    venda.data_emissao_nfe = new Date(nf.dataEmissao);
+    venda.nfe_emitida = 1;
+    venda.nfe_id = nf.id;
+    venda.nfe_link = await this.getNflink(nf.id, uf);
+  
+    await this.vendaRepository.save(venda);
+  
+    this.logger.log(`✅ NF ${venda.numero_nfe} sincronizada imediatamente para venda ${venda.codigo}`);
   }
 
   private async getNflink(id: number, uf: string): Promise<string | null> {
