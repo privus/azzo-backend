@@ -1,6 +1,6 @@
 import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, MoreThanOrEqual, Not, Raw, Repository } from 'typeorm';
+import { In, IsNull, MoreThanOrEqual, Not, Raw, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda, SaidaEstoque, MetaVendedor, Comissions, MetaMontagem } from '../../../infrastructure/database/entities';
 import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto, ProjectStockDto, GroupSalesResponse, CustomerGroupSalesDto, WeeklyAid, OrdeBlingDto, NfeBlingDTO, OrdersBlingResponseDto, OrderBlingResponseDto } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository, IBlingAuthRepository, IWhatsAppRepository } from '../../../domain/repositories';
@@ -1255,6 +1255,9 @@ export class SellsService implements ISellsRepository {
 
     const updatedSales = new Set<string>();
 
+    await this.syncroNfByNumber("MG");
+    await this.syncroNfByNumber("SP");  
+
     await this.syncroInvoiceNfForState("MG", this.apiUrlTiny);
     await this.syncroInvoiceNfForState("SP", this.apiUrlTiny);
     await this.getAccessKeyNf("MG", this.apiUrlTiny, updatedSales);
@@ -1380,11 +1383,6 @@ export class SellsService implements ISellsRepository {
             continue;
           }
 
-          if (venda.numero_nfe && !venda.chave_acesso) {
-            await this.syncroNfByNumber(venda, uf);
-            continue;
-          }
-
           venda.chave_acesso = nf.chaveAcesso;
           venda.data_emissao_nfe = new Date(nf.dataEmissao);
           venda.nfe_emitida = 1;
@@ -1403,49 +1401,59 @@ export class SellsService implements ISellsRepository {
     }
   }
 
-  private async syncroNfByNumber(venda: Venda, uf: string): Promise<void> {
+  private async syncroNfByNumber(uf: string): Promise<void> {
 
     const token = await this.tinyAuthService.getAccessToken(uf);
     if (!token) return;
+
+    const vendas = await this.vendaRepository.find({
+      where: {
+        numero_nfe: Not(null),
+        chave_acesso: IsNull(),
+        data_criacao: MoreThanOrEqual(new Date('2026-01-01'))
+      }
+    });
   
-    try {
+    for (const venda of vendas) {
   
-      const url = `${this.apiUrlTiny}${this.nfeTagTiny}?numero=${venda.numero_nfe}`;
+      try {
   
-      const response = await this.httpService.axiosRef.get<{ itens: NfeDto[] }>(
-        url,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+        const url = `${this.apiUrlTiny}${this.nfeTagTiny}?numero=${venda.numero_nfe}`;
   
-      const nf = response.data.itens?.[0];
+        const response = await this.httpService.axiosRef.get<{ itens: NfeDto[] }>(
+          url,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
   
-      if (!nf) {
-        console.warn(`⚠️ NF ${venda.numero_nfe} não encontrada no Tiny.`);
-        return;
+        const nf = response.data.itens?.[0];
+  
+        if (!nf) continue;
+  
+        venda.chave_acesso = nf.chaveAcesso;
+        venda.data_emissao_nfe = new Date(nf.dataEmissao);
+        venda.nfe_emitida = 1;
+        venda.nfe_id = nf.id;
+        venda.nfe_link = await this.getNflink(nf.id, uf);
+  
+        await this.vendaRepository.save(venda);
+  
+        console.log(`✅ NF ${venda.numero_nfe} sincronizada para venda ${venda.codigo}`);
+  
+      } catch (error) {
+  
+        console.error(
+          `❌ Erro ao sincronizar NF ${venda.numero_nfe}`,
+          error.message
+        );
+  
       }
   
-      venda.chave_acesso = nf.chaveAcesso;
-      venda.data_emissao_nfe = new Date(nf.dataEmissao);
-      venda.nfe_emitida = 1;
-      venda.nfe_id = nf.id;
-      venda.nfe_link = await this.getNflink(nf.id, uf);
-  
-      await this.vendaRepository.save(venda);
-  
-      console.log(`✅ NF ${venda.numero_nfe} sincronizada para venda ${venda.codigo}`);
-  
-    } catch (error) {
-  
-      console.error(
-        `❌ Erro ao sincronizar NF ${venda.numero_nfe}:`,
-        error.message,
-      );
-  
     }
+  
   }
 
   private async getNflink(id: number, uf: string): Promise<string | null> {
