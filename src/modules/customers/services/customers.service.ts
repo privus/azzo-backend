@@ -390,10 +390,6 @@ export class CustomersService implements ICustomersRepository{
     console.log("✅ Atualização de status de clientes concluída.");
   }
 
-  /**
-   * 📊 Salva o histórico de quantidade de clientes por status
-   * Executa a cada 15 dias (dias 1 e 15 de cada mês às 9:30)
-   */
   @Cron('0 30 9 1,15 * *')
   async saveHistoricoStatus(): Promise<void> {
     console.log("📊 Iniciando salvamento do histórico de status de clientes por região...");
@@ -904,6 +900,17 @@ export class CustomersService implements ICustomersRepository{
     }
   
     console.log('🏁 Sincronização de tabelas de preço concluída!');
+  }
+
+  async getDatasUnicasHistorico(): Promise<Date[]> {
+    const result = await this.historicoStatusRepository
+      .createQueryBuilder('historico')
+      .select('DATE(historico.data_registro)', 'data')
+      .groupBy('DATE(historico.data_registro)')
+      .orderBy('data', 'ASC')
+      .getRawMany();
+  
+    return result.map(r => r.data);
   }
 
 }

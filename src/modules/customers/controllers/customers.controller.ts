@@ -43,6 +43,12 @@ export class CustomersController {
     return this.customersService.findCustomersByStatus(id);
   }
 
+  @ApiOperation({ summary: 'Consultar datas do histórico de status diponiveis' })
+  @Get('dataHistorico')
+  async getDatasStatus() {
+    return this.customersService.getDatasUnicasHistorico();
+  }
+
   @ApiOperation({ summary: 'Consultar histórico de status de clientes por região' })
   @Get('historico/status')
   async getHistoricoStatus(@Query('regiaoId') regiaoId?: number) {

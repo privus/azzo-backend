@@ -1435,7 +1435,7 @@ export class SellsService implements ISellsRepository {
   
     await this.vendaRepository.save(venda);
   
-    this.logger.log(`✅ NF ${venda.numero_nfe} sincronizada imediatamente para venda ${venda.codigo}`);
+    this.logger.log(`✅ NF ${venda.numero_nfe} sincronizada para venda ${venda.codigo}`);
   }
 
   private async getNflink(id: number, uf: string): Promise<string | null> {
@@ -2553,14 +2553,38 @@ export class SellsService implements ISellsRepository {
 
   async registerAssemblyCommission(order: Venda) {
 
-    const valor = order.comissao_montagem || 0;
+    const valor = order.comissao_montagem;
   
     if (!valor || valor <= 0) return;
   
     let meta = await this.metaMontagemRepository.findOne({ where: {} });
-
-    meta.meta_realizada = Number(meta.meta_realizada) + 1;
-    meta.valor_condicional = Number(meta.valor_condicional) + Number(valor);
+  
+    if (!meta.meta_realizada || meta.meta_realizada === 0) {
+  
+      const hoje = new Date();
+      const dataInicio = new Date();
+      dataInicio.setDate(hoje.getDate() - 30);
+  
+      const from = dataInicio.toISOString().split('T')[0];
+      const to = hoje.toISOString().split('T')[0];
+  
+      const vendas = await this.sellsBetweenDates(from, to);
+  
+      const totalPedidos = vendas.filter(v =>
+        v.tipo_pedido?.tipo_pedido_id === 10438 &&
+        v.status_venda?.status_venda_id !== 11468
+      ).length;
+  
+      let metaDia = totalPedidos / 30;
+  
+      metaDia = Math.ceil(metaDia);
+      metaDia = Math.min(metaDia, 24);
+  
+      meta.meta_diaria = metaDia;
+    }
+  
+    meta.meta_realizada = Number(meta.meta_realizada || 0) + 1;
+    meta.valor_condicional = Number(meta.valor_condicional || 0) + Number(valor);
   
     await this.metaMontagemRepository.save(meta);
   }
