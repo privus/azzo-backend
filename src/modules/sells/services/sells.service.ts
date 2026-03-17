@@ -2575,12 +2575,7 @@ export class SellsService implements ISellsRepository {
         v.status_venda?.status_venda_id !== 11468
       ).length;
   
-      let metaDia = totalPedidos / 30;
-  
-      metaDia = Math.ceil(metaDia);
-      metaDia = Math.min(metaDia, 24);
-  
-      meta.meta_diaria = metaDia;
+      meta.meta_diaria = totalPedidos / 30;
     }
   
     meta.meta_realizada = Number(meta.meta_realizada || 0) + 1;
