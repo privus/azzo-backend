@@ -4,7 +4,7 @@ import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { CustomerAPIResponse, CustomerBlingDto, StatusAnalyticsDTO, TinyCustomerDto, TinyCustomerResponse } from '../dto';
-import { Regiao, StatusCliente, Cidade, Cliente, CategoriaCliente, GrupoCliente, Venda, HistoricoStatus } from '../../../infrastructure/database/entities';
+import { Regiao, StatusCliente, Cidade, Cliente, CategoriaCliente, GrupoCliente, HistoricoStatus } from '../../../infrastructure/database/entities';
 import { IBlingAuthRepository, ICustomersRepository, ISellersRepository } from '../../../domain/repositories';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import * as fs from 'fs';
@@ -912,5 +912,4 @@ export class CustomersService implements ICustomersRepository{
   
     return result.map(r => r.data);
   }
-
 }
