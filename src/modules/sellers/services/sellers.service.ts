@@ -282,8 +282,7 @@ export class SellersService {
   
     const atuais = await this.clienteRepository
     .createQueryBuilder('cliente')
-    .leftJoin('cliente.vendedor', 'vendedor')
-    .leftJoin('vendedor.regiao', 'regiao')
+    .leftJoin('cliente.regiao', 'regiao')
     .leftJoin('cliente.status_cliente', 'status')
     .select('regiao.regiao_id', 'regiao_id')
     .addSelect('COUNT(cliente.codigo)', 'total')
