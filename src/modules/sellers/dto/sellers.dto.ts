@@ -42,4 +42,5 @@ export interface StatusRecordeDTO {
   atual: number;
   record: number;
   bateu_recorde: boolean;
+  regiao_id: number;
 }

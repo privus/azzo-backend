@@ -271,8 +271,7 @@ export class SellersService {
     return relatorio;
   }
 
-  async getStatusRecorde(): Promise<StatusRecordeDTO[]> {
-
+  async getStatusRecorde(): Promise<StatusRecordeDTO[]> { 
     const vendedores = await this.vendedorRepository.find({
       where: { ativo: 1 },
       relations: ['regiao'],
@@ -281,14 +280,14 @@ export class SellersService {
     if (!vendedores.length) return [];
   
     const atuais = await this.clienteRepository
-    .createQueryBuilder('cliente')
-    .leftJoin('cliente.regiao', 'regiao')
-    .leftJoin('cliente.status_cliente', 'status')
-    .select('regiao.regiao_id', 'regiao_id')
-    .addSelect('COUNT(cliente.codigo)', 'total')
-    .where('status.status_cliente_id = :status', { status: 101 })
-    .groupBy('regiao.regiao_id')
-    .getRawMany();
+      .createQueryBuilder('cliente')
+      .leftJoin('cliente.regiao', 'regiao')
+      .leftJoin('cliente.status_cliente', 'status')
+      .select('regiao.regiao_id', 'regiao_id')
+      .addSelect('COUNT(cliente.codigo)', 'total')
+      .where('status.status_cliente_id = :status', { status: 101 })
+      .groupBy('regiao.regiao_id')
+      .getRawMany();
   
     const atualMap = new Map<number, number>();
   
@@ -311,13 +310,14 @@ export class SellersService {
     }
   
     const resultado: StatusRecordeDTO[] = vendedores.map(v => {
-      const regiaoId = v.regiao?.regiao_id;
+      const regiaoId = v.regiao.regiao_id;
   
       const atual = atualMap.get(regiaoId) || 0;
       const record = recordMap.get(regiaoId) || 0;
   
       return {
         vendedor: v.nome,
+        regiao_id: regiaoId,
         atual,
         record,
         bateu_recorde: atual > record,
