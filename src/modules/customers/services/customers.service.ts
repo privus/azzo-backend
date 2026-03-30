@@ -3,7 +3,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
-import { CustomerAPIResponse, CustomerBlingDto, StatusAnalyticsDTO, TinyCustomerDto, TinyCustomerResponse } from '../dto';
+import { CustomerAPIResponse, CustomerBlingDto, StatusAnalyticsDTO, StatusByRegion, TinyCustomerDto, TinyCustomerResponse } from '../dto';
 import { Regiao, StatusCliente, Cidade, Cliente, CategoriaCliente, GrupoCliente, HistoricoStatus } from '../../../infrastructure/database/entities';
 import { IBlingAuthRepository, ICustomersRepository, ISellersRepository } from '../../../domain/repositories';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -911,5 +911,31 @@ export class CustomersService implements ICustomersRepository{
       .getRawMany();
   
     return result.map(r => r.data);
+  }
+
+  async getStatusDashboard(): Promise<StatusByRegion[]> {
+    const result = await this.clienteRepository
+      .createQueryBuilder('cliente')
+      .leftJoin('cliente.regiao', 'regiao')
+      .leftJoin('cliente.status_cliente', 'status')
+      .select('regiao.regiao_id', 'regiao_id')
+      .addSelect('regiao.nome', 'regiao_nome')
+      .addSelect(`SUM(CASE WHEN status.status_cliente_id = 101 THEN 1 ELSE 0 END)`, 'ativo')
+      .addSelect(`SUM(CASE WHEN status.status_cliente_id = 104 THEN 1 ELSE 0 END)`, 'atencao')
+      .addSelect(`SUM(CASE WHEN status.status_cliente_id = 102 THEN 1 ELSE 0 END)`, 'frio')
+      .addSelect(`SUM(CASE WHEN status.status_cliente_id = 103 THEN 1 ELSE 0 END)`, 'inativo')
+      .where('cliente.ativo = 1')
+      .groupBy('regiao.regiao_id')
+      .addGroupBy('regiao.nome')
+      .getRawMany();
+  
+    return result.map(r => ({
+      regiao_id: +r.regiao_id,
+      regiao_nome: r.regiao_nome,
+      ativo: +r.ativo,
+      atencao: +r.atencao,
+      frio: +r.frio,
+      inativo: +r.inativo,
+    }));
   }
 }
