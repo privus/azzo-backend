@@ -760,7 +760,8 @@ export class CustomersService implements ICustomersRepository{
     }
   }
 
-  async statusAnalitics(regiaoId: number, data_registro: Date ): Promise<StatusAnalyticsDTO> {
+  async statusAnalytics(regiaoId: number, data_registro: Date ): Promise<StatusAnalyticsDTO> {
+    const dataStr = new Date(data_registro).toISOString().split('T')[0];
     const clientes = await this.clienteRepository
       .createQueryBuilder('cliente')
       .leftJoinAndSelect('cliente.status_cliente', 'status_cliente')
@@ -798,7 +799,7 @@ export class CustomersService implements ICustomersRepository{
       .createQueryBuilder('historico')
       .leftJoinAndSelect('historico.regiao', 'regiao')
       .where('regiao.regiao_id = :regiaoId', { regiaoId })
-      .andWhere('DATE(historico.data_registro) = :data_registro', { data_registro })
+      .andWhere('DATE(historico.data_registro) = :data_registro', { dataStr })
       .orderBy('historico.data_registro', 'ASC')
       .limit(1)
       .getOne();
@@ -811,14 +812,14 @@ export class CustomersService implements ICustomersRepository{
         .createQueryBuilder('historico')
         .leftJoinAndSelect('historico.regiao', 'regiao')
         .where('regiao.regiao_id = :regiaoId', { regiaoId })
-        .andWhere('historico.data_registro < :data_registro', { data_registro })
+        .andWhere('historico.data_registro < :data_registro', { dataStr })
         .orderBy('historico.data_registro', 'DESC')
         .limit(1)
         .getOne();
     }
   
     if (!historicoBase) {
-      console.warn(`⚠️ Nenhum histórico encontrado para a região ${regiaoId} até ${data_registro}.`);
+      console.warn(`⚠️ Nenhum histórico encontrado para a região ${regiaoId} até ${dataStr}.`);
       return {
         ativo: 0,
         frio: 0,

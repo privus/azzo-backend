@@ -64,7 +64,7 @@ export class CustomersController {
   @ApiOperation({ summary: 'Consultar análise de diferença de status por região' })
   @Get('regiao/:regiaoId/status')
   async getStatusAnalytics(@Param('regiaoId') regiaoId: number, @Query('data_registro') data_registro: Date) {
-    return this.customersService.statusAnalitics(regiaoId, data_registro);
+    return this.customersService.statusAnalytics(regiaoId, data_registro);
   }
 
   @ApiOperation({ summary: 'Traz status dos clientes por região' })
