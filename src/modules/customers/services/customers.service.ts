@@ -760,13 +760,14 @@ export class CustomersService implements ICustomersRepository{
     }
   }
 
-  async statusAnalytics(regiaoId: number, data_registro: Date ): Promise<StatusAnalyticsDTO> {
-    const dataStr = new Date(data_registro).toISOString().split('T')[0];
+  async statusAnalytics(regiaoId: number, data_registro: Date): Promise<StatusAnalyticsDTO> {
+    const dataStr = new Date(data_registro).toISOString().split('T')[0]; // ex: "2026-02-15"
+  
     const clientes = await this.clienteRepository
       .createQueryBuilder('cliente')
       .leftJoinAndSelect('cliente.status_cliente', 'status_cliente')
       .leftJoinAndSelect('cliente.regiao', 'regiao')
-      .where('cliente.ativo = :ativo', { ativo: 1 })
+      .where('cliente.ativo = :ivo: 1 }')
       .andWhere('regiao.regiao_id = :regiaoId', { regiaoId })
       .getMany();
   
@@ -794,13 +795,14 @@ export class CustomersService implements ICustomersRepository{
           break;
       }
     }
-    
+  
+    // 🔧 Correção: Usar LIKE para compatibilidade com MySQL
     const historicoMesmoDia = await this.historicoStatusRepository
       .createQueryBuilder('historico')
       .leftJoinAndSelect('historico.regiao', 'regiao')
       .where('regiao.regiao_id = :regiaoId', { regiaoId })
-      .andWhere('DATE(historico.data_registro) = :data_registro', { dataStr })
-      .orderBy('historico.data_registro', 'ASC')
+      .andWhere("historico.data_registro LIKE :datePattern", { datePattern: `${dataStr}%` })
+      .orderBy('historico.data_registro', 'DESC') // Pega o mais recente do dia
       .limit(1)
       .getOne();
   
@@ -812,7 +814,7 @@ export class CustomersService implements ICustomersRepository{
         .createQueryBuilder('historico')
         .leftJoinAndSelect('historico.regiao', 'regiao')
         .where('regiao.regiao_id = :regiaoId', { regiaoId })
-        .andWhere('historico.data_registro < :data_registro', { dataStr })
+        .andWhere('historico.data_registro < :dataStr', { dataStr })
         .orderBy('historico.data_registro', 'DESC')
         .limit(1)
         .getOne();
@@ -828,14 +830,14 @@ export class CustomersService implements ICustomersRepository{
         regiao_id: regiaoId,
       };
     }
-
+  
     const diffAtivo = ativoAtual - historicoBase.ativo;
-    const diffFrio = frioAtual - historicoBase.frio;
+    const diffFrio = historicoBase.frio;
     const diffAtencao = atencaoAtual - historicoBase.atencao;
     const diffInativo = inativoAtual - historicoBase.inativo;
   
     console.log(
-      `📊 Região ${regiaoId} comparando com ${data_registro} → ` +
+      `📊 Região ${regiaoId} comparando com ${dataStr} → ` +
         `Ativo: ${diffAtivo >= 0 ? '+' : ''}${diffAtivo}, ` +
         `Atenção: ${diffAtencao >= 0 ? '+' : ''}${diffAtencao}, ` +
         `Frio: ${diffFrio >= 0 ? '+' : ''}${diffFrio}, ` +
