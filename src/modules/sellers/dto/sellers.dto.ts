@@ -36,11 +36,3 @@ export interface CommissionsReport {
     comisao: number;
   }>;
 }
-
-export interface StatusRecordeDTO {
-  vendedor: string;
-  atual: number;
-  record: number;
-  bateu_recorde: boolean;
-  regiao_id: number;
-}

@@ -3,7 +3,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
-import { CustomerAPIResponse, CustomerBlingDto, StatusAnalyticsDTO, StatusByRegion, TinyCustomerDto, TinyCustomerResponse } from '../dto';
+import { CustomerAPIResponse, CustomerBlingDto, StatusAnalyticsDTO, StatusByRegion, StatusRecordeDTO, TinyCustomerDto, TinyCustomerResponse } from '../dto';
 import { Regiao, StatusCliente, Cidade, Cliente, CategoriaCliente, GrupoCliente, HistoricoStatus } from '../../../infrastructure/database/entities';
 import { IBlingAuthRepository, ICustomersRepository, ISellersRepository } from '../../../domain/repositories';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -940,5 +940,56 @@ export class CustomersService implements ICustomersRepository{
       frio: +r.frio,
       inativo: +r.inativo,
     }));
+  }
+
+  async getStatusRecorde(): Promise<StatusRecordeDTO[]> { 
+    const regioesIds = [5, 7, 6, 4, 10, 2, 8];
+  
+    // 🔹 Consulta dos ativos atuais por região
+    const atuais = await this.clienteRepository
+      .createQueryBuilder('cliente')
+      .leftJoin('cliente.regiao', 'regiao')
+      .leftJoin('cliente.status_cliente', 'status')
+      .select('regiao.regiao_id', 'regiao_id')
+      .addSelect('COUNT(cliente.codigo)', 'total')
+      .where('status.status_cliente_id = :status', { status: 101 })
+      .andWhere('regiao.regiao_id IN (:...regioesIds)', { regioesIds })
+      .groupBy('regiao.regiao_id')
+      .getRawMany();
+  
+    const atualMap = new Map<number, number>();
+    for (const a of atuais) {
+      atualMap.set(Number(a.regiao_id), Number(a.total));
+    }
+  
+    // 🔹 Consulta do recorde histórico por região
+    const records = await this.historicoStatusRepository
+      .createQueryBuilder('h')
+      .leftJoin('h.regiao', 'regiao')
+      .select('regiao.regiao_id', 'regiao_id')
+      .addSelect('MAX(h.ativo)', 'record')
+      .where('regiao.regiao_id IN (:...regioesIds)', { regioesIds })
+      .groupBy('regiao.regiao_id')
+      .getRawMany();
+  
+    const recordMap = new Map<number, number>();
+    for (const r of records) {
+      recordMap.set(Number(r.regiao_id), Number(r.record));
+    }
+  
+    // 🔹 Monta o resultado por região
+    const resultado: StatusRecordeDTO[] = regioesIds.map(regiaoId => {
+      const atual = atualMap.get(regiaoId) || 0;
+      const record = recordMap.get(regiaoId) || 0;
+  
+      return {
+        regiao_id: regiaoId,
+        atual,
+        record,
+        bateu_recorde: atual > record,
+      };
+    });
+  
+    return resultado.sort((a, b) => b.atual - a.atual);
   }
 }

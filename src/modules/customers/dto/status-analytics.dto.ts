@@ -14,3 +14,10 @@ export interface StatusByRegion {
   atencao: number;
   inativo: number;
 }
+
+export interface StatusRecordeDTO {
+  atual: number;
+  record: number;
+  bateu_recorde: boolean;
+  regiao_id: number;
+}

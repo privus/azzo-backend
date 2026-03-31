@@ -73,6 +73,12 @@ export class CustomersController {
     return this.customersService.getStatusDashboard();
   }
 
+  @ApiOperation({ summary: 'Traz recorde de clientes ativos por região' })
+  @Get('statusRecord')
+  async statusRecord() {
+    return this.customersService.getStatusRecorde();
+  }
+
   @ApiOperation({ summary: 'Buscar cliente por Código' })
   @Get(':id')
   async findCostumerById(@Param('id') codigo: number) {

@@ -3,7 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, Raw, Not } from 'typeorm';
 import { Vendedor, Regiao, MetaVendedor, Venda, Cliente, HistoricoStatus } from '../../../infrastructure/database/entities';
-import { Goals, GoalsDto, SellerAPIResponse, CommissionsReport, StatusRecordeDTO } from '../dto/sellers.dto';
+import { Goals, GoalsDto, SellerAPIResponse, CommissionsReport } from '../dto/sellers.dto';
 
 @Injectable()
 export class SellersService {
@@ -269,62 +269,5 @@ export class SellersService {
     }
   
     return relatorio;
-  }
-
-  async getStatusRecorde(): Promise<StatusRecordeDTO[]> { 
-    const vendedores = await this.vendedorRepository.find({
-      where: { ativo: 1 },
-      relations: ['regiao'],
-    });
-  
-    if (!vendedores.length) return [];
-  
-    const atuais = await this.clienteRepository
-      .createQueryBuilder('cliente')
-      .leftJoin('cliente.regiao', 'regiao')
-      .leftJoin('cliente.status_cliente', 'status')
-      .select('regiao.regiao_id', 'regiao_id')
-      .addSelect('COUNT(cliente.codigo)', 'total')
-      .where('status.status_cliente_id = :status', { status: 101 })
-      .groupBy('regiao.regiao_id')
-      .getRawMany();
-  
-    const atualMap = new Map<number, number>();
-  
-    for (const a of atuais) {
-      atualMap.set(Number(a.regiao_id), Number(a.total));
-    }
-  
-    const records = await this.historicoStatusRepository
-      .createQueryBuilder('h')
-      .leftJoin('h.regiao', 'regiao')
-      .select('regiao.regiao_id', 'regiao_id')
-      .addSelect('MAX(h.ativo)', 'record')
-      .groupBy('regiao.regiao_id')
-      .getRawMany();
-  
-    const recordMap = new Map<number, number>();
-  
-    for (const r of records) {
-      recordMap.set(Number(r.regiao_id), Number(r.record));
-    }
-  
-    const resultado: StatusRecordeDTO[] = vendedores.map(v => {
-      const regiaoId = v.regiao.regiao_id;
-  
-      const atual = atualMap.get(regiaoId) || 0;
-      const record = recordMap.get(regiaoId) || 0;
-  
-      return {
-        vendedor: v.nome,
-        regiao_id: regiaoId,
-        atual,
-        record,
-        bateu_recorde: atual > record,
-      };
-    });
-  
-    return resultado.sort((a, b) => b.atual - a.atual);
-  }
-  
+  }  
 }

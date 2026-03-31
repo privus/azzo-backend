@@ -38,12 +38,6 @@ export class SellersController {
     return this.sellersService.getMetaProgress();
   }
 
-  @ApiOperation({ summary: 'Traz recorde de clientes ativos por vendedor' })
-  @Get('statusRecord')
-  async statusRecord() {
-    return this.sellersService.getStatusRecorde();
-  }
-
   @ApiOperation({ summary: 'Rankins metas vendedores' })
   @Get('goalsRanking')
   async goalsRanking() {
