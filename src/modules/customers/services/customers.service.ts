@@ -767,7 +767,7 @@ export class CustomersService implements ICustomersRepository{
       .createQueryBuilder('cliente')
       .leftJoinAndSelect('cliente.status_cliente', 'status_cliente')
       .leftJoinAndSelect('cliente.regiao', 'regiao')
-      .where('cliente.ativo = :ivo: 1 }')
+      .where('cliente.ativo = :ativo', { ativo: 1 })
       .andWhere('regiao.regiao_id = :regiaoId', { regiaoId })
       .getMany();
   
