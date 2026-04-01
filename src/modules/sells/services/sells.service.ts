@@ -2511,7 +2511,7 @@ export class SellsService implements ISellsRepository {
     const resultados: string[] = [];
   
     try {
-      const vendasMes = await this.sellsBetweenDates('2026-02-01', '2026-02-27');
+      const vendasMes = await this.sellsBetweenDates('2026-03-01', '2026-03-31');
       const tipoVenda = 10438;
   
       const vendasFiltradas = vendasMes.filter(v => 
