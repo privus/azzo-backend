@@ -2613,4 +2613,59 @@ export class SellsService implements ISellsRepository {
   async getAssemblyGoal(): Promise <MetaMontagem> {
     return await this.metaMontagemRepository.findOne({ where: {} });
   }
+
+  async pendingPayment(): Promise<string[]> {
+    const codigosVendas = [
+      4374, 5472, 4554, 4654, 4686, 4798, 5433,
+      4856, 4872, 4594, 4935, 4847, 4416, 4969,
+      4896, 4977, 5008, 5172, 5224, 5322, 5560,
+      5434, 5554, 5558, 5062
+    ];
+    const resultados: string[] = [];
+    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+  
+    for (const codigo of codigosVendas) {
+      try {
+        const venda = await this.getSellByCode(codigo);
+  
+        if (!venda) {
+          resultados.push(`❌ Venda ${codigo} não encontrada.`);
+          continue;
+        }
+  
+        if (!venda.finance_id) {
+          this.logger.log(`📤 Venda ${codigo} sem finance_id. Enviando para o financeiro...`);
+          await this.sendSellToFinanceSystem(codigo);
+          resultados.push(`✅ Venda ${codigo} enviada ao financeiro e deixada em aberto.`);
+          await sleep(1000);
+          continue;
+        }
+  
+        const url = `${this.apiFinanceUrl}${this.contasReceberTag}/${venda.finance_id}/status`;
+        
+        const body = {
+          status: "pendente",
+          atualizar_parcelas: 1
+        };
+  
+        await this.httpService.axiosRef.patch(url, body, {
+          headers: {
+            Authorization: `Bearer ${this.tokenFinance}`,
+            'Content-Type': 'application/json',
+          },
+        });
+  
+        resultados.push(`✅ Venda ${codigo} (Finance ID: ${venda.finance_id}) deixada em aberto com sucesso.`);
+        this.logger.log(`✅ Venda ${codigo} atualizada para status "pendente" no financeiro.`);
+  
+        await sleep(1000); // Rate limiting
+  
+      } catch (error) {
+        this.logger.error(`❌ Erro ao processar venda ${codigo}:`, error.response?.data || error.message);
+        resultados.push(`❌ Erro na venda ${codigo}: ${error.message}`);
+      }
+    }
+  
+    return resultados;
+  }
 }
