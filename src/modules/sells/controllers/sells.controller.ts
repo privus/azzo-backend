@@ -229,6 +229,13 @@ export class SellsController {
     return { message: resultMessage };
   }
 
+  @ApiOperation({ summary: 'Manda para o sistema financeiro as contas a receber em aberto' })
+  @Get('pendingPayment')
+  async pendingPayment() {
+    const resultMessage = await this.sellsService.pendingPayment();
+    return { message: resultMessage };
+  }
+
   @Post('printResume')
   async printOrderResume(
     @Body('ids') ids: number[],
