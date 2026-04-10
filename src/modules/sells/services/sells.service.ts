@@ -60,71 +60,71 @@ export class SellsService implements ISellsRepository {
     const messages: string[] = [];
     const syncedSales: string[] = [];
     const updatedSales: string[] = [];
-  
+
     await this.clienteService.syncroLastPageCustomers();
-  
+
     const lastSync = await this.getLastSyncDate('sells');
     const lastUpdate = await this.getLastUpdateDate('sells-update');
-  
+
     console.log('Última sincronização:', lastSync);
     console.log('Última atualização:', lastUpdate);
-  
+
     const fetchSells = async (queryParam: string, type: 'created' | 'updated') => {
       let currentPage = 1;
       let lastPage = 1;
       const maxPage = 12;
-  
+
       do {
         const s = lastSync ? '&' : '?';
         const url = `${this.apiUrlSellentt}${this.apiTagSellentt}${queryParam}${s}page=${currentPage}`;
         console.log('Fetching URL:', url);
-  
+
         const response = await this.httpService.axiosRef.get<{
           data: SellsApiResponse[],
           meta: { current_page: number, last_page: number }
         }>(url, {
           headers: { Authorization: `Bearer ${this.tokenSellentt}` },
         });
-  
+
         const sellsData = response.data.data;
         lastPage = response.data.meta.last_page;
         console.log('lastPage ===============>', lastPage);
-  
+
         for (const sell of sellsData) {
           const result = await this.processSell(sell);
-  
+
           if (result?.startsWith('Atualizada')) {
             updatedSales.push(result.replace('Atualizada', '').trim());
           } else if (result?.startsWith('Recebida')) {
             syncedSales.push(result.replace('Recebida', '').trim());
-          }          
+          }
         }
-  
+
         currentPage++;
       } while (currentPage <= lastPage && currentPage <= maxPage);
     };
-  
+
     try {
 
       const createdParam = lastSync ? `?after_created=${this.formatDateWithTime(lastSync)}` : ''
       await fetchSells(createdParam, 'created');
-      
+
       if (lastUpdate) {
         const updatedParam = `?after_updated=${this.formatDateWithTime(lastUpdate)}`
         await fetchSells(updatedParam, 'updated');
       }
-  
+
       const now = new Date();
       await this.updateLastSyncDate('sells', now);
       await this.updateLastUpdateDate('sells-update', now);
-  
+
       if (syncedSales.length > 0) {
         messages.push(`Código das vendas sincronizadas: ${syncedSales.join(', ')}.`);
       }
       if (updatedSales.length > 0) {
         messages.push(`Código das vendas atualizadas: ${updatedSales.join(', ')}.`);
       }
-  
+
       this.syncroStatusSells();
       this.associatePairedSells();
       console.log(messages.join(' | '));
@@ -133,36 +133,36 @@ export class SellsService implements ISellsRepository {
       console.error('Erro ao sincronizar vendas:', error);
       return 'Erro ao sincronizar vendas.';
     }
-  } 
+  }
 
   async syncroStatusSells(): Promise<void> {
     let currentPage = 1;
     const maxPage = 10;
-  
+
     try {
       while (currentPage <= maxPage) {
         const url = `${this.apiUrlSellentt}${this.apiTagSellentt}?page=${currentPage}`;
         console.log(`📄 Fetching page ${currentPage} -> ${url}`);
-  
+
         const response = await this.httpService.axiosRef.get<{
           data: SellsApiResponse[];
           meta: { current_page: number; last_page: number };
         }>(url, {
           headers: { Authorization: `Bearer ${this.tokenSellentt}` },
         });
-  
+
         const sellsData = response.data.data;
-  
+
         if (!sellsData.length) {
           console.warn(`⚠️ Página ${currentPage} sem vendas. Encerrando...`);
           break;
         }
-  
+
         for (const sell of sellsData) {
           const existingSell = await this.vendaRepository.findOne({
             where: { codigo: Number(sell.code) },
           });
-  
+
           if (existingSell) {
             const newStatus = await this.statusVendaRepository.findOne({
               where: { status_venda_id: sell.status.id },
@@ -170,12 +170,12 @@ export class SellsService implements ISellsRepository {
             if (existingSell.volume > 0 && newStatus.status_venda_id === 11138) {
               await this.updateStatusSellentt(existingSell.codigo, 11541)
               return;
-            }              
+            }
             existingSell.status_venda = newStatus;
             await this.vendaRepository.save(existingSell);
             console.log(`✅ Status updated for venda: ${sell.code}`);
-            }
-        }  
+          }
+        }
         currentPage++;
       }
     } catch (error) {
@@ -248,86 +248,86 @@ export class SellsService implements ISellsRepository {
 
     let itensVenda = [];
 
-    if(existingSell) {
+    if (existingSell) {
       // existingSell.status_venda = status_venda;
       existingSell.observacao = sell.obs;
       existingSell.comisao = Number(sell.commission) || 0;
       existingSell.fora_politica = sell.politics_out;
-        if (existingSell.nfe_id && !existingSell.nfe_link) {
-          const link = await this.getNflink(existingSell.nfe_id, cliente.cidade.estado.sigla);
-          existingSell.nfe_link = link;
-        }
-          if (existingSell.valor_final != sell.amount_final || sell.installment_qty != existingSell.numero_parcelas) {
-            await this.revertSaleStock(existingSell);
-            console.log('Venda já existente e atualizando carrinho =>', sell.code);
-            existingSell.itens_atualizacao = new Date();
-            const productCodes = sell.products.map((item) => item.code);
-            const produtosEncontrados = await this.produtoRepository.find({
-              where: { codigo: In(productCodes) },
-            });
-            itensVenda = sell.products.map((item) => {
-              const produtoEncontrado = produtosEncontrados.find((p) => p.codigo === item.code);
-              return {
-                quantidade: Number(item.quantity),
-                valor_unitario: Number(item.unit_price),
-                valor_total: Number(item.total_price),
-                produto: produtoEncontrado,
-                observacao: item.notes,
-              };
-            });
-            await this.itensVendaRepository.delete({ venda: existingSell });
+      if (existingSell.nfe_id && !existingSell.nfe_link) {
+        const link = await this.getNflink(existingSell.nfe_id, cliente.cidade.estado.sigla);
+        existingSell.nfe_link = link;
+      }
+      if (existingSell.valor_final != sell.amount_final || sell.installment_qty != existingSell.numero_parcelas) {
+        await this.revertSaleStock(existingSell);
+        console.log('Venda já existente e atualizando carrinho =>', sell.code);
+        existingSell.itens_atualizacao = new Date();
+        const productCodes = sell.products.map((item) => item.code);
+        const produtosEncontrados = await this.produtoRepository.find({
+          where: { codigo: In(productCodes) },
+        });
+        itensVenda = sell.products.map((item) => {
+          const produtoEncontrado = produtosEncontrados.find((p) => p.codigo === item.code);
+          return {
+            quantidade: Number(item.quantity),
+            valor_unitario: Number(item.unit_price),
+            valor_total: Number(item.total_price),
+            produto: produtoEncontrado,
+            observacao: item.notes,
+          };
+        });
+        await this.itensVendaRepository.delete({ venda: existingSell });
 
-            existingSell.itensVenda = itensVenda;
-            existingSell.valor_pedido = Number(sell.amount);
-            existingSell.valor_final = Number(sell.amount_final);
-            existingSell.desconto = sell.discount || 0
-            existingSell.valor_parcela = Number(sell.installment_value)
-            existingSell.forma_pagamento = sell.payment_term_text || '';
-            cliente.valor_ultima_compra = Number(sell.amount_final);
+        existingSell.itensVenda = itensVenda;
+        existingSell.valor_pedido = Number(sell.amount);
+        existingSell.valor_final = Number(sell.amount_final);
+        existingSell.desconto = sell.discount || 0
+        existingSell.valor_parcela = Number(sell.installment_value)
+        existingSell.forma_pagamento = sell.payment_term_text || '';
+        cliente.valor_ultima_compra = Number(sell.amount_final);
 
-            const paymentTerms = sell.payment_term_text ? sell.payment_term_text.match(/\d+/g) : null;
-            const paymentDays = paymentTerms ? paymentTerms.map(Number) : []; // Converte para números
-            // Garantir que o número de dias de prazo seja igual ao número de parcelas (installment_qty)
-            const numberOfInstallments = sell.installment_qty;
-            const validPaymentDays = paymentDays.slice(0, numberOfInstallments); // Usa apenas os primeiros `installment_qty` dias
-        
-            // Calcular as datas de vencimento com base nos dias de prazo
-            const baseDate = new Date(sell.order_date);
-            const datasVencimentoArray = validPaymentDays.map((days) => {
-              const data = new Date(baseDate);
-              data.setDate(data.getDate() + days + 1); // Adiciona um dia extra
-              return data.toISOString().split('T')[0]; // Formato "YYYY-MM-DD"
-            });
-            
-            const datas_vencimento = datasVencimentoArray;
-        
-            // Criar as parcelas de crédito
-            const parcela_credito = validPaymentDays.map((days, index) => {
-              const data = new Date(baseDate);
-              data.setDate(data.getDate() + days + 1); // Adiciona um dia extra
-              return this.parcelaRepository.create({
-                  numero: index + 1,
-                  valor: Number(sell.installment_value),
-                  data_criacao: new Date(),
-                  data_vencimento: data,
-                  status_pagamento,
-                  descricao: `Venda código ${sell.code}`
-              });
-            });
-            
-            existingSell.datas_vencimento = datas_vencimento;
-            existingSell.parcela_credito = parcela_credito;
+        const paymentTerms = sell.payment_term_text ? sell.payment_term_text.match(/\d+/g) : null;
+        const paymentDays = paymentTerms ? paymentTerms.map(Number) : []; // Converte para números
+        // Garantir que o número de dias de prazo seja igual ao número de parcelas (installment_qty)
+        const numberOfInstallments = sell.installment_qty;
+        const validPaymentDays = paymentDays.slice(0, numberOfInstallments); // Usa apenas os primeiros `installment_qty` dias
 
-            await this.vendaRepository.save(existingSell);
-            await this.clienteService.saveCustomer(cliente);
-            await this.decrementStockSell(existingSell.codigo);
-            const carrinho = existingSell.itens_atualizacao ? ' 🛒' : ''
-          
-            return `Atualizada ${sell.code + carrinho}`;
-          } else {
-          console.log(`Venda já existente e atualizada => ${sell.code}`);
-          }
-          
+        // Calcular as datas de vencimento com base nos dias de prazo
+        const baseDate = new Date(sell.order_date);
+        const datasVencimentoArray = validPaymentDays.map((days) => {
+          const data = new Date(baseDate);
+          data.setDate(data.getDate() + days + 1); // Adiciona um dia extra
+          return data.toISOString().split('T')[0]; // Formato "YYYY-MM-DD"
+        });
+
+        const datas_vencimento = datasVencimentoArray;
+
+        // Criar as parcelas de crédito
+        const parcela_credito = validPaymentDays.map((days, index) => {
+          const data = new Date(baseDate);
+          data.setDate(data.getDate() + days + 1); // Adiciona um dia extra
+          return this.parcelaRepository.create({
+            numero: index + 1,
+            valor: Number(sell.installment_value),
+            data_criacao: new Date(),
+            data_vencimento: data,
+            status_pagamento,
+            descricao: `Venda código ${sell.code}`
+          });
+        });
+
+        existingSell.datas_vencimento = datas_vencimento;
+        existingSell.parcela_credito = parcela_credito;
+
+        await this.vendaRepository.save(existingSell);
+        await this.clienteService.saveCustomer(cliente);
+        await this.decrementStockSell(existingSell.codigo);
+        const carrinho = existingSell.itens_atualizacao ? ' 🛒' : ''
+
+        return `Atualizada ${sell.code + carrinho}`;
+      } else {
+        console.log(`Venda já existente e atualizada => ${sell.code}`);
+      }
+
       await this.vendaRepository.save(existingSell);
       await this.clienteService.saveCustomer(cliente);
       return `Atualizada ${sell.code}`;
@@ -350,26 +350,26 @@ export class SellsService implements ISellsRepository {
       // Calcular as datas de vencimento com base nos dias de prazo
       const baseDate = new Date(sell.order_date);
       datas_vencimento = validPaymentDays.map((days) => {
-          const data = new Date(baseDate);
-          data.setDate(data.getDate() + days + 1);
-          return data.toISOString().split('T')[0];
+        const data = new Date(baseDate);
+        data.setDate(data.getDate() + days + 1);
+        return data.toISOString().split('T')[0];
       });
 
       // Criar as parcelas de crédito
       parcela_credito = validPaymentDays.map((days, index) => {
-          const data = new Date(baseDate);
-          data.setDate(data.getDate() + days + 1);
-            return this.parcelaRepository.create({
-                numero: index + 1,
-                valor: Number(sell.installment_value),
-                data_criacao: sell.order_date,
-                data_vencimento: data,
-                status_pagamento,
-                descricao: `Venda código ${sell.code}`
-          });
+        const data = new Date(baseDate);
+        data.setDate(data.getDate() + days + 1);
+        return this.parcelaRepository.create({
+          numero: index + 1,
+          valor: Number(sell.installment_value),
+          data_criacao: sell.order_date,
+          data_vencimento: data,
+          status_pagamento,
+          descricao: `Venda código ${sell.code}`
+        });
       });
     }
-  
+
     if (sell.products && sell.products.length > 0) {
       const productCodes = sell.products.map((item) => item.code);
       const produtosEncontrados = await this.produtoRepository.find({
@@ -434,24 +434,24 @@ export class SellsService implements ISellsRepository {
 
     const venda = await this.getSellByCode(code);
     let comissaoMontagem = 0;
-  
+
     for (const item of venda.itensVenda) {
-  
+
       const produtoVenda = item.produto;
       if (!produtoVenda) continue;
-  
+
       const produtoEstoque = produtoVenda.unidade || produtoVenda;
-  
+
       let quantidadeEmUnidadesBase = Number(item.quantidade);
-  
+
       if (produtoVenda.qt_uni && produtoVenda.unidade) {
         quantidadeEmUnidadesBase *= produtoVenda.qt_uni;
       }
-      
+
       if (venda.tipo_pedido.tipo_pedido_id === 10438) {
         comissaoMontagem += quantidadeEmUnidadesBase * 0.01;
       }
-  
+
       const saida = this.saidaRepository.create({
         produto: produtoEstoque,
         quantidade: quantidadeEmUnidadesBase,
@@ -459,16 +459,16 @@ export class SellsService implements ISellsRepository {
         venda: venda,
         observacao: `Saída por ${venda.tipo_pedido.nome} - ${venda.codigo}`,
       });
-  
+
       await this.produtoRepository.decrement(
         { produto_id: produtoEstoque.produto_id },
         'saldo_estoque',
         quantidadeEmUnidadesBase,
       );
-  
+
       await this.saidaRepository.save(saida);
     }
-  
+
     venda.comissao_montagem = comissaoMontagem;
     await this.saveSell(venda);
   }
@@ -479,11 +479,11 @@ export class SellsService implements ISellsRepository {
     yesterday.setDate(today.getDate() - 1);
     const t = today.toISOString().split('T')[0];
     const y = yesterday.toISOString().split('T')[0];
-  
+
     const vendasHoje = await this.sellsBetweenDates(y, t);
-  
+
     const vendasPorCliente: Map<number, Venda[]> = new Map();
-  
+
     for (const venda of vendasHoje) {
       const clienteId = venda.cliente?.cliente_id;
       if (!clienteId || clienteId === 558) continue;
@@ -492,13 +492,13 @@ export class SellsService implements ISellsRepository {
       }
       vendasPorCliente.get(clienteId)!.push(venda);
     }
-  
+
     for (const vendas of vendasPorCliente.values()) {
       if (vendas.length < 2) continue;
-  
+
       const vendaPrincipal = vendas.find(v => v.tipo_pedido?.tipo_pedido_id === 10438);
       const vendaAssociada = vendas.find(v => v.tipo_pedido?.tipo_pedido_id !== 10438);
-  
+
       if (vendaPrincipal && vendaAssociada) {
         vendaPrincipal.associado = vendaAssociada.codigo;
         vendaAssociada.associado = vendaPrincipal.codigo;
@@ -524,7 +524,7 @@ export class SellsService implements ISellsRepository {
   async sellsBetweenDates(fromDate: string, toDate?: string): Promise<Venda[]> {
     let where: any = {};
     console.log('fromDate==========================>', fromDate, 'toDate =============================>', toDate);
-  
+
     if (toDate) {
       where.data_criacao = Raw(
         alias => `DATE(${alias}) BETWEEN :from AND :to`,
@@ -536,7 +536,7 @@ export class SellsService implements ISellsRepository {
         { from: fromDate }
       );
     }
-  
+
     return this.vendaRepository.find({
       where,
       relations: [
@@ -546,7 +546,7 @@ export class SellsService implements ISellsRepository {
         'status_pagamento',
         'status_venda',
         'itensVenda.produto',
-        'itensVenda.produto.fornecedor', 
+        'itensVenda.produto.fornecedor',
         'tipo_pedido'
       ],
     });
@@ -626,32 +626,32 @@ export class SellsService implements ISellsRepository {
 
   async updateStatus(codigo: number, status_venda_id: number): Promise<void> {
     const venda = await this.getSellByCode(codigo);
-  
+
     if (!venda) return;
 
     if (venda.associado) {
       await this.updateStatusSellentt(venda.associado, status_venda_id);
     }
     await this.updateStatusSellentt(codigo, status_venda_id);
-  
+
     const oldStatusId = venda.status_venda?.status_venda_id;
-  
+
     if (oldStatusId === status_venda_id) {
       this.logger.warn(`Status ${status_venda_id} já está definido para venda ${codigo}.`);
       return;
     }
-  
+
     const novoStatus = await this.statusVendaRepository.findOne({
       where: { status_venda_id },
     });
     if (!novoStatus) return;
-  
+
     const tipoVenda = venda.tipo_pedido.tipo_pedido_id === 10438;
-  
+
     // ✅ atualiza local primeiro
     venda.status_venda = novoStatus;
     await this.vendaRepository.save(venda);
-  
+
     if (tipoVenda) {
       if (status_venda_id === 11139 && !venda.itens_atualizacao) {
         await this.whatsAppService.sendMessage(
@@ -660,7 +660,7 @@ export class SellsService implements ISellsRepository {
           `Olá ${venda.cliente.nome_empresa}, recebemos seu pedido ${venda.codigo} e ele está sendo montado 🛠️`,
         );
       }
-  
+
       if (status_venda_id === 11541) {
         await this.whatsAppService.sendMessage(
           venda.cliente.codigo,
@@ -668,7 +668,7 @@ export class SellsService implements ISellsRepository {
           `Olá ${venda.cliente.nome_empresa}, seu pedido ${venda.codigo} foi montado e está aguardando coleta da transportadora`,
         );
       }
-  
+
       if (status_venda_id === 11491) {
         await this.whatsAppService.sendMessage(
           venda.cliente.codigo,
@@ -681,89 +681,89 @@ export class SellsService implements ISellsRepository {
 
   async exportTiny(id: number): Promise<string> {
     try {
-          const order = await this.vendaRepository.findOne({
-              where: { venda_id: id },
-              relations: ['cliente.cidade.estado', 'itensVenda.produto', 'parcela_credito', 'tipo_pedido'],
-          });
+      const order = await this.vendaRepository.findOne({
+        where: { venda_id: id },
+        relations: ['cliente.cidade.estado', 'itensVenda.produto', 'parcela_credito', 'tipo_pedido'],
+      });
 
-          if (!order) {
-              throw new BadRequestException({ message: `🚨 Pedido com ID ${id} não encontrado.` });
-          }
+      if (!order) {
+        throw new BadRequestException({ message: `🚨 Pedido com ID ${id} não encontrado.` });
+      }
 
-          if (!order.cliente) {
-              throw new BadRequestException({ message: `🚨 Cliente não encontrado para o pedido ${id}.` });
-          }
+      if (!order.cliente) {
+        throw new BadRequestException({ message: `🚨 Cliente não encontrado para o pedido ${id}.` });
+      }
 
-          const itensComErro = order.itensVenda.filter(item => !item.produto.tiny_mg || !item.produto.tiny_sp);
+      const itensComErro = order.itensVenda.filter(item => !item.produto.tiny_mg || !item.produto.tiny_sp);
 
-          if (itensComErro.length > 0) {
-              let errorMessage = "Os seguintes produtos não possuem ID:\n\n";
+      if (itensComErro.length > 0) {
+        let errorMessage = "Os seguintes produtos não possuem ID:\n\n";
 
-              itensComErro.forEach(item => {
-                  const nomeProduto = item.produto.nome || 'NOME DESCONHECIDO';
-                  console.error(`❌ Produto: ${nomeProduto}`);
-                  errorMessage += `• ${nomeProduto}\n`;
-              });
+        itensComErro.forEach(item => {
+          const nomeProduto = item.produto.nome || 'NOME DESCONHECIDO';
+          console.error(`❌ Produto: ${nomeProduto}`);
+          errorMessage += `• ${nomeProduto}\n`;
+        });
 
-              throw new BadRequestException({ message: errorMessage });
-          }
+        throw new BadRequestException({ message: errorMessage });
+      }
 
-          let idContato = order.cliente.tiny_id || 0;
-          if (!idContato) {
-              idContato = await this.clienteService.registerCustomerTiny(order.cliente.codigo);
-          }
+      let idContato = order.cliente.tiny_id || 0;
+      if (!idContato) {
+        idContato = await this.clienteService.registerCustomerTiny(order.cliente.codigo);
+      }
 
-          if (!order.cliente.cidade?.estado?.sigla) {
-              throw new BadRequestException({ message: `🚨 Estado não definido para o cliente ${order.cliente.codigo}.` });
-          }
-          const uf = order.cliente.cidade.estado.sigla === 'MG' || order.cliente.cidade.estado.sigla === 'SP' 
-            ? order.cliente.cidade.estado.sigla 
-            : 'MG';
-          const accessToken = await this.tinyAuthService.getAccessToken(uf);
+      if (!order.cliente.cidade?.estado?.sigla) {
+        throw new BadRequestException({ message: `🚨 Estado não definido para o cliente ${order.cliente.codigo}.` });
+      }
+      const uf = order.cliente.cidade.estado.sigla === 'MG' || order.cliente.cidade.estado.sigla === 'SP'
+        ? order.cliente.cidade.estado.sigla
+        : 'MG';
+      const accessToken = await this.tinyAuthService.getAccessToken(uf);
 
-          if (!accessToken) {
-              throw new BadRequestException({ message: "🚨 Não foi possível obter um token válido para exportação." });
-          }
+      if (!accessToken) {
+        throw new BadRequestException({ message: "🚨 Não foi possível obter um token válido para exportação." });
+      }
 
-          const body: OrderTinyDto = {
-            idContato: idContato,
-            numeroOrdemCompra: `${order.codigo}_sell`,
-            data: (order.data_criacao ? new Date(order.data_criacao).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
-            meioPagamento: 2,
-            parcelas: order.datas_vencimento.map((dataVencimento, index) => ({
-                dias: Math.floor(
-                    (new Date(dataVencimento).getTime() - new Date(order.data_criacao).getTime()) / (1000 * 60 * 60 * 24)
-                ),
-                data: new Date(dataVencimento),
-                valor: order.parcela_credito?.[index]?.valor || 0,
-            })),
-            itens: order.itensVenda?.map(item => ({
-                produto: {
-                    id: uf === 'MG' ? item.produto.tiny_mg : item.produto.tiny_sp,
-                },
-                quantidade: item.quantidade,
-                valorUnitario: item.valor_unitario,
-            })) || [],
-          };
+      const body: OrderTinyDto = {
+        idContato: idContato,
+        numeroOrdemCompra: `${order.codigo}_sell`,
+        data: (order.data_criacao ? new Date(order.data_criacao).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+        meioPagamento: 2,
+        parcelas: order.datas_vencimento.map((dataVencimento, index) => ({
+          dias: Math.floor(
+            (new Date(dataVencimento).getTime() - new Date(order.data_criacao).getTime()) / (1000 * 60 * 60 * 24)
+          ),
+          data: new Date(dataVencimento),
+          valor: order.parcela_credito?.[index]?.valor || 0,
+        })),
+        itens: order.itensVenda?.map(item => ({
+          produto: {
+            id: uf === 'MG' ? item.produto.tiny_mg : item.produto.tiny_sp,
+          },
+          quantidade: item.quantidade,
+          valorUnitario: item.valor_unitario,
+        })) || [],
+      };
 
-          order.exportado = 1;
-          await this.vendaRepository.save(order);
+      order.exportado = 1;
+      await this.vendaRepository.save(order);
 
-          const apiUrl = this.apiUrlTiny + this.orderTag;
+      const apiUrl = this.apiUrlTiny + this.orderTag;
 
-          console.log('Body ===========>', body);
+      console.log('Body ===========>', body);
 
-          await this.httpService.axiosRef.post(apiUrl, body, {
-              headers: {
-                  Authorization: `Bearer ${accessToken}`,
-                  'Content-Type': 'application/json',
-              },
-          });
+      await this.httpService.axiosRef.post(apiUrl, body, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-          return `Pedido ${order.codigo} exportado com sucesso para o Tiny ${uf}`;
-      } catch (error) {
-          console.error("Erro ao exportar pedido:", error.response?.data || error.message);
-          throw new BadRequestException({ message: error.message || 'Erro desconhecido ao exportar pedido' });
+      return `Pedido ${order.codigo} exportado com sucesso para o Tiny ${uf}`;
+    } catch (error) {
+      console.error("Erro ao exportar pedido:", error.response?.data || error.message);
+      throw new BadRequestException({ message: error.message || 'Erro desconhecido ao exportar pedido' });
     }
   }
 
@@ -772,7 +772,7 @@ export class SellsService implements ISellsRepository {
     const venda = await this.getSellByCode(code);
 
     if (!venda) {
-        throw new Error(`Venda com ID ${code} não encontrada.`);
+      throw new Error(`Venda com ID ${code} não encontrada.`);
     }
 
     await this.revertSaleStock(venda);
@@ -787,26 +787,26 @@ export class SellsService implements ISellsRepository {
     for (const item of venda.itensVenda) {
       const produtoVenda = item.produto;
       if (!produtoVenda) continue;
-  
+
       const produtoEstoque = produtoVenda.unidade || produtoVenda;
-  
+
       let quantidadeEmUnidadesBase = Number(item.quantidade);
       if (produtoVenda.qt_uni && produtoVenda.unidade) {
         quantidadeEmUnidadesBase *= produtoVenda.qt_uni;
       }
-  
+
       await this.produtoRepository.increment({ produto_id: produtoEstoque.produto_id }, 'saldo_estoque', quantidadeEmUnidadesBase);
     }
-  
+
     // Também apaga os registros de saída de estoque dessa venda
     await this.saidaRepository.delete({ venda });
   }
-  
+
   async getDailyRakingSells(): Promise<RakingSellsResponse> {
     // Ajuste de datas para considerar só o dia
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
-  
+
     const ontem = new Date(hoje);
     // Segunda-feira (1): busca sexta (hoje - 3 dias). Demais dias: busca ontem
     if (hoje.getDay() === 1) {
@@ -814,20 +814,20 @@ export class SellsService implements ISellsRepository {
     } else {
       ontem.setDate(hoje.getDate() - 1);
     }
-  
+
     const hojeStr = hoje.toISOString().slice(0, 10);   // 'YYYY-MM-DD'
     const ontemStr = ontem.toISOString().slice(0, 10); // 'YYYY-MM-DD'
-  
+
     // Busca as vendas só pela data (ignorando horário)
     const todaySales = await this.sellsBetweenDates(hojeStr);
     const yesterdaySales = await this.sellsBetweenDates(ontemStr);
-  
+
     const allSellers = (await this.sellersSevice.findAllSellers())
       .filter(v => v.ativo && v.vendedor_id !== 12);
-  
+
     const buildRanking = (sells: Venda[]) => {
       const rankingMap: Record<number, RankingItem> = {};
-  
+
       for (const seller of allSellers) {
         rankingMap[seller.vendedor_id] = {
           id: seller.vendedor_id,
@@ -838,58 +838,58 @@ export class SellsService implements ISellsRepository {
           pureli: 0,
         };
       }
-  
+
       const pedidosContabilizadosFornecedor7 = new Set<number>();
-  
+
       for (const sell of sells) {
         const { vendedor, tipo_pedido, itensVenda } = sell;
         if (!vendedor.ativo || vendedor.vendedor_id === 12) continue;
         if (tipo_pedido?.tipo_pedido_id !== 10438) continue;
-  
+
         const id = vendedor.vendedor_id;
         const entry = rankingMap[id];
-  
+
         entry.total += Number(sell.valor_final);
         entry.numero_vendas += 1;
         entry.codigos_vendas.push(Number(sell.codigo));
-  
+
         const temFornecedor7 = itensVenda.some(
           item => item.produto?.fornecedor?.fornecedor_id === 7
         );
-  
+
         if (temFornecedor7 && !pedidosContabilizadosFornecedor7.has(sell.codigo)) {
           entry.pureli += 1;
           pedidosContabilizadosFornecedor7.add(sell.codigo);
         }
       }
-  
+
       return Object.values(rankingMap)
         .sort((a, b) => b.total - a.total);
     };
-  
+
     return {
       today: buildRanking(todaySales),
       yesterday: buildRanking(yesterdaySales),
     };
   }
-  
+
   async reportBrandSalesBySeller(fromDate: string, toDate?: string): Promise<BrandSales> {
     const vendas = await this.sellsBetweenDates(fromDate, toDate);
-  
+
     const relatorio: BrandSales = {};
-  
+
     // Inicializa o agrupamento total por empresa
     relatorio["Azzo"] = {
       totalPedidos: 0,
       totalFaturado: 0,
       marcas: {},
     };
-  
+
     for (const venda of vendas) {
       if (venda.tipo_pedido.tipo_pedido_id !== 10438 || venda.status_venda.status_venda_id === 11468) continue;
-  
+
       const vendedorNome = venda.vendedor?.nome || 'Desconhecido';
-  
+
       if (!relatorio[vendedorNome]) {
         relatorio[vendedorNome] = {
           totalPedidos: 0,
@@ -897,25 +897,25 @@ export class SellsService implements ISellsRepository {
           marcas: {},
         };
       }
-  
+
       relatorio[vendedorNome].totalPedidos += 1;
       relatorio[vendedorNome].totalFaturado += Number(venda.valor_final) || 0;
-  
+
       relatorio["Azzo"].totalPedidos += 1;
       relatorio["Azzo"].totalFaturado += Number(venda.valor_final) || 0;
-  
+
       for (const item of venda.itensVenda) {
         const marca = item?.produto?.fornecedor?.nome || 'Desconhecida';
-  
+
         const quantidade = Number(item.quantidade);
         const valor = Number(item.valor_total);
-  
+
         if (!relatorio[vendedorNome].marcas[marca]) {
           relatorio[vendedorNome].marcas[marca] = { quantidade: 0, valor: 0 };
         }
         relatorio[vendedorNome].marcas[marca].quantidade += quantidade;
         relatorio[vendedorNome].marcas[marca].valor += valor;
-  
+
         if (!relatorio["Azzo"].marcas[marca]) {
           relatorio["Azzo"].marcas[marca] = { quantidade: 0, valor: 0 };
         }
@@ -926,27 +926,27 @@ export class SellsService implements ISellsRepository {
 
     for (const key in relatorio) {
       relatorio[key].totalFaturado = Number(relatorio[key].totalFaturado.toFixed(2));
-  
+
       for (const marca in relatorio[key].marcas) {
         relatorio[key].marcas[marca].valor = Number(relatorio[key].marcas[marca].valor.toFixed(2));
       }
     }
-  
+
     return relatorio;
   }
-  
-  
+
+
   async reportPositivityByBrand(fromDate: string, toDate?: string): Promise<ReportBrandPositivity> {
     const vendas = (await this.sellsBetweenDates(fromDate, toDate))
       .filter(v => v.tipo_pedido?.tipo_pedido_id === 10438);
-  
+
     const clientes = await this.clienteService.findAllCustomers();
-  
+
     const allSellers = (await this.sellersSevice.findAllSellers())
       .filter(v => v.ativo);
-  
+
     const relatorio: ReportBrandPositivity = {};
-  
+
     const clientesPorVendedor = new Map<number, Cliente[]>();
     for (const cliente of clientes) {
       const vendedorId = cliente.vendedor?.vendedor_id;
@@ -957,29 +957,29 @@ export class SellsService implements ISellsRepository {
         clientesPorVendedor.get(vendedorId)!.push(cliente);
       }
     }
-  
+
     for (const vendedor of allSellers) {
       const vendedorId = vendedor.vendedor_id;
       const vendedorNome = vendedor.nome;
-  
+
       const carteira = clientesPorVendedor.get(vendedorId) ?? clientes;
       const usandoCarteiraCompleta = !clientesPorVendedor.has(vendedorId);
       const totalClientes = usandoCarteiraCompleta ? 1 : carteira.length;
-  
+
       const marcasPorCliente = new Map<number, Set<string>>();
-  
+
       for (const venda of vendas) {
         const clienteId = venda.cliente?.cliente_id;
         if (!clienteId) continue;
-  
+
         const pertenceAoVendedor = venda.vendedor?.vendedor_id === vendedorId &&
           carteira.some(c => c.cliente_id === clienteId);
         if (!pertenceAoVendedor) continue;
-  
+
         if (!marcasPorCliente.has(clienteId)) {
           marcasPorCliente.set(clienteId, new Set());
         }
-  
+
         for (const item of venda.itensVenda) {
           const marca = item.produto?.fornecedor?.nome;
           if (marca) {
@@ -987,17 +987,17 @@ export class SellsService implements ISellsRepository {
           }
         }
       }
-  
+
       const marcas: Record<string, BrandPositivity> = {};
       const clientesPositivadosSet = new Set<number>();
-  
+
       for (const cliente of carteira) {
         const clienteId = cliente.cliente_id;
         const marcasCliente = marcasPorCliente.get(clienteId);
         if (!marcasCliente || marcasCliente.size === 0) continue;
-  
+
         clientesPositivadosSet.add(clienteId);
-  
+
         for (const marca of marcasCliente) {
           if (!marcas[marca]) {
             marcas[marca] = {
@@ -1009,21 +1009,21 @@ export class SellsService implements ISellsRepository {
           marcas[marca].clientesPositivados += 1;
         }
       }
-  
+
       const clientesPositivados = clientesPositivadosSet.size;
       const positivacaoGeral = Number(((clientesPositivados / totalClientes) * 100).toFixed(2));
-  
+
       for (const marca in marcas) {
         marcas[marca].positivacaoMarca = Number(((marcas[marca].clientesPositivados / totalClientes) * 100).toFixed(2));
       }
-  
+
       const soma = Object.values(marcas).reduce((acc, m) => acc + m.positivacaoMarca, 0);
-  
+
       for (const marca in marcas) {
         const m = marcas[marca];
         m.contribuicaoPercentual = soma > 0 ? Number(((m.positivacaoMarca / soma) * 100).toFixed(2)) : 0;
       }
-  
+
       if (clientesPositivados > 0 && totalClientes > 0) {
         relatorio[vendedorNome] = {
           totalClientes,
@@ -1033,29 +1033,29 @@ export class SellsService implements ISellsRepository {
         };
       }
     }
-  
+
     return relatorio;
   }
-  
+
   async getPositivityAzzo(fromDate: string, toDate: string): Promise<PositivityResponse> {
     const vendas = await this.sellsBetweenDates(fromDate, toDate);
     const clientes = await this.clienteService.findAllCustomers();
-  
+
     const totalClientes = clientes.length;
-  
+
     const marcasPorCliente = new Map<number, Set<string>>();
     const clientesPositivadosSet = new Set<number>();
-  
+
     for (const venda of vendas) {
       const clienteId = venda.cliente?.cliente_id;
       if (!clienteId) continue;
-  
+
       clientesPositivadosSet.add(clienteId);
-  
+
       if (!marcasPorCliente.has(clienteId)) {
         marcasPorCliente.set(clienteId, new Set());
       }
-  
+
       for (const item of venda.itensVenda) {
         const marca = item.produto?.fornecedor?.nome;
         if (marca) {
@@ -1063,14 +1063,14 @@ export class SellsService implements ISellsRepository {
         }
       }
     }
-  
+
     const marcas: Record<string, BrandPositivity> = {};
-  
+
     for (const cliente of clientes) {
       const clienteId = cliente.cliente_id;
       const marcasCliente = marcasPorCliente.get(clienteId);
       if (!marcasCliente || marcasCliente.size === 0) continue;
-  
+
       for (const marca of marcasCliente) {
         if (!marcas[marca]) {
           marcas[marca] = {
@@ -1082,21 +1082,21 @@ export class SellsService implements ISellsRepository {
         marcas[marca].clientesPositivados += 1;
       }
     }
-  
+
     const clientesPositivados = clientesPositivadosSet.size;
     const positivacaoGeral = Number(((clientesPositivados / totalClientes) * 100).toFixed(2));
-  
+
     for (const marca in marcas) {
       marcas[marca].positivacaoMarca = Number(((marcas[marca].clientesPositivados / totalClientes) * 100).toFixed(2));
     }
-  
+
     const soma = Object.values(marcas).reduce((acc, m) => acc + m.positivacaoMarca, 0);
-  
+
     for (const marca in marcas) {
       const m = marcas[marca];
       m.contribuicaoPercentual = soma > 0 ? Number(((m.positivacaoMarca / soma) * 100).toFixed(2)) : 0;
     }
-  
+
     return {
       totalClientes,
       clientesPositivados,
@@ -1109,10 +1109,10 @@ export class SellsService implements ISellsRepository {
     const vendasMes = await this.sellsBetweenDates(fromDate, toDate);
     const tipoId = 10438;
     const tipoIdBonificado = 10441;
-  
+
     const todosVendedores = (await this.sellersSevice.findAllSellers())
       .filter(v => v.ativo && ![18, 12, 16].includes(v.vendedor_id));
-  
+
     const vendedorMap = new Map<number, Commissions>();
     for (const vendedor of todosVendedores) {
       vendedorMap.set(vendedor.vendedor_id, {
@@ -1125,38 +1125,38 @@ export class SellsService implements ISellsRepository {
         bonificado: 0,
       });
     }
-  
+
     for (const venda of vendasMes) {
       const vendedor = venda.vendedor;
       const vendedorId = vendedor?.vendedor_id;
-  
+
       if (!vendedorMap.has(vendedorId)) continue;
-  
+
       const data = vendedorMap.get(vendedorId)!;
-  
+
       if (venda.tipo_pedido?.tipo_pedido_id === tipoIdBonificado) {
         data.bonificado += Number(venda.valor_final);
       }
-  
+
       if (venda.tipo_pedido?.tipo_pedido_id !== tipoId || venda.status_venda?.status_venda_id === 11468) continue;
-  
+
       data.faturado += Number(venda.valor_final);
       data.pedidos += 1;
       data.comissao += Number(venda.comisao);
     }
-  
-    const [ano, mes] = fromDate.split('-').map(Number);  
-  
+
+    const [ano, mes] = fromDate.split('-').map(Number);
+
     const metas = await this.metaRepository.find({
       where: { mes, ano },
       relations: ['vendedor'],
     });
-  
+
     for (const meta of metas) {
       const vendedorId = meta.vendedor.vendedor_id;
       const progresso = vendedorMap.get(vendedorId);
       if (!progresso) continue;
-  
+
       if (meta.meta_ped > 0 || Number(meta.meta_fat) > 0) {
         progresso.meta_ped = meta.meta_ped;
         progresso.meta_fat = meta.meta_fat;
@@ -1164,7 +1164,7 @@ export class SellsService implements ISellsRepository {
         progresso.progresso_fat = Number(((progresso.faturado / Number(meta.meta_fat)) * 100).toFixed(2));
       }
     }
-  
+
     return Array.from(vendedorMap.values()).map(v => ({
       ...v,
       faturado: Number(v.faturado.toFixed(2)),
@@ -1180,7 +1180,7 @@ export class SellsService implements ISellsRepository {
       .catch((error) => {
         console.error('Erro ao atualizar o volume da venda:', error);
         throw new Error(`Erro ao atualizar o volume da venda ${id}: ${error.message}`);
-    });
+      });
   }
 
   async performanceSalesPeriods(
@@ -1192,23 +1192,23 @@ export class SellsService implements ISellsRepository {
     // Busca vendas dos períodos comparativos
     const vendasPeriodo1 = await this.sellsBetweenDates(fromDate1, toDate1);
     const vendasPeriodo2 = await this.sellsBetweenDates(fromDate2, toDate2);
-  
+
     const tipoId = 10438;
     const statusIgnorar = 11468;
-  
+
     // Filtra tipo de pedido e remove vendas com status 11468
     const vendasValidasPeriodo1 = vendasPeriodo1.filter(
       v =>
         v.tipo_pedido?.tipo_pedido_id === tipoId &&
         v.status_venda?.status_venda_id !== statusIgnorar
     );
-  
+
     const vendasValidasPeriodo2 = vendasPeriodo2.filter(
       v =>
         v.tipo_pedido?.tipo_pedido_id === tipoId &&
         v.status_venda?.status_venda_id !== statusIgnorar
     );
-  
+
     const totalPeriodo1 = vendasValidasPeriodo1.reduce(
       (acc, venda) => acc + Number(venda.valor_final || 0),
       0
@@ -1217,23 +1217,23 @@ export class SellsService implements ISellsRepository {
       (acc, venda) => acc + Number(venda.valor_final || 0),
       0
     );
-  
+
     const variacao =
       totalPeriodo1 === 0
         ? totalPeriodo2 > 0
           ? 100
           : 0
         : ((totalPeriodo2 - totalPeriodo1) / totalPeriodo1) * 100;
-  
+
     let direcao: 'aumento' | 'queda' | 'neutro' = 'neutro';
     if (variacao > 0) direcao = 'aumento';
     else if (variacao < 0) direcao = 'queda';
-  
+
     // Relatório de marcas usando o período selecionado
     const relatorioPeriodoSelecionado = await this.reportBrandSalesBySeller(fromDate2, toDate2);
     const azzoData = relatorioPeriodoSelecionado["Azzo"] || { totalFaturado: 0, marcas: {} };
     const faturamentoMesAtual = azzoData.totalFaturado || 0;
-  
+
     const faturamentoPorMarcaMesAtual: { [marca: string]: number } = {};
     if (azzoData.marcas) {
       for (const marca in azzoData.marcas) {
@@ -1242,7 +1242,7 @@ export class SellsService implements ISellsRepository {
         );
       }
     }
-  
+
     return {
       totalPeriodo1: Number(totalPeriodo1.toFixed(2)),
       totalPeriodo2: Number(totalPeriodo2.toFixed(2)),
@@ -1252,7 +1252,7 @@ export class SellsService implements ISellsRepository {
       faturamentoPorMarcaMesAtual
     };
   }
-  
+
 
   @Cron(CronExpression.EVERY_DAY_AT_9AM)
   async syncroTinyInvoiceNf(): Promise<string> {
@@ -1405,36 +1405,36 @@ export class SellsService implements ISellsRepository {
 
   private async syncroNfBySell(venda: Venda): Promise<void> {
     if (!venda.numero_nfe || venda.chave_acesso) return;
-  
-    const uf =  venda.cliente.cidade.estado.sigla;
-  
+
+    const uf = venda.cliente.cidade.estado.sigla;
+
     const token = await this.tinyAuthService.getAccessToken(uf);
     if (!token) {
       throw new BadRequestException({ message: `Token Tiny não encontrado para ${uf}` });
     }
-  
+
     const url = `${this.apiUrlTiny}${this.nfeTagTiny}?numero=${venda.numero_nfe}`;
-  
+
     const response = await this.httpService.axiosRef.get<{ itens: NfeDto[] }>(url, {
       headers: { Authorization: `Bearer ${token}` },
     });
-  
+
     const nf = response.data.itens?.[0];
-  
+
     if (!nf) {
       throw new BadRequestException({
         message: `NF ${venda.numero_nfe} não encontrada no Tiny.`,
       });
     }
-  
+
     venda.chave_acesso = nf.chaveAcesso;
     venda.data_emissao_nfe = new Date(nf.dataEmissao);
     venda.nfe_emitida = 1;
     venda.nfe_id = nf.id;
     venda.nfe_link = await this.getNflink(nf.id, uf);
-  
+
     await this.vendaRepository.save(venda);
-  
+
     this.logger.log(`✅ NF ${venda.numero_nfe} sincronizada para venda ${venda.codigo}`);
   }
 
@@ -1459,13 +1459,13 @@ export class SellsService implements ISellsRepository {
         throw new BadRequestException({ message: error.message });
       }
     }
-  } 
+  }
 
   async reportUniqueEanBySegment(): Promise<Record<string, { totalVendas: number, faturamento: number, fornecedores: Record<string, { uniqueEansCount: number, margem: number, participacao: number }> }>> {
     const vendas = await this.vendaRepository.find({
       relations: ['cliente.categoria_cliente', 'itensVenda', 'itensVenda.produto', 'itensVenda.produto.fornecedor'],
     });
-  
+
     const segmentoMap: Record<string, {
       totalVendas: number,
       faturamento: number,
@@ -1475,11 +1475,11 @@ export class SellsService implements ISellsRepository {
         custo: number
       }>
     }> = {};
-  
+
     for (const venda of vendas) {
       const categoria = venda.cliente?.categoria_cliente?.nome;
       if (!categoria) continue;
-  
+
       if (!segmentoMap[categoria]) {
         segmentoMap[categoria] = {
           totalVendas: 0,
@@ -1487,9 +1487,9 @@ export class SellsService implements ISellsRepository {
           fornecedores: {},
         };
       }
-  
+
       segmentoMap[categoria].totalVendas += 1;
-  
+
       for (const item of venda.itensVenda) {
         const ean = item.produto?.ean?.toString();
         const fornecedor = item.produto?.fornecedor?.nome;
@@ -1497,11 +1497,11 @@ export class SellsService implements ISellsRepository {
         const quantidade = Number(item.quantidade);
         const receita = Number(item.valor_total);
         const custoTotal = precoCusto * quantidade;
-  
+
         if (!ean || receita <= 0) continue;
-  
+
         segmentoMap[categoria].faturamento += receita;
-  
+
         if (!segmentoMap[categoria].fornecedores[fornecedor]) {
           segmentoMap[categoria].fornecedores[fornecedor] = {
             eans: new Set<string>(),
@@ -1509,14 +1509,14 @@ export class SellsService implements ISellsRepository {
             custo: 0,
           };
         }
-  
+
         const fornecedorData = segmentoMap[categoria].fornecedores[fornecedor];
         fornecedorData.eans.add(ean);
         fornecedorData.receita += receita;
         fornecedorData.custo += custoTotal;
       }
     }
-  
+
     const result: Record<string, {
       totalVendas: number,
       faturamento: number,
@@ -1526,38 +1526,38 @@ export class SellsService implements ISellsRepository {
         participacao: number
       }>
     }> = {};
-  
+
     for (const categoria in segmentoMap) {
       const totalFaturamento = segmentoMap[categoria].faturamento;
       const fornecedorData: Record<string, { uniqueEansCount: number, margem: number, participacao: number }> = {};
-  
+
       for (const fornecedor in segmentoMap[categoria].fornecedores) {
         const data = segmentoMap[categoria].fornecedores[fornecedor];
         const receita = Number(data.receita);
         const custo = Number(data.custo);
         const margem = receita > 0 ? Number((((receita - custo) / receita) * 100).toFixed(2)) : 0;
         const participacao = totalFaturamento > 0 ? Number(((receita / totalFaturamento) * 100).toFixed(2)) : 0;
-  
+
         fornecedorData[fornecedor] = {
           uniqueEansCount: data.eans.size,
           margem,
           participacao,
         };
       }
-  
+
       result[categoria] = {
         totalVendas: segmentoMap[categoria].totalVendas,
         faturamento: Number(totalFaturamento.toFixed(2)),
         fornecedores: fornecedorData,
       };
     }
-  
-    console.log('relatorio ====>', result);
-  
-    return result;
-  } 
 
-    async reportSalesByBrandAndProduct(): Promise<
+    console.log('relatorio ====>', result);
+
+    return result;
+  }
+
+  async reportSalesByBrandAndProduct(): Promise<
     Record<string, Record<string, { quantidade: number; valor: number }>>
   > {
     const todasAsVendas = await this.sellsBetweenDates('2025-06-02', '2025-06-06')
@@ -1598,7 +1598,7 @@ export class SellsService implements ISellsRepository {
 
   updateStatusSellentt(id: number, status_id: number): Promise<void> {
     const url = `${this.apiUrlSellentt}${this.apiTagSellentt}/${id}`;
-    console.log('url ======', url)    
+    console.log('url ======', url)
     try {
       return this.httpService.axiosRef.put(url, { status_id }, {
         headers: {
@@ -1625,17 +1625,17 @@ export class SellsService implements ISellsRepository {
       },
       relations: ['itensVenda', 'itensVenda.produto', 'cliente'],
     });
-  
+
     const resultMap: Map<string, ProjectStockDto> = new Map();
-  
+
     const stripHtml = (html: string): string =>
       html.replace(/<[^>]+>/g, '').trim();
-  
+
     for (const venda of vendas) {
       for (const item of venda.itensVenda) {
         const produto = item.produto;
         if (!produto?.codigo || !produto.nome) continue;
-  
+
         if (!resultMap.has(produto.codigo)) {
           resultMap.set(produto.codigo, {
             codigo: produto.codigo,
@@ -1646,7 +1646,7 @@ export class SellsService implements ISellsRepository {
             pedidos: [],
           });
         }
-  
+
         const entry = resultMap.get(produto.codigo)!;
         entry.quantidade += Number(item.quantidade);
         if (venda.codigo) {
@@ -1658,10 +1658,10 @@ export class SellsService implements ISellsRepository {
         }
       }
     }
-  
+
     return Array.from(resultMap.values());
   }
-  
+
   async saveSell(venda: Venda): Promise<void> {
     await this.vendaRepository.save(venda);
     return
@@ -1677,19 +1677,19 @@ export class SellsService implements ISellsRepository {
       relations: ['itensVenda.produto.unidade']
     });
   }
-  
+
   findSellsByRomaneio(romaneio_id: number): Promise<Venda[]> {
     return this.vendaRepository.find({
-        where: {
-            romaneio: {
-                romaneio_id
-            }
-        },
+      where: {
+        romaneio: {
+          romaneio_id
+        }
+      },
     });
   }
-  
-    async customersPureli(): Promise<
-    Array<{ 
+
+  async customersPureli(): Promise<
+    Array<{
       codigo: number;
       nome: string;
       cidade: string;
@@ -1763,10 +1763,10 @@ export class SellsService implements ISellsRepository {
       where: { tipo_pedido: { tipo_pedido_id: Not(10438) } },
       relations: ['tipo_pedido'],
     });
-  
+
     const ids = vendas.map(v => v.venda_id);
     if (!ids.length) return 'Nenhuma parcela para deletar.';
-  
+
     // delete em lotes para não estourar placeholders
     const chunk = 1000;
     let deletadas = 0;
@@ -1782,28 +1782,28 @@ export class SellsService implements ISellsRepository {
     }
     return `✅ ${deletadas} parcelas deletadas (tipo_pedido_id != 10438).`;
   }
-  
+
   async groupConsumption(GroupSalesDto): Promise<GroupSalesResponse> {
     const { groupId, supplierId, fromDate, toDate } = GroupSalesDto;
     const vendas = await this.sellsBetweenDates(fromDate, toDate);
-  
+
     const porCliente = new Map<number, CustomerGroupSalesDto>();
     let groupTotal = 0;
-  
+
     for (const venda of vendas) {
       const cliente = venda.cliente;
       if (!cliente?.grupo || cliente.grupo.grupo_cliente_id !== +groupId) continue;
-  
+
       // soma apenas itens do supplierId
       let somaVendaFornecedor = 0;
-  
+
       for (const item of venda.itensVenda || []) {
         const fornecedor = item.produto?.fornecedor;
         if (fornecedor?.fornecedor_id !== +supplierId) continue;
-  
+
         const valor = Number(item.valor_total) || 0;
         somaVendaFornecedor += valor;
-  
+
         // cria cliente no mapa se não existir
         if (!porCliente.has(cliente.codigo)) {
           porCliente.set(cliente.codigo, {
@@ -1814,25 +1814,25 @@ export class SellsService implements ISellsRepository {
             linksNfe: [],
           });
         }
-  
+
         const entry = porCliente.get(cliente.codigo)!;
         entry.totalValor += valor;
-  
+
         // adiciona o código do pedido
         const codigo = Number(venda.codigo);
         if (!Number.isNaN(codigo) && !entry.pedidos.includes(codigo)) {
           entry.pedidos.push(codigo);
         }
-  
+
         // adiciona "codigo - link" da NFe (se existir)
         if (venda.nfe_link && !entry.linksNfe.includes(`${codigo} - ${venda.nfe_link}`)) {
           entry.linksNfe.push(`${codigo} - ${venda.nfe_link}`);
         }
       }
-  
+
       groupTotal += somaVendaFornecedor;
     }
-  
+
     // organiza resultado
     const clientes = Array.from(porCliente.values())
       .map(c => ({
@@ -1840,48 +1840,48 @@ export class SellsService implements ISellsRepository {
         totalValor: Number(c.totalValor.toFixed(2)),
       }))
       .sort((a, b) => b.totalValor - a.totalValor);
-  
+
     return {
       groupTotal: Number(groupTotal.toFixed(2)),
       clientes,
     };
   }
-  
+
   async calculateWeeklyAid(fromDate: string, toDate: string): Promise<WeeklyAid> {
     const vendas = await this.sellsBetweenDates(fromDate, toDate);
     const tipoPedidoAlvo = 10438;
-  
+
     const valorAntigo = 30;
     const valorNovo = 50;
-  
+
     const from = new Date(fromDate);
     const to = new Date(toDate);
-  
+
     const vendedoresAtivos = await this.sellersSevice.findAllSellers();
     const vendedoresMap = new Map(
       vendedoresAtivos
         .filter(v => v.ativo)
         .map(v => [v.vendedor_id, v.nome])
     );
-  
+
     const result: WeeklyAid = {};
-  
+
     for (const venda of vendas) {
       const isPedidoValido =
         venda.tipo_pedido?.tipo_pedido_id === tipoPedidoAlvo &&
         venda.status_venda?.status_venda_id !== 11468 && venda.valor_final >= 350;
-  
+
       if (!isPedidoValido) continue;
-  
+
       const vendedor = venda.vendedor;
       if (!vendedor || !vendedoresMap.has(vendedor.vendedor_id)) continue;
-  
+
       const vendedorId = vendedor.vendedor_id as number;
-  
+
       if (vendedorId === 9 || vendedorId === 12) continue;
-  
+
       const vendedorNome = vendedoresMap.get(vendedorId)!;
-  
+
       if (!result[vendedorNome]) {
         result[vendedorNome] = {
           valor_total: 0,
@@ -1889,18 +1889,18 @@ export class SellsService implements ISellsRepository {
           clientes_novos: 0,
         };
       }
-  
+
       result[vendedorNome].pedidos++;
-  
+
       const clienteCriacao = new Date(venda.cliente?.data_criacao);
       const isNovoCliente = clienteCriacao >= from && clienteCriacao <= to;
-  
+
       let incrementoPedido = isNovoCliente ? valorNovo : valorAntigo;
-  
+
       if (isNovoCliente) {
         result[vendedorNome].clientes_novos++;
       }
-  
+
       result[vendedorNome].valor_total += incrementoPedido;
     }
 
@@ -1921,25 +1921,25 @@ export class SellsService implements ISellsRepository {
           'itensVenda.produto.unidade',
         ],
       });
-  
+
       if (!order) {
         throw new BadRequestException({ message: `🚨 Pedido com ID ${id} não encontrado.` });
       }
-  
+
       if (!order.cliente) {
         throw new BadRequestException({ message: `🚨 Cliente não encontrado para o pedido ${id}.` });
       }
-  
+
       let idContato = order.cliente.bling_id_p;
       if (!idContato) {
         idContato = await this.clienteService.registerBling(order.cliente.codigo);
       }
-  
+
       const token = await this.blingAuthService.getAccessToken('PURELI');
       if (!token) {
         throw new BadRequestException({ message: "🚨 Não foi possível obter um token válido para exportação." });
       }
-  
+
       const body: OrdeBlingDto = {
         data: new Date(order.data_criacao).toISOString(),
         contato: { id: idContato },
@@ -1950,12 +1950,12 @@ export class SellsService implements ISellsRepository {
         itens: order.itensVenda.map(item => {
           const produto = item.produto;
           const unidadeBase = produto.unidade || produto;
-  
+
           let quantidadeUnidade = Number(item.quantidade);
           if (produto.qt_uni && produto.unidade) {
             quantidadeUnidade *= produto.qt_uni;
           }
-  
+
           return {
             codigo: unidadeBase.codigo,
             unidade: 'UNI',
@@ -1972,23 +1972,23 @@ export class SellsService implements ISellsRepository {
           quantidadeVolumes: order.volume,
         },
       };
-  
+
       const apiUrl = this.apiBlingUrl + this.orderTagBling;
       console.log('apiUrl =====', apiUrl);
-  
+
       this.logger.log('📤 Enviando pedido para o Bling:', body);
-  
+
       const resp = await this.httpService.axiosRef.post(apiUrl, body, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
-  
+
       order.exportado = 1;
       order.bling_id = resp.data.data.id;
       await this.vendaRepository.save(order);
-  
+
       return `✅ Pedido ${order.codigo} exportado com sucesso para o Bling.`;
     } catch (error) {
       this.logger.error('❌ Erro ao exportar pedido para o Bling:', error?.response?.data || error.message);
@@ -1999,37 +1999,37 @@ export class SellsService implements ISellsRepository {
   async syncroBlingNfe(): Promise<string> {
     let pagina = 1;
     const updatedSales: string[] = [];
-  
+
     const token = await this.blingAuthService.getAccessToken('PURELI');
     if (!token) {
       throw new BadRequestException({ message: "🚨 Não foi possível obter um token válido para exportação." });
     }
-  
+
     while (true) {
       try {
         const url = `${this.apiBlingUrl}${this.nfeTagBling}?dataEmissaoInicial=2025-09-17&pagina=${pagina}`;
         const response = await this.httpService.axiosRef.get<{ data: NfeBlingDTO[] }>(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
-  
+
         const nfData = response.data.data;
         if (!nfData || nfData.length === 0) {
           this.logger.log(`🚫 Nenhuma nota fiscal encontrada na página ${pagina}. Encerrando...`);
           break;
         }
-  
+
         for (const nf of nfData) {
           const dataEmissao = new Date(nf.dataEmissao);
           const numeroNota = nf.numero;
           const chaveAcesso = nf.chaveAcesso;
           const linkDanfe = `https://www.bling.com.br/relatorios/danfe.php?idNota1=${nf.id}`;
           const clienteBlingId = nf.contato.id;
-  
+
           const dataMin = new Date(dataEmissao);
           const dataMax = new Date(dataEmissao);
           dataMin.setDate(dataMin.getDate() - 7);
           dataMax.setDate(dataMax.getDate() + 7);
-  
+
           const vendasPossiveis = await this.vendaRepository.find({
             where: {
               cliente: { bling_id_p: clienteBlingId },
@@ -2043,19 +2043,19 @@ export class SellsService implements ISellsRepository {
             },
             relations: ['cliente', 'tipo_pedido'],
           });
-  
+
           if (!vendasPossiveis.length) {
             this.logger.warn(`⚠️ Nenhuma venda válida encontrada para NF ${numeroNota} (cliente ${nf.contato.nome})`);
             continue;
           }
-  
+
           const venda = vendasPossiveis.reduce((maisProxima, atual) => {
             const atualDate = new Date(atual.data_criacao);
             const proximaDate = new Date(maisProxima.data_criacao);
             const diffAtual = Math.abs(atualDate.getTime() - dataEmissao.getTime());
             const diffProxima = Math.abs(proximaDate.getTime() - dataEmissao.getTime());
             return diffAtual < diffProxima ? atual : maisProxima;
-          });         
+          });
 
           venda.numero_nfe = Number(numeroNota);
           venda.chave_acesso = chaveAcesso;
@@ -2063,68 +2063,68 @@ export class SellsService implements ISellsRepository {
           venda.nfe_emitida = 1;
           venda.data_emissao_nfe = dataEmissao;
           venda.nfe_id = nf.id;
-  
+
           await this.vendaRepository.save(venda);
           updatedSales.push(venda.codigo.toString());
-  
+
           this.logger.log(`✅ Nota fiscal ${numeroNota} vinculada à venda ${venda.codigo} (cliente ${venda.cliente?.nome})`);
         }
-  
+
         pagina++;
       } catch (error) {
         this.logger.error(`❌ Erro ao buscar notas na página ${pagina}`, error?.response?.data || error.message);
         break;
       }
     }
-  
+
     return `🎉 Sincronização concluída. Vendas atualizadas: ${updatedSales.join(', ')}`;
   }
 
   async syncroEcommerceBling(): Promise<string> {
     const token = await this.blingAuthService.getAccessToken('PURELI');
     const updated: string[] = [];
-  
+
     const shopee = 205488875;
     const mercadoLivre = 205478072;
-  
+
     const lojas = [
       { nome: 'Shopee', id: shopee, skuColumn: 'sku_shoppe' },
       { nome: 'Mercado Livre', id: mercadoLivre, skuColumn: 'sku_mercadolivre' },
     ];
-  
+
     console.log(`🚀 Iniciando sincronização de Shopee e Mercado Livre`);
-  
+
     let pagina = 1;
-  
+
     while (true) {
       const listUrl = `${this.apiBlingUrl}${this.orderTagBling}?dataInicial=2025-11-17&pagina=${pagina}`;
       const response = await this.httpService.axiosRef.get<{ data: OrdersBlingResponseDto[] }>(listUrl, {
         headers: { Authorization: `Bearer ${token}` }
       });
-  
+
       const pedidos = response.data.data;
       if (!pedidos?.length) {
         console.log(`✅ Nenhum pedido encontrado na página ${pagina}.`);
         break;
       }
-  
+
       for (const pedido of pedidos) {
         const loja = lojas.find(l => l.id === pedido.loja.id);
         const id = pedido.id;
         const status = pedido.situacao.id;
-  
+
         if (!loja || pedido.loja.id === 0) continue;
-  
+
         if (status === 12) {
           console.log(`🚫 Pedido ${id} (${loja.nome}) está cancelado. Revertendo...`);
           const existente = await this.ecommerceRepository.findOne({ where: { cod_bling: id } });
-  
+
           if (existente) {
             const saidas = await this.saidaRepository.find({
               where: { observacao: `Saída por ${loja.nome} - ${id}` },
               relations: ['produto']
             });
-  
+
             for (const saida of saidas) {
               await this.produtoRepository.increment(
                 { produto_id: saida.produto.produto_id },
@@ -2134,22 +2134,22 @@ export class SellsService implements ISellsRepository {
               await this.saidaRepository.remove(saida);
               console.log(`↩️ Estoque revertido do produto ${saida.produto.codigo} (pedido ${id}).`);
             }
-  
+
             await this.ecommerceRepository.remove(existente);
             console.log(`🗑️ Pedido ${id} removido da tabela e-commerce (cancelamento).`);
             updated.push(`Cancelado ${pedido.numero} (${loja.nome})`);
           } else {
             console.warn(`⚠️ Pedido ${id} (${loja.nome}) cancelado, mas não encontrado no banco.`);
           }
-  
+
           continue;
         }
-  
+
         if (status !== 9 && status !== 6) {
           console.log(`ℹ️ Pedido ${id} (${loja.nome}) ignorado (status ${status}).`);
           continue;
         }
-  
+
         const existente = await this.ecommerceRepository.findOne({ where: { cod_bling: id } });
         if (existente) {
           existente.status_id = status;
@@ -2157,18 +2157,18 @@ export class SellsService implements ISellsRepository {
           console.warn(`⚠️ Pedido ${id} (${loja.nome}) já importado. Pulando...`);
           continue;
         }
-  
+
         const detailUrl = `${this.apiBlingUrl}${this.orderTagBling}/${id}`;
-        const detailResp = await this.httpService.axiosRef.get<{  data: OrderBlingResponseDto }>(detailUrl, {
+        const detailResp = await this.httpService.axiosRef.get<{ data: OrderBlingResponseDto }>(detailUrl, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const vendaDetalhe = detailResp.data.data;
 
         await this.sleep(2000);
-  
+
         for (const item of vendaDetalhe.itens || []) {
           const { baseCodigo } = this.extractBaseSku(item.codigo);
-          
+
           const produto = await this.produtoRepository
             .createQueryBuilder('produto')
             .where(`produto.${loja.skuColumn} = :sku`, { sku: item.codigo })
@@ -2176,20 +2176,20 @@ export class SellsService implements ISellsRepository {
             .orWhere('produto.codigo LIKE :codigo', { codigo: `${baseCodigo}%` })
             .andWhere('produto.unidade_id IS NULL')
             .getOne();
-  
-            if (!produto) {
-              const errorMsg = `Produto não encontrado: ${item.codigo} (Pedido ${vendaDetalhe.numeroLoja} ${loja.nome})`;
-              console.error(`❌ ${errorMsg}`);
-              throw new BadRequestException({
-                code: 'PRODUCT_NOT_FOUND',
-                message: errorMsg,
-                pedidoId: id,
-                sku: item.codigo,
-                loja: loja.nome,
-              });
-            }
+
+          if (!produto) {
+            const errorMsg = `Produto não encontrado: ${item.codigo} (Pedido ${vendaDetalhe.numeroLoja} ${loja.nome})`;
+            console.error(`❌ ${errorMsg}`);
+            throw new BadRequestException({
+              code: 'PRODUCT_NOT_FOUND',
+              message: errorMsg,
+              pedidoId: id,
+              sku: item.codigo,
+              loja: loja.nome,
+            });
+          }
         }
-  
+
         const ecommerce = this.ecommerceRepository.create({
           codigo: pedido.numero,
           data_pedido: new Date(pedido.data),
@@ -2202,36 +2202,36 @@ export class SellsService implements ISellsRepository {
           status_id: pedido.situacao.id,
           loja_id: pedido.loja.id
         });
-  
+
         await this.ecommerceRepository.save(ecommerce);
-  
+
         // 🔻 Processa saídas
         for (const item of vendaDetalhe.itens || []) {
           const { baseCodigo, kitMultiplier } = this.extractBaseSku(item.codigo);
           const quantidadeReal = item.quantidade * kitMultiplier;
-  
+
           const produto = await this.produtoRepository
             .createQueryBuilder('produto')
             .where(`produto.${loja.skuColumn} = :sku`, { sku: item.codigo })
             .orWhere(`produto.${loja.skuColumn} = :baseSku`, { baseSku: baseCodigo })
             .orWhere('produto.codigo LIKE :codigo', { codigo: `${baseCodigo}%` })
-            .andWhere('produto.unidade_id IS NULL') 
+            .andWhere('produto.unidade_id IS NULL')
             .getOne();
-  
+
           if (!produto) {
             console.error(`❌ Produto não encontrado para saída: ${item.codigo} (Pedido ${id}, ${loja.nome})`);
             continue;
           }
-  
+
           const existingSaida = await this.saidaRepository.findOne({
             where: { observacao: `Saída por ${loja.nome} - ${id}`, produto: { produto_id: produto.produto_id } }
           });
-  
+
           if (existingSaida) {
             console.warn(`⚠️ Saída já registrada para produto ${item.codigo} (Pedido ${id}, ${loja.nome}). Pulando...`);
             continue;
           }
-  
+
           const saida = this.saidaRepository.create({
             produto,
             quantidade: quantidadeReal,
@@ -2239,29 +2239,29 @@ export class SellsService implements ISellsRepository {
             observacao: `Saída por ${loja.nome} - ${id}`,
             ecommerce
           });
-  
+
           await this.produtoRepository.decrement(
             { produto_id: produto.produto_id },
             'saldo_estoque',
             quantidadeReal
           );
-  
+
           await this.saidaRepository.save(saida);
           console.log(`📦 Saída registrada: ${item.codigo} → ${quantidadeReal} unid. (Pedido ${id})`);
         }
-  
+
         updated.push(`Importado ${pedido.numero} (${loja.nome})`);
       }
-  
+
       pagina++;
-      
+
       await this.sleep(2000);
     }
-  
+
     console.log(`✅ Finalizada sincronização de Shopee e Mercado Livre`);
     return `🎯 Sincronização concluída. Movimentos: ${updated.join(', ')}`;
   }
-  
+
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
@@ -2292,14 +2292,14 @@ export class SellsService implements ISellsRepository {
 
     return { baseCodigo, kitMultiplier };
   }
-  
+
   findAllEcommerce(): Promise<Ecommerce[]> {
     return this.ecommerceRepository.find();
   }
 
   ecommerceBetweenDates(fromDate: string, toDate?: string): Promise<Ecommerce[]> {
     let where: any = {};
-  
+
     if (toDate) {
       where.data_pedido = Raw(
         alias => `DATE(${alias}) BETWEEN :from AND :to`,
@@ -2310,16 +2310,16 @@ export class SellsService implements ISellsRepository {
   }
 
   async commissionBySellerCalculated(): Promise<Commissions[]> {
-  
+
     const vendasMes = await this.sellsBetweenDates('2025-03-01', '2025-12-31');
     const tipoVenda = 10438;
-  
+
     // 🔹 Vendedores válidos
     const vendedores = (await this.sellersSevice.findAllSellers())
       .filter(v => v.ativo && ![18, 12, 16].includes(v.vendedor_id));
-  
+
     const vendedorMap = new Map<number, Commissions>();
-  
+
     for (const vendedor of vendedores) {
       vendedorMap.set(vendedor.vendedor_id, {
         vendedor_id: vendedor.vendedor_id,
@@ -2330,14 +2330,14 @@ export class SellsService implements ISellsRepository {
         ticketMedio: 0,
       });
     }
-  
+
     // 🔹 Percentual por produto
     const commissions = await this.comissionsRepository.find();
     const commissionMap = new Map<string, number>();
     commissions.forEach(c => {
       commissionMap.set(c.codigo, Number(c.percentual));
     });
-  
+
     // 🔹 Fator por tabela de preço
     const tabelaFactorMap: Record<number, number> = {
       1: 1,
@@ -2347,37 +2347,37 @@ export class SellsService implements ISellsRepository {
       5: 0.4,
       6: 0.6,
     };
-  
+
     // 🔹 Processa vendas
     for (const venda of vendasMes) {
       if (venda.tipo_pedido?.tipo_pedido_id !== tipoVenda) continue;
       if (venda.status_venda?.status_venda_id === 11468) continue;
-  
+
       const vendedorId = venda.vendedor?.vendedor_id;
       if (!vendedorMap.has(vendedorId)) continue;
-  
+
       const data = vendedorMap.get(vendedorId)!;
-  
+
       data.faturado += Number(venda.valor_final);
       data.pedidos += 1;
-  
+
       const tabelaPreco = Number(venda.cliente?.cod_tabela_preco) || 1;
       const fatorTabela = tabelaFactorMap[tabelaPreco] ?? 1;
-  
+
       for (const item of venda.itensVenda) {
         const produto = item.produto;
         if (!produto) continue;
-  
+
         const percentualBase = commissionMap.get(produto.codigo);
         if (!percentualBase) continue;
-  
+
         const valorItem = Number(item.valor_total);
-  
+
         const comissaoItem =
           valorItem *
           (percentualBase / 100) *
           fatorTabela;
-  
+
         data.comissao += comissaoItem;
       }
     }
@@ -2394,7 +2394,7 @@ export class SellsService implements ISellsRepository {
 
   async sendSellToFinanceSystem(codigoVenda: number): Promise<string> {
     const venda = await this.getSellByCode(codigoVenda);
-  
+
     if (!venda) {
       throw new BadRequestException({ message: `Venda com código ${codigoVenda} não encontrada.` });
     }
@@ -2402,18 +2402,18 @@ export class SellsService implements ISellsRepository {
     if (venda.finance_id) {
       return `Venda ${codigoVenda} já enviada para o sistema financeiro.`;
     }
-  
+
     const cliente = venda.cliente;
     if (!cliente) {
       throw new BadRequestException({ message: `Cliente não encontrado para a venda ${codigoVenda}.` });
     }
-  
+
     const parcelas = venda.parcela_credito.map((p, i) => ({
       valor: p.valor,
       data_vencimento: p.data_vencimento,
       descricao: `Venda código ${codigoVenda}`
     }));
-  
+
     const produtos = venda.itensVenda.map(item => ({
       sku: item.produto.codigo,
       nome: item.produto.nome,
@@ -2423,12 +2423,12 @@ export class SellsService implements ISellsRepository {
       unidade_medida: item.produto.qt_uni === 0
         ? 'UNI'
         : item.produto.qt_uni === 6
-        ? 'MEIA_DZ'
-        : 'DZ',
+          ? 'MEIA_DZ'
+          : 'DZ',
     }));
-  
+
     const obs = venda.observacao ? ` - Obs: ${venda.observacao}` : '';
-  
+
     const body = {
       empresa_id: 1,
       categoria_id: 294,
@@ -2454,10 +2454,10 @@ export class SellsService implements ISellsRepository {
         produtos,
       },
     };
-  
+
     const url = `${this.apiFinanceUrl}${this.contasReceberTag}`;
     this.logger.log(`📤 Enviando venda ${codigoVenda} para sistema financeiro: ${url}`);
-  
+
     try {
       const response = await this.httpService.axiosRef.post(url, body, {
         headers: {
@@ -2465,19 +2465,19 @@ export class SellsService implements ISellsRepository {
           'Content-Type': 'application/json',
         },
       });
-  
+
       const { conta_receber_id, parcelas_ids, pedido_id, cliente_id } = response.data;
-  
+
       venda.finance_id = Number(conta_receber_id);
       venda.finance_order_id = Number(pedido_id);
       venda.cliente.finance_id = cliente_id;
-  
+
       await this.clienteService.saveCustomer(venda.cliente);
       await this.vendaRepository.save(venda);
-  
+
       // ✅ Ordena as parcelas locais e associa os IDs retornados
       venda.parcela_credito.sort((a, b) => a.numero - b.numero);
-  
+
       let index = 0;
       for (const parcela_id of parcelas_ids) {
         const parcela = venda.parcela_credito[index];
@@ -2485,7 +2485,7 @@ export class SellsService implements ISellsRepository {
         await this.parcelaRepository.save(parcela);
         index++;
       }
-  
+
       this.logger.log(`✅ Venda ${codigoVenda} enviada com sucesso ao sistema financeiro.`);
       return `Venda ${codigoVenda} enviada com sucesso ao sistema financeiro.`;
     } catch (error) {
@@ -2498,31 +2498,31 @@ export class SellsService implements ISellsRepository {
       });
     }
   }
-  
+
   async sendToFinanceSystem(): Promise<string[]> {
     this.logger.log(`🟡 Iniciando envio ao financeiro`);
-  
+
     if (this.isRuning) {
       this.logger.warn('⚠️ Registro de lançamentos financeiros já está em andamento. Abortando nova execução.');
       return;
     }
-  
+
     this.isRuning = true;
     const resultados: string[] = [];
-  
+
     try {
       const vendasMes = await this.sellsBetweenDates('2026-03-01', '2026-03-31');
       const tipoVenda = 10438;
-  
-      const vendasFiltradas = vendasMes.filter(v => 
+
+      const vendasFiltradas = vendasMes.filter(v =>
         v.tipo_pedido?.tipo_pedido_id === tipoVenda &&
         v.status_venda?.status_venda_id !== 11468 &&
         !v.finance_id
       );
       this.logger.log(`🔢 Vendas filtradas: ${vendasFiltradas.length}`);
-  
+
       const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-  
+
       for (const venda of vendasFiltradas) {
         try {
           const msg = await this.sendSellToFinanceSystem(venda.codigo);
@@ -2542,33 +2542,33 @@ export class SellsService implements ISellsRepository {
   async registerAssemblyCommission(order: Venda) {
 
     const valor = order.comissao_montagem;
-  
+
     if (!valor || valor <= 0) return;
-  
+
     let meta = await this.metaMontagemRepository.findOne({ where: {} });
-  
+
     if (!meta.meta_realizada || meta.meta_realizada === 0) {
-  
+
       const hoje = new Date();
       const dataInicio = new Date();
       dataInicio.setDate(hoje.getDate() - 30);
-  
+
       const from = dataInicio.toISOString().split('T')[0];
       const to = hoje.toISOString().split('T')[0];
-  
+
       const vendas = await this.sellsBetweenDates(from, to);
-  
+
       const totalPedidos = vendas.filter(v =>
         v.tipo_pedido?.tipo_pedido_id === 10438 &&
         v.status_venda?.status_venda_id !== 11468
       ).length;
-  
+
       meta.meta_diaria = totalPedidos / 30;
     }
-  
+
     meta.meta_realizada = Number(meta.meta_realizada || 0) + 1;
     meta.valor_condicional = Number(meta.valor_condicional || 0) + Number(valor);
-  
+
     await this.metaMontagemRepository.save(meta);
   }
 
@@ -2591,7 +2591,7 @@ export class SellsService implements ISellsRepository {
       meta.valor_acumulado =
         Number(meta.valor_acumulado || 0) +
         Number(meta.valor_condicional || 0);
-    
+
       this.logger.log(
         `🎯 Meta batida! Valor ${meta.valor_condicional} adicionado ao acumulado.`,
       );
@@ -2610,7 +2610,7 @@ export class SellsService implements ISellsRepository {
     this.logger.log('✅ Fechamento diário finalizado.');
   }
 
-  async getAssemblyGoal(): Promise <MetaMontagem> {
+  async getAssemblyGoal(): Promise<MetaMontagem> {
     return await this.metaMontagemRepository.findOne({ where: {} });
   }
 
@@ -2618,21 +2618,24 @@ export class SellsService implements ISellsRepository {
     const codigosVendas = [
       4374, 5472, 4554, 4654, 4686, 4798, 5433,
       4856, 4872, 4594, 4935, 4847, 4416, 4969,
-      4896, 4977, 5008, 5172, 5224, 5322, 5560,
-      5434, 5554, 5558, 5062
+      4896, 4977, 5008, 5172, 5224, 5700, 5322,
+      5560, 5434, 5554, 5062, 5733, 5500, 5801,
+      5104, 5723, 5299, 5714, 4947, 5846, 5875,
+      5668, 5542, 4994, 5107, 5722, 5715,
     ];
+
     const resultados: string[] = [];
     const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-  
+
     for (const codigo of codigosVendas) {
       try {
         const venda = await this.getSellByCode(codigo);
-  
+
         if (!venda) {
           resultados.push(`❌ Venda ${codigo} não encontrada.`);
           continue;
         }
-  
+
         if (!venda.finance_id) {
           this.logger.log(`📤 Venda ${codigo} sem finance_id. Enviando para o financeiro...`);
           await this.sendSellToFinanceSystem(codigo);
@@ -2640,32 +2643,32 @@ export class SellsService implements ISellsRepository {
           await sleep(1000);
           continue;
         }
-  
+
         const url = `${this.apiFinanceUrl}${this.contasReceberTag}/${venda.finance_id}/status`;
-        
+
         const body = {
           status: "pendente",
           atualizar_parcelas: 1
         };
-  
+
         await this.httpService.axiosRef.patch(url, body, {
           headers: {
             Authorization: `Bearer ${this.tokenFinance}`,
             'Content-Type': 'application/json',
           },
         });
-  
+
         resultados.push(`✅ Venda ${codigo} (Finance ID: ${venda.finance_id}) deixada em aberto com sucesso.`);
         this.logger.log(`✅ Venda ${codigo} atualizada para status "pendente" no financeiro.`);
-  
-        await sleep(1000); // Rate limiting
-  
+
+        await sleep(1000);
+
       } catch (error) {
         this.logger.error(`❌ Erro ao processar venda ${codigo}:`, error.response?.data || error.message);
         resultados.push(`❌ Erro na venda ${codigo}: ${error.message}`);
       }
     }
-  
+
     return resultados;
   }
 }
