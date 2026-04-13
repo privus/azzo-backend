@@ -869,14 +869,21 @@ export class StockService implements IStockRepository {
     
     for (const item of estoqueData) {
       const produto = await this.productRepository.findProductById(item.produto_id);
+
       if (!produto) {
         console.warn(`⚠️ Produto com ID ${item.produto_id} não encontrado.`);
+        continue;
+      }
+
+      if (!item.localizacao) {
+        console.warn(`⚠️ Produto ${item.produto_id} sem localização.`);
         continue;
       }
 
       produto.local_cx = item.localizacao
         .trim()
         .replace(/\s+/g, '|');
+
       await this.productRepository.saveProduct(produto);
     }
 
