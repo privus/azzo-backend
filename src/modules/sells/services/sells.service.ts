@@ -1847,33 +1847,26 @@ export class SellsService implements ISellsRepository {
     };
   }
 
-  async last2SellsByClient(clienteId: number): Promise<boolean> {
-    const vendas = await this.vendaRepository.find({
-      where: {
-        cliente: { cliente_id: clienteId },
-        tipo_pedido: { tipo_pedido_id: 10438 },
-        status_venda: { status_venda_id: Not(11468) },
-      },
-      order: { data_criacao: 'DESC' },
-      take: 2,
-    });
+async last2SellsByClient(clienteId: number): Promise<boolean> {
+  const result = await this.vendaRepository.query(`
+    SELECT 
+      CASE 
+        WHEN COUNT(*) < 2 THEN 0
+        ELSE DATEDIFF(MAX(data_criacao), MIN(data_criacao))
+      END as diff
+    FROM (
+      SELECT data_criacao
+      FROM venda v
+      WHERE v.cliente_id = ?
+        AND v.tipo_pedido_id = 10438
+        AND v.status_venda_id != 11468
+      ORDER BY v.data_criacao DESC
+      LIMIT 2
+    ) as ultimas
+  `, [clienteId]);
 
-    if (!vendas || vendas.length < 2) {
-      return false;
-    }
-
-    const d1 = new Date(vendas[0].data_criacao);
-    const d2 = new Date(vendas[1].data_criacao);
-
-    d1.setHours(0, 0, 0, 0);
-    d2.setHours(0, 0, 0, 0);
-
-    const diffTime = Math.abs(d1.getTime() - d2.getTime());
-    const diffDays = diffTime / (1000 * 60 * 60 * 24);
-
-    return diffDays > 15;
-  }
-
+  return result[0]?.diff > 15;
+}
   async calculateWeeklyAid(fromDate: string, toDate: string): Promise<WeeklyAid> {
     const vendas = await this.sellsBetweenDates(fromDate, toDate);
     const tipoPedidoAlvo = 10438;
