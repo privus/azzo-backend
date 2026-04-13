@@ -43,10 +43,10 @@ export class ProductsController {
     return this.productsService.syncroTinyIds();
   }
 
-  @ApiOperation({ summary: 'Sincronizar produtos Bling' })
-  @Get('syncroBling')
-  async syncroBling() {
-    return this.blingService.registerProducts();
+  @ApiOperation({ summary: 'Atualiza preço conforme tabela de preço' })
+  @Get('updatePrices')
+  async updatePrices() {
+    return this.productsService.updatePricesFromJson();
   }
 
   @ApiOperation({ summary: 'Sincronizar id produtos Bling' })

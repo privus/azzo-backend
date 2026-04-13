@@ -334,7 +334,7 @@ export class ProductsService implements IProductsRepository {
   }
 
   async updatePricesFromJson(): Promise<void> {
-    const jsonFilePath = 'src/utils/tabela-padrao.json';
+    const jsonFilePath = 'src/utils/tabela-de-preco.json';
     if (!fs.existsSync(jsonFilePath)) {
       console.error(`❌ Arquivo '${jsonFilePath}' não encontrado.`);
       return;
