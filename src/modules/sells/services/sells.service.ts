@@ -1862,11 +1862,11 @@ export class SellsService implements ISellsRepository {
       return false;
     }
 
-    const data1 = vendas[0].data_criacao.toISOString().split('T')[0];
-    const data2 = vendas[1].data_criacao.toISOString().split('T')[0];
+    const d1 = new Date(vendas[0].data_criacao);
+    const d2 = new Date(vendas[1].data_criacao);
 
-    const d1 = new Date(data1);
-    const d2 = new Date(data2);
+    d1.setHours(0, 0, 0, 0);
+    d2.setHours(0, 0, 0, 0);
 
     const diffTime = Math.abs(d1.getTime() - d2.getTime());
     const diffDays = diffTime / (1000 * 60 * 60 * 24);
