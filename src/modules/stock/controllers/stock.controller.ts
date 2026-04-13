@@ -22,7 +22,7 @@ export class StockController {
   @ApiOperation({ summary: 'update estoque'})
   @Get('updateStock')
   async updateStock(): Promise<string> {
-    return this.stockService.updateStockFromJson();
+    return this.stockService.stockMapFromJson();
   }
 
   @ApiOperation({ summary: 'Duração estoque em dias por produto e valor estoque' })
