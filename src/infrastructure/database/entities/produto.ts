@@ -99,6 +99,6 @@ export class Produto {
   @Column({ type: 'varchar', length: 40, nullable: true })
   sku_mercadolivre: string;
 
-  @Column({ type: 'varchar', length: 7, nullable: true })
+  @Column({ type: 'varchar', length: 8, nullable: true })
   local_cx: string;
 }
