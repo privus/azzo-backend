@@ -1847,6 +1847,33 @@ export class SellsService implements ISellsRepository {
     };
   }
 
+  async last2SellsByClient(clienteId: number): Promise<boolean> {
+    const vendas = await this.vendaRepository.find({
+      where: {
+        cliente: { cliente_id: clienteId },
+        tipo_pedido: { tipo_pedido_id: 10438 },
+        status_venda: { status_venda_id: Not(11468) },
+      },
+      order: { data_criacao: 'DESC' },
+      take: 2,
+    });
+
+    if (!vendas || vendas.length < 2) {
+      return false;
+    }
+
+    const data1 = vendas[0].data_criacao.toISOString().split('T')[0];
+    const data2 = vendas[1].data_criacao.toISOString().split('T')[0];
+
+    const d1 = new Date(data1);
+    const d2 = new Date(data2);
+
+    const diffTime = Math.abs(d1.getTime() - d2.getTime());
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+    return diffDays > 15;
+  }
+
   async calculateWeeklyAid(fromDate: string, toDate: string): Promise<WeeklyAid> {
     const vendas = await this.sellsBetweenDates(fromDate, toDate);
     const tipoPedidoAlvo = 10438;
@@ -1899,6 +1926,14 @@ export class SellsService implements ISellsRepository {
 
       if (isNovoCliente) {
         result[vendedorNome].clientes_novos++;
+      } else {
+        const clienteId = venda.cliente?.cliente_id;
+        if (clienteId) {
+          const hasInterval = await this.last2SellsByClient(clienteId);
+          if (!hasInterval) {
+            incrementoPedido = 0;
+          }
+        }
       }
 
       result[vendedorNome].valor_total += incrementoPedido;

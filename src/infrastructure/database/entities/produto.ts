@@ -98,4 +98,10 @@ export class Produto {
 
   @Column({ type: 'varchar', length: 40, nullable: true })
   sku_mercadolivre: string;
+
+  @Column({ type: 'varchar', length: 40, nullable: true })
+  local_cx: string;
+
+  @Column({ type: 'varchar', length: 40, nullable: true })
+  local_uni: string;
 }

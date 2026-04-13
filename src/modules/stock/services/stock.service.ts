@@ -855,4 +855,30 @@ export class StockService implements IStockRepository {
       ])
       .getRawMany();
   }
+
+  async stockMapFromJson(): Promise<string> {
+    const jsonFilePath = 'src/utils/mapa-estoque.json';
+
+    if (!fs.existsSync(jsonFilePath)) {
+      console.error(`❌ Arquivo '${jsonFilePath}' não encontrado.`);
+      return '❌ Arquivo de estoque não encontrado.';
+    }
+
+    const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
+    const estoqueData: { produto_id: number; localizacao_cx: string; localizacao_uni: string}[] = JSON.parse(jsonData);
+    
+    for (const item of estoqueData) {
+    const produto = await this.productRepository.findProductById(item.produto_id);
+    if (!produto) {
+      console.warn(`⚠️ Produto com ID ${item.produto_id} não encontrado.`);
+      continue;
+    }
+
+    produto.local_cx = item.localizacao_cx
+    produto.local_uni = item.localizacao_uni
+    await this.productRepository.saveProduct(produto);
+    }
+
+    return '✅ Estoque atualizado com sucesso.';
+  }
 }
