@@ -1847,26 +1847,26 @@ export class SellsService implements ISellsRepository {
     };
   }
 
-async last2SellsByClient(clienteId: number): Promise<boolean> {
-  const result = await this.vendaRepository.query(`
-    SELECT 
-      CASE 
-        WHEN COUNT(*) < 2 THEN 0
-        ELSE DATEDIFF(MAX(data_criacao), MIN(data_criacao))
-      END as diff
-    FROM (
-      SELECT data_criacao
-      FROM venda v
-      WHERE v.cliente_id = ?
-        AND v.tipo_pedido_id = 10438
-        AND v.status_venda_id != 11468
-      ORDER BY v.data_criacao DESC
-      LIMIT 2
-    ) as ultimas
-  `, [clienteId]);
+  async last2SellsByClient(clienteId: number): Promise<boolean> {
+    const result = await this.vendaRepository.query(`
+      SELECT 
+        CASE 
+          WHEN COUNT(*) < 2 THEN 0
+          ELSE DATEDIFF(MAX(data_criacao), MIN(data_criacao))
+        END as diff
+      FROM (
+        SELECT data_criacao
+        FROM venda v
+        WHERE v.cliente_id = ?
+          AND v.tipo_pedido_id = 10438
+          AND v.status_venda_id != 11468
+        ORDER BY v.data_criacao DESC
+        LIMIT 2
+      ) as ultimas
+    `, [clienteId]);
 
-  return result[0]?.diff > 15;
-}
+    return result[0]?.diff > 15;
+  }
   async calculateWeeklyAid(fromDate: string, toDate: string): Promise<WeeklyAid> {
     const vendas = await this.sellsBetweenDates(fromDate, toDate);
     const tipoPedidoAlvo = 10438;

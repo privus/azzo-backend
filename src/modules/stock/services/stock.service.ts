@@ -865,18 +865,19 @@ export class StockService implements IStockRepository {
     }
 
     const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
-    const estoqueData: { produto_id: number; localizacao_cx: string; localizacao_uni: string}[] = JSON.parse(jsonData);
+    const estoqueData: { produto_id: number; localizacao: string }[] = JSON.parse(jsonData);
     
     for (const item of estoqueData) {
-    const produto = await this.productRepository.findProductById(item.produto_id);
-    if (!produto) {
-      console.warn(`⚠️ Produto com ID ${item.produto_id} não encontrado.`);
-      continue;
-    }
+      const produto = await this.productRepository.findProductById(item.produto_id);
+      if (!produto) {
+        console.warn(`⚠️ Produto com ID ${item.produto_id} não encontrado.`);
+        continue;
+      }
 
-    produto.local_cx = item.localizacao_cx
-    produto.local_uni = item.localizacao_uni
-    await this.productRepository.saveProduct(produto);
+      produto.local_cx = item.localizacao
+        .trim()
+        .replace(/\s+/g, '|');
+      await this.productRepository.saveProduct(produto);
     }
 
     return '✅ Estoque atualizado com sucesso.';

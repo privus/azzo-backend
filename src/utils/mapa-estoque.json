@@ -1,0 +1,1034 @@
+[
+    {
+        "produto_id":1,
+        "localizacao":"C3 P8 A3"
+    },
+    {
+        "produto_id":70,
+        "localizacao":"C3 P8 A1"
+    },
+    {
+        "produto_id":71,
+        "localizacao":"C3 P8 A1"
+    },
+    {
+        "produto_id":72,
+        "localizacao":"C3 P8 A1 "
+    },
+    {
+        "produto_id":73,
+        "localizacao":"C3 P8 A1"
+    },
+    {
+        "produto_id":131,
+        "localizacao":null
+    },
+    {
+        "produto_id":132,
+        "localizacao":null
+    },
+    {
+        "produto_id":141,
+        "localizacao":"C3 P8 A2"
+    },
+    {
+        "produto_id":148,
+        "localizacao":"C3 P8 A1"
+    },
+    {
+        "produto_id":161,
+        "localizacao":"C3 P8 A4"
+    },
+    {
+        "produto_id":162,
+        "localizacao":"C3 P8 A2"
+    },
+    {
+        "produto_id":163,
+        "localizacao":"C3 P8 A3"
+    },
+    {
+        "produto_id":164,
+        "localizacao":"C3 P8 A2"
+    },
+    {
+        "produto_id":165,
+        "localizacao":null
+    },
+    {
+        "produto_id":166,
+        "localizacao":null
+    },
+    {
+        "produto_id":167,
+        "localizacao":null
+    },
+    {
+        "produto_id":168,
+        "localizacao":"C3 P8 A4 "
+    },
+    {
+        "produto_id":169,
+        "localizacao":"C3 P8 A2"
+    },
+    {
+        "produto_id":170,
+        "localizacao":"C3 P8 A3"
+    },
+    {
+        "produto_id":171,
+        "localizacao":"C3 P8 A2"
+    },
+    {
+        "produto_id":172,
+        "localizacao":"C3 P8 A4 "
+    },
+    {
+        "produto_id":173,
+        "localizacao":null
+    },
+    {
+        "produto_id":174,
+        "localizacao":null
+    },
+    {
+        "produto_id":175,
+        "localizacao":"C3 P8 A2"
+    },
+    {
+        "produto_id":340,
+        "localizacao":"C1 P1 A2"
+    },
+    {
+        "produto_id":341,
+        "localizacao":"C1 P1 A2"
+    },
+    {
+        "produto_id":342,
+        "localizacao":null
+    },
+    {
+        "produto_id":343,
+        "localizacao":null
+    },
+    {
+        "produto_id":344,
+        "localizacao":"C1 P1 A2"
+    },
+    {
+        "produto_id":345,
+        "localizacao":"C1 P2 A2"
+    },
+    {
+        "produto_id":346,
+        "localizacao":"C1 P1 A3"
+    },
+    {
+        "produto_id":347,
+        "localizacao":"C1 P2 A3"
+    },
+    {
+        "produto_id":348,
+        "localizacao":"C1 P2 A3"
+    },
+    {
+        "produto_id":349,
+        "localizacao":null
+    },
+    {
+        "produto_id":2,
+        "localizacao":"C2 P2 A3"
+    },
+    {
+        "produto_id":3,
+        "localizacao":"C2 P2 A3"
+    },
+    {
+        "produto_id":9,
+        "localizacao":"C2 P2 A1"
+    },
+    {
+        "produto_id":88,
+        "localizacao":"C2 P3 A3"
+    },
+    {
+        "produto_id":89,
+        "localizacao":"C2 P4 A3"
+    },
+    {
+        "produto_id":100,
+        "localizacao":"C2 P4 A1"
+    },
+    {
+        "produto_id":101,
+        "localizacao":"C2 P1 A2"
+    },
+    {
+        "produto_id":102,
+        "localizacao":"C2 P2 A1"
+    },
+    {
+        "produto_id":109,
+        "localizacao":"C2 P2 A3"
+    },
+    {
+        "produto_id":155,
+        "localizacao":"C2 P2 A4"
+    },
+    {
+        "produto_id":156,
+        "localizacao":"C2 P2 A4"
+    },
+    {
+        "produto_id":157,
+        "localizacao":null
+    },
+    {
+        "produto_id":158,
+        "localizacao":"C2 P2 A4"
+    },
+    {
+        "produto_id":159,
+        "localizacao":"C2 P2 A3"
+    },
+    {
+        "produto_id":160,
+        "localizacao":"C2 P2 A3"
+    },
+    {
+        "produto_id":176,
+        "localizacao":"C2 P4 A3"
+    },
+    {
+        "produto_id":191,
+        "localizacao":"C2 P2 A3"
+    },
+    {
+        "produto_id":196,
+        "localizacao":"C2 P2 A2"
+    },
+    {
+        "produto_id":208,
+        "localizacao":"C2 P3 A4"
+    },
+    {
+        "produto_id":238,
+        "localizacao":"C2 P2 A1"
+    },
+    {
+        "produto_id":246,
+        "localizacao":"C2 P3 A2"
+    },
+    {
+        "produto_id":247,
+        "localizacao":"C2 P3 A2"
+    },
+    {
+        "produto_id":253,
+        "localizacao":"C2 P4 A4"
+    },
+    {
+        "produto_id":260,
+        "localizacao":"C2 P4 A2"
+    },
+    {
+        "produto_id":261,
+        "localizacao":"C2 P3 A4"
+    },
+    {
+        "produto_id":262,
+        "localizacao":"C2 P3 A4"
+    },
+    {
+        "produto_id":263,
+        "localizacao":"C2 P5 A2"
+    },
+    {
+        "produto_id":269,
+        "localizacao":"C2 P2 A2"
+    },
+    {
+        "produto_id":270,
+        "localizacao":"C2 P2 A2"
+    },
+    {
+        "produto_id":271,
+        "localizacao":"C2 P2 A2"
+    },
+    {
+        "produto_id":272,
+        "localizacao":"C2 P4 A1"
+    },
+    {
+        "produto_id":273,
+        "localizacao":"C2 P3 A2"
+    },
+    {
+        "produto_id":277,
+        "localizacao":"C2 P4 A2"
+    },
+    {
+        "produto_id":278,
+        "localizacao":"C2 P4 A2"
+    },
+    {
+        "produto_id":279,
+        "localizacao":"C2 P3 A1"
+    },
+    {
+        "produto_id":280,
+        "localizacao":"C2 P4 A2"
+    },
+    {
+        "produto_id":294,
+        "localizacao":"C2 P4 A2"
+    },
+    {
+        "produto_id":295,
+        "localizacao":"C2 P3 A4"
+    },
+    {
+        "produto_id":296,
+        "localizacao":"C2 P3 A2"
+    },
+    {
+        "produto_id":297,
+        "localizacao":"C2 P1 A1"
+    },
+    {
+        "produto_id":298,
+        "localizacao":"C2 P4 A4"
+    },
+    {
+        "produto_id":299,
+        "localizacao":"C2 P4 A3"
+    },
+    {
+        "produto_id":300,
+        "localizacao":"C2 P4 A3"
+    },
+    {
+        "produto_id":301,
+        "localizacao":"C2 P3 A3"
+    },
+    {
+        "produto_id":304,
+        "localizacao":"C2 P2 A4"
+    },
+    {
+        "produto_id":305,
+        "localizacao":"C2 P4 A1"
+    },
+    {
+        "produto_id":321,
+        "localizacao":"C2 P4 A1"
+    },
+    {
+        "produto_id":322,
+        "localizacao":"C2 P2 A1"
+    },
+    {
+        "produto_id":323,
+        "localizacao":"C2 P4 A4"
+    },
+    {
+        "produto_id":324,
+        "localizacao":"C2 P3 A4"
+    },
+    {
+        "produto_id":325,
+        "localizacao":"C2 P4 A4"
+    },
+    {
+        "produto_id":327,
+        "localizacao":"C2 P2 A1"
+    },
+    {
+        "produto_id":328,
+        "localizacao":"C2 P3 A1"
+    },
+    {
+        "produto_id":329,
+        "localizacao":"C2 P3 A3"
+    },
+    {
+        "produto_id":334,
+        "localizacao":"C2 P1 A1"
+    },
+    {
+        "produto_id":335,
+        "localizacao":"C2 P1 A1"
+    },
+    {
+        "produto_id":379,
+        "localizacao":"C2 P5 A1"
+    },
+    {
+        "produto_id":380,
+        "localizacao":"C2 P2 A2"
+    },
+    {
+        "produto_id":382,
+        "localizacao":"C2 P1 A1"
+    },
+    {
+        "produto_id":419,
+        "localizacao":"C2 P2 A4"
+    },
+    {
+        "produto_id":424,
+        "localizacao":"C2 P2 A2"
+    },
+    {
+        "produto_id":425,
+        "localizacao":"C2 P3 A1"
+    },
+    {
+        "produto_id":426,
+        "localizacao":"C2 P3 A1"
+    },
+    {
+        "produto_id":427,
+        "localizacao":"C2 P1 A2"
+    },
+    {
+        "produto_id":428,
+        "localizacao":"C2 P1 A2"
+    },
+    {
+        "produto_id":429,
+        "localizacao":"C2 P2 A2"
+    },
+    {
+        "produto_id":434,
+        "localizacao":"C2 P1 A3"
+    },
+    {
+        "produto_id":435,
+        "localizacao":"C2 P1 A3"
+    },
+    {
+        "produto_id":436,
+        "localizacao":"C2 P1 A3"
+    },
+    {
+        "produto_id":497,
+        "localizacao":null
+    },
+    {
+        "produto_id":509,
+        "localizacao":"C2 P4 A2"
+    },
+    {
+        "produto_id":4,
+        "localizacao":"C2 P10 A3"
+    },
+    {
+        "produto_id":5,
+        "localizacao":"C1 P3 A1"
+    },
+    {
+        "produto_id":7,
+        "localizacao":"C2 P9 A2"
+    },
+    {
+        "produto_id":8,
+        "localizacao":"C2 P9 A2"
+    },
+    {
+        "produto_id":34,
+        "localizacao":"C2 P9 A2"
+    },
+    {
+        "produto_id":35,
+        "localizacao":"C3 P9 A2"
+    },
+    {
+        "produto_id":36,
+        "localizacao":"C3 P9 A2"
+    },
+    {
+        "produto_id":37,
+        "localizacao":null
+    },
+    {
+        "produto_id":38,
+        "localizacao":"C3 P9 A3"
+    },
+    {
+        "produto_id":39,
+        "localizacao":null
+    },
+    {
+        "produto_id":61,
+        "localizacao":"C1 P3 A3"
+    },
+    {
+        "produto_id":62,
+        "localizacao":"C2 P10 A2"
+    },
+    {
+        "produto_id":65,
+        "localizacao":"C3 P9 A2 "
+    },
+    {
+        "produto_id":66,
+        "localizacao":"C2 P9 A2"
+    },
+    {
+        "produto_id":67,
+        "localizacao":"C2 P9 A2"
+    },
+    {
+        "produto_id":68,
+        "localizacao":"C3 P10 A2"
+    },
+    {
+        "produto_id":69,
+        "localizacao":"C1 P3 A1"
+    },
+    {
+        "produto_id":84,
+        "localizacao":"C1 P3 A1"
+    },
+    {
+        "produto_id":85,
+        "localizacao":"C1 P3 A1"
+    },
+    {
+        "produto_id":86,
+        "localizacao":"C1 P3 A1"
+    },
+    {
+        "produto_id":87,
+        "localizacao":"C3 P9 A3"
+    },
+    {
+        "produto_id":95,
+        "localizacao":null
+    },
+    {
+        "produto_id":96,
+        "localizacao":"C2 P9 A3"
+    },
+    {
+        "produto_id":97,
+        "localizacao":"C2 P9 A3"
+    },
+    {
+        "produto_id":98,
+        "localizacao":"C1 P3 A1"
+    },
+    {
+        "produto_id":99,
+        "localizacao":"C1 P3 A1"
+    },
+    {
+        "produto_id":105,
+        "localizacao":null
+    },
+    {
+        "produto_id":106,
+        "localizacao":null
+    },
+    {
+        "produto_id":107,
+        "localizacao":null
+    },
+    {
+        "produto_id":108,
+        "localizacao":null
+    },
+    {
+        "produto_id":110,
+        "localizacao":"C2 P10 A2"
+    },
+    {
+        "produto_id":111,
+        "localizacao":"C2 P10 A2"
+    },
+    {
+        "produto_id":112,
+        "localizacao":null
+    },
+    {
+        "produto_id":113,
+        "localizacao":"C1 P3 A1"
+    },
+    {
+        "produto_id":129,
+        "localizacao":"C2 P10 A2"
+    },
+    {
+        "produto_id":130,
+        "localizacao":"C2 P10 A2"
+    },
+    {
+        "produto_id":137,
+        "localizacao":null
+    },
+    {
+        "produto_id":138,
+        "localizacao":"C3 P9 A2"
+    },
+    {
+        "produto_id":139,
+        "localizacao":"C3 P9 A3"
+    },
+    {
+        "produto_id":140,
+        "localizacao":"C2 P7 A3"
+    },
+    {
+        "produto_id":145,
+        "localizacao":"C3 P9 A3"
+    },
+    {
+        "produto_id":146,
+        "localizacao":"C2 P10 A2"
+    },
+    {
+        "produto_id":147,
+        "localizacao":"C3 P9 A3"
+    },
+    {
+        "produto_id":149,
+        "localizacao":null
+    },
+    {
+        "produto_id":150,
+        "localizacao":"C2 P10 A3"
+    },
+    {
+        "produto_id":151,
+        "localizacao":"C2 P10 A3"
+    },
+    {
+        "produto_id":152,
+        "localizacao":"C2 P10 A3"
+    },
+    {
+        "produto_id":153,
+        "localizacao":"C2 P10 A3"
+    },
+    {
+        "produto_id":154,
+        "localizacao":"C1 P3 A1"
+    },
+    {
+        "produto_id":188,
+        "localizacao":"C2 P10 A2"
+    },
+    {
+        "produto_id":198,
+        "localizacao":"C2 P7 A3"
+    },
+    {
+        "produto_id":199,
+        "localizacao":"C2 P9 A3"
+    },
+    {
+        "produto_id":207,
+        "localizacao":"C2 P10 A3"
+    },
+    {
+        "produto_id":209,
+        "localizacao":null
+    },
+    {
+        "produto_id":211,
+        "localizacao":"C2 P7 A3"
+    },
+    {
+        "produto_id":212,
+        "localizacao":null
+    },
+    {
+        "produto_id":236,
+        "localizacao":"C2 P9 A3"
+    },
+    {
+        "produto_id":239,
+        "localizacao":null
+    },
+    {
+        "produto_id":248,
+        "localizacao":null
+    },
+    {
+        "produto_id":302,
+        "localizacao":"C2 P8 A2"
+    },
+    {
+        "produto_id":303,
+        "localizacao":"C2 P8 A2"
+    },
+    {
+        "produto_id":326,
+        "localizacao":"C2 P8 A2"
+    },
+    {
+        "produto_id":376,
+        "localizacao":"C2 P10 A3"
+    },
+    {
+        "produto_id":377,
+        "localizacao":"C2 P10 A3"
+    },
+    {
+        "produto_id":381,
+        "localizacao":"C1 P4 A3"
+    },
+    {
+        "produto_id":388,
+        "localizacao":"C1 P3 A2"
+    },
+    {
+        "produto_id":389,
+        "localizacao":"C1 P3 A2"
+    },
+    {
+        "produto_id":390,
+        "localizacao":"C1 P3 A2"
+    },
+    {
+        "produto_id":391,
+        "localizacao":"C1 P3 A2"
+    },
+    {
+        "produto_id":392,
+        "localizacao":"C1 P3 A2"
+    },
+    {
+        "produto_id":393,
+        "localizacao":"C2 P10 A3"
+    },
+    {
+        "produto_id":394,
+        "localizacao":"C1 P3 A1"
+    },
+    {
+        "produto_id":395,
+        "localizacao":"C1 P3 A1"
+    },
+    {
+        "produto_id":396,
+        "localizacao":"C1 P3 A1"
+    },
+    {
+        "produto_id":397,
+        "localizacao":"C2 P10 A3"
+    },
+    {
+        "produto_id":398,
+        "localizacao":"C1 P3 A1"
+    },
+    {
+        "produto_id":399,
+        "localizacao":"C2 P9 A3"
+    },
+    {
+        "produto_id":420,
+        "localizacao":"C1 P4 A1"
+    },
+    {
+        "produto_id":421,
+        "localizacao":"C1 P4 A1"
+    },
+    {
+        "produto_id":422,
+        "localizacao":"C1 P4 A1"
+    },
+    {
+        "produto_id":423,
+        "localizacao":"C1 P4 A1"
+    },
+    {
+        "produto_id":454,
+        "localizacao":"C3 P9 A2"
+    },
+    {
+        "produto_id":455,
+        "localizacao":"C2 P9 A3"
+    },
+    {
+        "produto_id":504,
+        "localizacao":null
+    },
+    {
+        "produto_id":505,
+        "localizacao":"C1 P4 A3"
+    },
+    {
+        "produto_id":506,
+        "localizacao":"C1 P4 A3"
+    },
+    {
+        "produto_id":507,
+        "localizacao":"C1 P4 A3"
+    },
+    {
+        "produto_id":10,
+        "localizacao":"C2 P5 A3"
+    },
+    {
+        "produto_id":11,
+        "localizacao":"C2 P6 A3"
+    },
+    {
+        "produto_id":40,
+        "localizacao":"C2 P6 A1"
+    },
+    {
+        "produto_id":41,
+        "localizacao":"C2 P6 A1"
+    },
+    {
+        "produto_id":43,
+        "localizacao":"C2 P6 A1"
+    },
+    {
+        "produto_id":44,
+        "localizacao":"C2 P5 A2"
+    },
+    {
+        "produto_id":63,
+        "localizacao":"C3 P5 A1"
+    },
+    {
+        "produto_id":64,
+        "localizacao":"C3 P5 A2"
+    },
+    {
+        "produto_id":83,
+        "localizacao":"C3 P5 A4"
+    },
+    {
+        "produto_id":264,
+        "localizacao":"C3 P6 A2"
+    },
+    {
+        "produto_id":265,
+        "localizacao":"C3 P6 A1"
+    },
+    {
+        "produto_id":266,
+        "localizacao":"C3 P6 A4"
+    },
+    {
+        "produto_id":267,
+        "localizacao":"C3 P6 A3"
+    },
+    {
+        "produto_id":268,
+        "localizacao":null
+    },
+    {
+        "produto_id":330,
+        "localizacao":"C2 P6 A2"
+    },
+    {
+        "produto_id":331,
+        "localizacao":"C2 P6 A2"
+    },
+    {
+        "produto_id":332,
+        "localizacao":"C2 P6 A2"
+    },
+    {
+        "produto_id":333,
+        "localizacao":"C2 P5 A2"
+    },
+    {
+        "produto_id":378,
+        "localizacao":null
+    },
+    {
+        "produto_id":383,
+        "localizacao":"C3 P5 A2"
+    },
+    {
+        "produto_id":384,
+        "localizacao":"C3 P5 A3"
+    },
+    {
+        "produto_id":385,
+        "localizacao":"C3 P5 A3"
+    },
+    {
+        "produto_id":386,
+        "localizacao":"C3 P5 A3"
+    },
+    {
+        "produto_id":387,
+        "localizacao":"C3 P5 A3"
+    },
+    {
+        "produto_id":430,
+        "localizacao":"C3 P5 A1"
+    },
+    {
+        "produto_id":431,
+        "localizacao":"C3 P5 A1"
+    },
+    {
+        "produto_id":432,
+        "localizacao":"C3 P5 A1"
+    },
+    {
+        "produto_id":433,
+        "localizacao":"C2 P5 A1"
+    },
+    {
+        "produto_id":103,
+        "localizacao":"C3 P1 A3"
+    },
+    {
+        "produto_id":189,
+        "localizacao":"C3 P2 A2"
+    },
+    {
+        "produto_id":210,
+        "localizacao":"C3 P1 A2"
+    },
+    {
+        "produto_id":240,
+        "localizacao":"C3 P2 A3"
+    },
+    {
+        "produto_id":249,
+        "localizacao":"C3 P3 A2"
+    },
+    {
+        "produto_id":251,
+        "localizacao":"C3 P2 A4"
+    },
+    {
+        "produto_id":252,
+        "localizacao":"C3 P3 A3"
+    },
+    {
+        "produto_id":257,
+        "localizacao":"C3 P3 A3"
+    },
+    {
+        "produto_id":336,
+        "localizacao":"C3 P2 A1"
+    },
+    {
+        "produto_id":338,
+        "localizacao":"C3 P2 A1"
+    },
+    {
+        "produto_id":362,
+        "localizacao":"C3 P3 A3"
+    },
+    {
+        "produto_id":470,
+        "localizacao":"C3 P7 A2"
+    },
+    {
+        "produto_id":471,
+        "localizacao":"C3 P7 A1"
+    },
+    {
+        "produto_id":472,
+        "localizacao":"C3 P7 A1"
+    },
+    {
+        "produto_id":473,
+        "localizacao":"C3 P7 A3"
+    },
+    {
+        "produto_id":474,
+        "localizacao":"C3 P7 A4"
+    },
+    {
+        "produto_id":475,
+        "localizacao":"C3 P7 A4"
+    },
+    {
+        "produto_id":476,
+        "localizacao":"C3 P7 A3"
+    },
+    {
+        "produto_id":478,
+        "localizacao":null
+    },
+    {
+        "produto_id":480,
+        "localizacao":null
+    },
+    {
+        "produto_id":482,
+        "localizacao":null
+    },
+    {
+        "produto_id":484,
+        "localizacao":null
+    },
+    {
+        "produto_id":486,
+        "localizacao":null
+    },
+    {
+        "produto_id":488,
+        "localizacao":null
+    },
+    {
+        "produto_id":490,
+        "localizacao":null
+    },
+    {
+        "produto_id":492,
+        "localizacao":null
+    },
+    {
+        "produto_id":496,
+        "localizacao":null
+    },
+    {
+        "produto_id":498,
+        "localizacao":"C3 P7 A2"
+    },
+    {
+        "produto_id":501,
+        "localizacao":null
+    },
+    {
+        "produto_id":504,
+        "localizacao":null
+    },
+    {
+        "produto_id":505,
+        "localizacao":null
+    },
+    {
+        "produto_id":506,
+        "localizacao":null
+    },
+    {
+        "produto_id":507,
+        "localizacao":null
+    },
+    {
+        "produto_id":510,
+        "localizacao":"C3 P1 A3"
+    },
+    {
+        "produto_id":511,
+        "localizacao":"C3 P1 A1"
+    },
+    {
+        "produto_id":513,
+        "localizacao":"C3 P2 A2"
+    },
+    {
+        "produto_id":515,
+        "localizacao":"C3 P5 A3"
+    },
+    {
+        "produto_id":517,
+        "localizacao":"C3 P10 A3"
+    }
+]
