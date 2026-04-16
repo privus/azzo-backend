@@ -2125,7 +2125,7 @@ export class SellsService implements ISellsRepository {
     let pagina = 1;
 
     while (true) {
-      const listUrl = `${this.apiBlingUrl}${this.orderTagBling}?dataInicial=2025-11-17&pagina=${pagina}`;
+      const listUrl = `${this.apiBlingUrl}${this.orderTagBling}?dataInicial=2026-04-16&pagina=${pagina}`;
       const response = await this.httpService.axiosRef.get<{ data: OrdersBlingResponseDto[] }>(listUrl, {
         headers: { Authorization: `Bearer ${token}` }
       });
