@@ -1977,8 +1977,8 @@ export class SellsService implements ISellsRepository {
           clientes_novos: 0,
           pedidos_30: [],
           pedidos_50: [],
-          invalidos_valor: [],
-          invalidos_intervalo: [],
+          valor_invalido: [],
+          intervalo_invalido: [],
         };
       }
 
@@ -1990,10 +1990,9 @@ export class SellsService implements ISellsRepository {
 
       if (!isTipoValido) continue;
 
-      // ❌ INVALIDO POR VALOR
       if (Number(venda.valor_final) < 350) {
         if (pedidoId) {
-          result[vendedorNome].invalidos_valor.push(pedidoId);
+          result[vendedorNome].valor_invalido.push(pedidoId);
         }
         continue;
       }
@@ -2016,10 +2015,9 @@ export class SellsService implements ISellsRepository {
         if (clienteId) {
           const hasInterval = await this.last2SellsByClient(clienteId);
 
-        // ❌ INVALIDO POR INTERVALO
           if (!hasInterval) {
             if (pedidoId) {
-              result[vendedorNome].invalidos_intervalo.push(pedidoId);
+              result[vendedorNome].intervalo_invalido.push(pedidoId);
             }
             continue;
           }

@@ -29,8 +29,8 @@ export interface WeeklyAidDetails {
     pedidos_30: number[];
     pedidos_50: number[];
 
-    invalidos_valor: number[];
-    invalidos_intervalo: number[];
+    valor_invalido: number[];
+    intervalo_invalido: number[];
   };
 }
   
