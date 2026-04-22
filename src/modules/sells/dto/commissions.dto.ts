@@ -20,5 +20,17 @@ export interface WeeklyAid {
   };
 }
 
+export interface WeeklyAidDetails {
+  [vendedor: string]: {
+    valor_total: number;
+    pedidos: number;
+    clientes_novos: number;
 
+    pedidos_30: number[];
+    pedidos_50: number[];
+
+    invalidos_valor: number[];
+    invalidos_intervalo: number[];
+  };
+}
   

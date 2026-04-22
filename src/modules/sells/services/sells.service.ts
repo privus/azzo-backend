@@ -2,7 +2,7 @@ import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, IsNull, MoreThanOrEqual, Not, Raw, Repository } from 'typeorm';
 import { Produto, Venda, ParcelaCredito, StatusPagamento, StatusVenda, Syncro, TipoPedido, Cliente, ItensVenda, SaidaEstoque, MetaVendedor, Comissions, MetaMontagem } from '../../../infrastructure/database/entities';
-import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto, ProjectStockDto, GroupSalesResponse, CustomerGroupSalesDto, WeeklyAid, OrdeBlingDto, NfeBlingDTO, OrdersBlingResponseDto, OrderBlingResponseDto } from '../dto';
+import { OrderTinyDto, SellsApiResponse, UpdateSellStatusDto, BrandSales, Commissions, RakingSellsResponse, BrandPositivity, ReportBrandPositivity, PositivityResponse, RankingItem, SalesComparisonReport, NfeDto, InvoiceTinyDto, ProjectStockDto, GroupSalesResponse, CustomerGroupSalesDto, WeeklyAid, OrdeBlingDto, NfeBlingDTO, OrdersBlingResponseDto, OrderBlingResponseDto, WeeklyAidDetails } from '../dto';
 import { ICustomersRepository, ISellersRepository, IRegionsRepository, ISellsRepository, ITinyAuthRepository, IBlingAuthRepository, IWhatsAppRepository } from '../../../domain/repositories';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { HttpService } from '@nestjs/axios';
@@ -1926,6 +1926,104 @@ export class SellsService implements ISellsRepository {
           if (!hasInterval) {
             incrementoPedido = 0;
           }
+        }
+      }
+
+      result[vendedorNome].valor_total += incrementoPedido;
+    }
+
+    return result;
+  }
+
+  async weeklyAidDetails(fromDate: string, toDate: string): Promise<WeeklyAidDetails> {
+    const vendas = await this.sellsBetweenDates(fromDate, toDate);
+
+    const tipoPedidoAlvo = 10438;
+    const statusCancelado = 11468;
+
+    const valorAntigo = 30;
+    const valorNovo = 50;
+
+    const from = new Date(fromDate);
+    const to = new Date(toDate);
+
+    const vendedoresAtivos = await this.sellersSevice.findAllSellers();
+
+    const vendedoresMap = new Map(
+      vendedoresAtivos
+        .filter(v => v.ativo)
+        .map(v => [v.vendedor_id, v.nome])
+    );
+
+    const result: WeeklyAidDetails = {};
+
+    for (const venda of vendas) {
+      const vendedor = venda.vendedor;
+      if (!vendedor || !vendedoresMap.has(vendedor.vendedor_id)) continue;
+
+      const vendedorId = vendedor.vendedor_id as number;
+      if (vendedorId === 9 || vendedorId === 12) continue;
+
+      const vendedorNome = vendedoresMap.get(vendedorId)!;
+
+      if (!result[vendedorNome]) {
+        result[vendedorNome] = {
+          valor_total: 0,
+          pedidos: 0,
+          clientes_novos: 0,
+          pedidos_30: [],
+          pedidos_50: [],
+          invalidos_valor: [],
+          invalidos_intervalo: [],
+        };
+      }
+
+      const pedidoId = venda.codigo;
+
+      const isTipoValido =
+        venda.tipo_pedido?.tipo_pedido_id === tipoPedidoAlvo &&
+        venda.status_venda?.status_venda_id !== statusCancelado;
+
+      if (!isTipoValido) continue;
+
+      // ❌ INVALIDO POR VALOR
+      if (Number(venda.valor_final) < 350) {
+        if (pedidoId) {
+          result[vendedorNome].invalidos_valor.push(pedidoId);
+        }
+        continue;
+      }
+
+      result[vendedorNome].pedidos++;
+
+      const clienteCriacao = new Date(venda.cliente?.data_criacao);
+      const isNovoCliente = clienteCriacao >= from && clienteCriacao <= to;
+
+      let incrementoPedido = isNovoCliente ? valorNovo : valorAntigo;
+
+      if (isNovoCliente) {
+        result[vendedorNome].clientes_novos++;
+        if (pedidoId) {
+          result[vendedorNome].pedidos_50.push(pedidoId);
+        }
+      } else {
+          const clienteId = venda.cliente?.cliente_id;
+
+        if (clienteId) {
+          const hasInterval = await this.last2SellsByClient(clienteId);
+
+        // ❌ INVALIDO POR INTERVALO
+          if (!hasInterval) {
+            if (pedidoId) {
+              result[vendedorNome].invalidos_intervalo.push(pedidoId);
+            }
+            continue;
+          }
+        }
+
+        // ✅ cliente antigo válido → entra como 30
+        if (pedidoId) {
+          result[vendedorNome].pedidos_30.push(pedidoId);
         }
       }
 
