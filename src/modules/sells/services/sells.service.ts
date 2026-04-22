@@ -1866,7 +1866,7 @@ export class SellsService implements ISellsRepository {
     const total = Number(result[0]?.total);
     const diff = Number(result[0]?.diff);
 
-    if (total < 2) return false;
+    if (total < 2) return true;
 
     return diff > 15;
   }
