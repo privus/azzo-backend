@@ -135,4 +135,7 @@ export class Venda {
 
   @Column({ type: 'int', nullable: true })
   finance_order_id: number;
+
+  @Column({ type: 'tinyint', nullable: true })
+  qt_sku: number;
 }

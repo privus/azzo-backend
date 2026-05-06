@@ -433,11 +433,16 @@ export class SellsService implements ISellsRepository {
   private async decrementStockSell(code: number): Promise<void> {
 
     const venda = await this.getSellByCode(code);
+
     let comissaoMontagem = 0;
+
+    // Guarda SKUs únicos
+    const skuUnicos = new Set<number>();
 
     for (const item of venda.itensVenda) {
 
       const produtoVenda = item.produto;
+
       if (!produtoVenda) continue;
 
       const produtoEstoque = produtoVenda.unidade || produtoVenda;
@@ -447,6 +452,9 @@ export class SellsService implements ISellsRepository {
       if (produtoVenda.qt_uni && produtoVenda.unidade) {
         quantidadeEmUnidadesBase *= produtoVenda.qt_uni;
       }
+
+      // Adiciona SKU único
+      skuUnicos.add(produtoEstoque.produto_id);
 
       if (venda.tipo_pedido.tipo_pedido_id === 10438) {
         comissaoMontagem += quantidadeEmUnidadesBase * 0.01;
@@ -470,6 +478,10 @@ export class SellsService implements ISellsRepository {
     }
 
     venda.comissao_montagem = comissaoMontagem;
+
+    // Quantidade de SKUs diferentes
+    venda.qt_sku = skuUnicos.size;
+
     await this.saveSell(venda);
   }
 
@@ -2214,13 +2226,15 @@ export class SellsService implements ISellsRepository {
 
     const shopee = 205488875;
     const mercadoLivre = 205478072;
+    const amazon = 205818273
 
     const lojas = [
       { nome: 'Shopee', id: shopee, skuColumn: 'sku_shoppe' },
       { nome: 'Mercado Livre', id: mercadoLivre, skuColumn: 'sku_mercadolivre' },
+      { nome: 'Amazon', id: amazon, skuColumn: 'sku_amazon' },
     ];
 
-    console.log(`🚀 Iniciando sincronização de Shopee e Mercado Livre`);
+    console.log(`🚀 Iniciando sincronização de Shopee, Mercado Livre e Amazon`);
 
     let pagina = 1;
 
@@ -2661,7 +2675,9 @@ export class SellsService implements ISellsRepository {
         }
         await sleep(2000);
       }
+
       return resultados;
+
     } finally {
       this.isRuning = false;
     }
@@ -2669,7 +2685,7 @@ export class SellsService implements ISellsRepository {
 
   async registerAssemblyCommission(order: Venda) {
 
-    const valor = order.comissao_montagem;
+    let valor = Number(order.comissao_montagem || 0);
 
     if (!valor || valor <= 0) return;
 
@@ -2679,6 +2695,7 @@ export class SellsService implements ISellsRepository {
 
       const hoje = new Date();
       const dataInicio = new Date();
+
       dataInicio.setDate(hoje.getDate() - 30);
 
       const from = dataInicio.toISOString().split('T')[0];
@@ -2686,16 +2703,70 @@ export class SellsService implements ISellsRepository {
 
       const vendas = await this.sellsBetweenDates(from, to);
 
-      const totalPedidos = vendas.filter(v =>
+      const vendasValidas = vendas.filter(v =>
         v.tipo_pedido?.tipo_pedido_id === 10438 &&
         v.status_venda?.status_venda_id !== 11468
-      ).length;
+      );
 
-      meta.meta_diaria = totalPedidos / 30;
+      const totalPedidos = vendasValidas.length;
+
+      // pedidos atrasados nos status 11138 e 11139
+      let pedidosAtrasados = 0;
+
+      for (const venda of vendasValidas) {
+
+        const statusId = venda.status_venda?.status_venda_id;
+
+        if (![11138, 11139].includes(statusId)) {
+          continue;
+        }
+
+        const dataBase = venda.itens_atualizacao || venda.data_criacao;
+
+        if (!dataBase) continue;
+
+        const inicio = new Date(dataBase);
+        const hoje = new Date();
+
+        let diasUteisAtraso = 0;
+
+        const dataAtual = new Date(inicio);
+
+        while (dataAtual <= hoje) {
+
+          const diaSemana = dataAtual.getDay();
+
+          // 0 domingo | 6 sábado
+          if (diaSemana !== 0 && diaSemana !== 6) {
+            diasUteisAtraso++;
+          }
+
+          dataAtual.setDate(dataAtual.getDate() + 1);
+        }
+
+        // mais de 5 dias úteis parado
+        if (diasUteisAtraso > 5) {
+          pedidosAtrasados++;
+        }
+      }
+
+      meta.meta_diaria =
+        (totalPedidos / 21) + pedidosAtrasados;
+    }
+
+    const metaBatida = meta.meta_realizada >= meta.meta_diaria;
+
+    if (metaBatida) {
+      valor += valor * 0.10;
     }
 
     meta.meta_realizada = Number(meta.meta_realizada || 0) + 1;
-    meta.valor_condicional = Number(meta.valor_condicional || 0) + Number(valor);
+
+    meta.valor_condicional =
+      Number(meta.valor_condicional || 0) + valor;
+
+    meta.qt_sku =
+      Number(meta.qt_sku || 0) + Number(order.qt_sku || 0);
 
     await this.metaMontagemRepository.save(meta);
   }
@@ -2723,6 +2794,7 @@ export class SellsService implements ISellsRepository {
       this.logger.log(
         `🎯 Meta batida! Valor ${meta.valor_condicional} adicionado ao acumulado.`,
       );
+
     } else {
 
       this.logger.log(
@@ -2730,8 +2802,14 @@ export class SellsService implements ISellsRepository {
       );
     }
 
+    // salva valores do dia anterior
+    meta.valor_condicional_ontem = Number(meta.valor_condicional || 0);
+    meta.qt_sku_ontem = Number(meta.qt_sku || 0);
+
+    // reseta dia atual
     meta.meta_realizada = 0;
     meta.valor_condicional = 0;
+    meta.qt_sku = 0;
 
     await this.metaMontagemRepository.save(meta);
 

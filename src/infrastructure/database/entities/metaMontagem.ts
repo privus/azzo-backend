@@ -16,4 +16,13 @@ export class MetaMontagem {
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   valor_condicional: number;
+
+  @Column({ type: 'decimal', nullable: true })
+  qt_sku: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  valor_condicional_ontem: number;
+
+  @Column({ type: 'decimal', nullable: true })
+  qt_sku_ontem: number;
 }
