@@ -2810,6 +2810,7 @@ export class SellsService implements ISellsRepository {
     meta.meta_realizada = 0;
     meta.valor_condicional = 0;
     meta.qt_sku = 0;
+    meta.meta_diaria = 0;
 
     await this.metaMontagemRepository.save(meta);
 
