@@ -113,4 +113,10 @@ export class Cliente {
 
   @Column({ type: 'tinyint', default: 0, nullable: true })
   revisar: number;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  observacao: string;
+
+  @Column({ type: 'tinyint', default: 0, nullable: true })
+  transporte: number;
 }
