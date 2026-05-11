@@ -20,15 +20,24 @@ export class LabelService {
     // Caminho do logo
     const logoPath = path.resolve('src/utils/azzo.png');
     const logoBase64 = await this.getBase64Image(logoPath);
+    // Caminho do caminhão
+    const truckPath = path.resolve('src/utils/truck.svg');
+    let truckSvg = '';
+    try {
+      truckSvg = await fs.readFile(truckPath, 'utf8');
+    } catch (error) {
+      console.error('Erro ao carregar truck.svg:', error);
+    }
+
     if (order.status_venda.status_venda_id !== 11491) {
       await this.sellsSevice.updateStatusSellentt(order.codigo, 11541);
     }
     await this.sellsSevice.registerAssemblyCommission(order);
 
-    return await this.createPdf(order, totalVolumes, responsible, logoBase64);
+    return await this.createPdf(order, totalVolumes, responsible, logoBase64, truckSvg);
   }
 
-  private async createPdf(order: any, totalVolumes: number, responsible: string, logoBase64: string): Promise<Buffer> {
+  private async createPdf(order: any, totalVolumes: number, responsible: string, logoBase64: string, truckSvg: string): Promise<Buffer> {
     // Definição da fonte Helvetica corretamente
     const fonts = {
       Helvetica: {
@@ -49,7 +58,7 @@ export class LabelService {
     };
 
     for (let volume = 1; volume <= totalVolumes; volume++) {
-      docDefinition.content.push(this.createLabel(order, volume, totalVolumes, responsible, logoBase64));
+      docDefinition.content.push(this.createLabel(order, volume, totalVolumes, responsible, logoBase64, truckSvg));
       if (volume < totalVolumes) {
         docDefinition.content.push({ text: '', pageBreak: 'after' });
       }
@@ -58,13 +67,22 @@ export class LabelService {
     return this.generatePdfBuffer(printer, docDefinition);
   }
 
-  private createLabel(order: Venda, volume: number, totalVolumes: number, responsible: string, logoBase64: string) {
+  private createLabel(order: Venda, volume: number, totalVolumes: number, responsible: string, logoBase64: string, truckSvg: string) {
     const endereco = order.cliente.endereco + ' Nº ' + (order.cliente.num_endereco ?? '');
     const complemento = order.cliente.complemento ? order.cliente.complemento : '';
     const estado = order.cliente.cidade ? order.cliente.cidade.estado.sigla : '';
     const cidade = order.cliente.cidade_string + ' - ' + estado + ' - ' + order.cliente.cep;
     const telefoneFixo = '(35) 99877 - 0726';
-    const categoriaCliente = order.cliente.categoria_cliente ? order.cliente.categoria_cliente.nome : 'Supermercado';
+    const categoriaCliente = order.cliente.categoria_cliente.nome;
+    const transportadoraIcon = order.cliente.transportadora && truckSvg
+      ? {
+          svg: truckSvg,
+          width: 15,
+          height: 15,
+          margin: [0, -5, 10, -10],
+        }
+      : null;
+
     return {
       stack: [
         {
@@ -86,9 +104,15 @@ export class LabelService {
         {
           columns: [
             { text: `${categoriaCliente}`, fontSize: 5, bold: true, alignment: 'left' },
-            { text: `Pedido: ${order.codigo}`, fontSize: 5, bold: true, alignment: 'right' },
+            {
+              alignment: 'right',
+              columns: [
+                ...(transportadoraIcon ? [{ width: 'auto', ...transportadoraIcon }] : []),
+                { width: 'auto', text: `Pedido: ${order.codigo}`, fontSize: 5, bold: true },
+              ],
+            },
           ],
-        },        
+        },
         { text: `Cliente: ${order.cliente.nome_empresa}`, fontSize: 5, alignment: 'left', margin: [0, 10, 0, 2] },
         // Endereço
         { text: `Endereço: ${endereco} ${complemento}`, fontSize: 5, alignment: 'left', margin: [0, 2, 0, 2]},

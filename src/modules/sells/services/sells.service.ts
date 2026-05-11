@@ -525,11 +525,11 @@ export class SellsService implements ISellsRepository {
         where: {
           data_criacao: MoreThanOrEqual(new Date(fromDate)),
         },
-        relations: ['cliente.cidade.estado', 'vendedor', 'status_pagamento', 'status_venda', 'itensVenda.produto.unidade', 'itensVenda.produto.fornecedor', 'tipo_pedido'],
+        relations: ['cliente.cidade.estado', 'vendedor', 'status_pagamento', 'status_venda', 'itensVenda.produto.unidade', 'itensVenda.produto.fornecedor', 'tipo_pedido', 'cliente.transportadora'],
       });
     }
     return this.vendaRepository.find({
-      relations: ['cliente.cidade.estado', 'vendedor', 'status_pagamento', 'status_venda', 'itensVenda.produto.unidade', 'itensVenda.produto.fornecedor', 'tipo_pedido'],
+      relations: ['cliente.cidade.estado', 'vendedor', 'status_pagamento', 'status_venda', 'itensVenda.produto.unidade', 'itensVenda.produto.fornecedor', 'tipo_pedido', 'cliente.transportadora'],
     });
   }
 
@@ -559,7 +559,8 @@ export class SellsService implements ISellsRepository {
         'status_venda',
         'itensVenda.produto',
         'itensVenda.produto.fornecedor',
-        'tipo_pedido'
+        'tipo_pedido',
+        'cliente.transportadora'
       ],
     });
   }
@@ -578,6 +579,7 @@ export class SellsService implements ISellsRepository {
         'cliente.categoria_cliente',
         'cliente.regiao',
         'itensVenda.produto.unidade',
+        'cliente.transportadora'
       ],
     });
   }
