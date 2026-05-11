@@ -2709,6 +2709,8 @@ export class SellsService implements ISellsRepository {
 
   async registerAssemblyCommission(order: Venda) {
 
+    if (order.volume) return;
+
     let valor = Number(order.comissao_montagem || 0);
 
     if (!valor || valor <= 0) return;
