@@ -86,11 +86,22 @@ export class PrintOrderService {
         this.createProductsTable(order),
   
         {
-          text: `Total do Pedido: R$ ${order.valor_final}`,
-          alignment: 'right',
-          bold: true,
+          columns: [
+            {
+              text: `${order.cliente.observacao || ''}`,
+              alignment: 'left',
+              bold: true,
+              fontSize: 10,
+              color: '#fe4c40',
+            },
+            {
+              text: `Total do Pedido: R$ ${order.valor_final}`,
+              alignment: 'right',
+              bold: true,
+            },
+          ],
           margin: [0, 10, 0, 0],
-        },,
+        },
         {
           text: `Obs: ${order.observacao || '-'}`,
           alignment: 'right',
@@ -150,6 +161,7 @@ export class PrintOrderService {
           stack: [
             { text: produto?.nome ?? '-', fontSize: 10 },
             { text: obs, fontSize: 9, color: '#fe4c40'},
+            { text: produto.local_cx || '-' , fontSize: 9, color: '#dc4439ff'},
           ]
         },
         { text: item.quantidade?.toString() ?? '0', alignment: 'center', fontSize: 10 },
