@@ -161,7 +161,7 @@ export class PrintOrderService {
           stack: [
             { text: produto?.nome ?? '-', fontSize: 10 },
             { text: obs, fontSize: 9, color: '#fe4c40'},
-            { text: produto.local_cx || '-' , fontSize: 9, color: '#dc4439ff'},
+            { text: produto.local_cx || '' , fontSize: 10},
           ]
         },
         { text: item.quantidade?.toString() ?? '0', alignment: 'center', fontSize: 10 },
